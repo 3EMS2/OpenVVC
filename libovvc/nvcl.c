@@ -44,10 +44,7 @@
 #define NB_ARRAY_ELEMS(x) sizeof(x)/sizeof(*(x))
 
 
-typedef int (*NALUnitAction)(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
-                             uint8_t nalu_type);
-
-typedef int (*NALUnitAction2)(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu);
+typedef int (*NALUnitAction)(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu);
 static const char *nalu_name[32] =
 {
     "TRAIL",
@@ -90,6 +87,7 @@ extern const struct HLSReader sps_manager;
 extern const struct HLSReader pps_manager;
 extern const struct HLSReader ph_manager;
 extern const struct HLSReader sh_manager;
+extern const struct HLSReader aps_rdr;
 
 static const struct HLSReader *nalu_reader[32] =
 {
@@ -110,8 +108,8 @@ static const struct HLSReader *nalu_reader[32] =
     &vps_manager         , /* VPS */
     &sps_manager         , /* SPS */
     &pps_manager         , /* PPS */
-    &todo                , /* PREFIX_APS */
-    &todo                , /* SUFFIX_APS */
+    &aps_rdr             , /* PREFIX_APS */
+    &aps_rdr             , /* SUFFIX_APS */
     &ph_manager          , /* PH */
     &todo                , /* AUD */
     &todo                , /* EOS */
@@ -200,26 +198,21 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
         hlsdata_unref(&nvcl_ctx->pps_list[i]);
     }
 
-    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->alf_aps_list);
+    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->aps_list[0]);
     for (i = 0; i < nb_elems; ++i) {
-        if (nvcl_ctx->alf_aps_list[i]) {
-            ov_freep(&nvcl_ctx->alf_aps_list[i]);
-        }
+        hlsdata_unref(&nvcl_ctx->aps_list[0][i]);
     }
 
-    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->lmcs_aps_list);
+    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->aps_list[1]);
     for (i = 0; i < nb_elems; ++i) {
-        if (nvcl_ctx->lmcs_aps_list[i]) {
-            ov_freep(&nvcl_ctx->lmcs_aps_list[i]);
-        }
+        hlsdata_unref(&nvcl_ctx->aps_list[1][i]);
     }
 
-    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->scaling_list_aps_list);
+    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->aps_list[2]);
     for (i = 0; i < nb_elems; ++i) {
-        if (nvcl_ctx->scaling_list_aps_list[i]) {
-            ov_freep(&nvcl_ctx->scaling_list_aps_list[i]);
-        }
+        hlsdata_unref(&nvcl_ctx->aps_list[2][i]);
     }
+
     if (nvcl_ctx->ph) {
         hlsdata_unref(&nvcl_ctx->ph);
     }
@@ -285,11 +278,7 @@ decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, struct HLSDataRef **storage, OVN
     if (ret < 0)  goto invalid;
 
     ov_log(NULL, OVLOG_TRACE, "Replacing new %s\n", hls_hdl->name);
-    #if 0
-    ret = hls_hdl->replace(hls_hdl, storage, &data);
-    #else
     hls_replace_ref(hls_hdl, storage, &data);
-    #endif
 
     return ret;
 
@@ -348,19 +337,6 @@ static int decode_nvcl_hls(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
     return 0;
 }
 
-static int tmp_aps_wrap(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
-{
-    uint8_t nalu_type = nalu->type & 0x1F;
-    const struct HLSReader *const hls_reader = nalu_reader[nalu_type];
-    OVNVCLReader rdr;
-
-    nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
-
-    nvcl_skip_bits(&rdr, 16);
-
-    return nvcl_decode_nalu_aps(nvcl_ctx, &rdr, nalu_type);
-}
-
 static int tmp_sei_wrap(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
 {
     uint8_t nalu_type = nalu->type & 0x1F;
@@ -374,7 +350,7 @@ static int tmp_sei_wrap(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
     return nvcl_decode_nalu_sei(nvcl_ctx, &rdr, nalu_type);
 }
 
-static const NALUnitAction2 nalu_action[32] =
+static const NALUnitAction nalu_action[32] =
 {
     &log_ignored                , /* TRAIL */
     &log_ignored                , /* STSA */
@@ -393,8 +369,8 @@ static const NALUnitAction2 nalu_action[32] =
     &decode_nvcl_hls            , /* VPS */
     &decode_nvcl_hls            , /* SPS */
     &decode_nvcl_hls            , /* PPS */
-    &tmp_aps_wrap       , /* PREFIX_APS */
-    &tmp_aps_wrap       , /* SUFFIX_APS */
+    &decode_nvcl_hls       , /* PREFIX_APS */
+    &decode_nvcl_hls       , /* SUFFIX_APS */
     &decode_nvcl_hls            , /* PH */
     &log_ignored                , /* AUD */
     &log_ignored                , /* EOS */

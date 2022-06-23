@@ -38,6 +38,7 @@
 #include "nvcl.h"
 #include "nvcl_utils.h"
 #include "nvcl_structures.h"
+#include "hls_structures.h"
 
 enum APSType {
    APS_ALF          = 0,
@@ -45,13 +46,38 @@ enum APSType {
    APS_SCALING_LIST = 2
 };
 
+static uint8_t
+probe_aps_id(OVNVCLReader *const rdr)
+{
+    uint8_t aps_type = fetch_bits(rdr, 3);
+    uint8_t aps_id = fetch_bits(rdr, 8) & 0x1F;
+    return aps_id;
+}
+
+static uint8_t
+probe_aps_type(OVNVCLReader *const rdr)
+{
+    uint8_t aps_type = fetch_bits(rdr, 3);
+    return aps_type;
+}
+
+static struct HLSDataRef **
+storage_in_nvcl_ctx(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
+{
+    uint8_t type = probe_aps_type(rdr);
+    uint8_t id = probe_aps_id(rdr);
+
+    struct HLSDataRef **storage = &nvcl_ctx->aps_list[type][id];
+
+    return storage;
+}
+
 static int
-validate_aps(OVNVCLReader *rdr, OVAPS *const aps)
+validate_aps(OVNVCLReader *rdr, const union HLSData *const data)
 {
     /* TODO various check on limitation and max sizes */
     return 1;
 }
-
 
 static void
 nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data,
@@ -985,10 +1011,20 @@ derive_scaling_tb_luts(struct TBScalingLUTs *const sl_luts, const OVAPS *const a
                       sl_luts->intra_luts_cr, sl_luts->inter_luts_cr);
 }
 
-int
-nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
-              const OVNVCLCtx *const nvcl_ctx)
+static void
+free_aps(const union HLSData *const data)
 {
+    /* TODO unref and/or free dynamic structure */
+    const OVAPS *const aps = (const OVAPS *)data;
+    ov_free((void *)aps);
+}
+
+int
+nvcl_aps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
+              const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type)
+{
+    OVAPS *const aps = &hls_data->aps;
+
     aps->aps_params_type                    = nvcl_read_bits(rdr, 3);
     aps->aps_adaptation_parameter_set_id    = nvcl_read_bits(rdr, 5);
     aps->aps_chroma_present_flag            = nvcl_read_flag(rdr);
@@ -1015,44 +1051,13 @@ nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
     return 0;
 }
 
-int
-nvcl_decode_nalu_aps(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t nalu_type)
+const struct HLSReader aps_rdr =
 {
-    int ret;
-    /* TODO compare RBSP data to avoid new read */
+    .name = "APS",
+    .data_size = sizeof(OVAPS),
+    .find_storage = storage_in_nvcl_ctx,
+    .read = nvcl_aps_read,
+    .validate = validate_aps,
+    .free = free_aps
+};
 
-    OVAPS *aps = ov_mallocz(sizeof(*aps));
-    if (!aps) {
-        return OVVC_ENOMEM;
-    }
-
-    ret = nvcl_aps_read(rdr, aps, nvcl_ctx);
-    if (ret < 0) {
-        goto cleanup;
-    }
-
-    ret = validate_aps(rdr, aps);
-    if (ret < 0) {
-        goto cleanup;
-    }
-
-    uint8_t aps_id = aps->aps_adaptation_parameter_set_id;
-    if (aps->aps_params_type == 0) {
-        ov_free(nvcl_ctx->alf_aps_list[aps_id]);
-        nvcl_ctx->alf_aps_list[aps_id] = aps;
-    } else if (aps->aps_params_type == 1) {
-        ov_free(nvcl_ctx->lmcs_aps_list[aps_id]);
-        nvcl_ctx->lmcs_aps_list[aps_id] = aps;
-    } else if (aps->aps_params_type == 2) {
-        ov_free(nvcl_ctx->scaling_list_aps_list[aps_id]);
-        nvcl_ctx->scaling_list_aps_list[aps_id] = aps;
-    } else {
-        ov_free(aps);
-    }
-
-    return aps_id;
-
-cleanup:
-    ov_free(aps);
-    return ret;
-}

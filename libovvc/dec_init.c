@@ -489,8 +489,8 @@ static OVAPS *
 retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, uint8_t aps_id)
 {
     OVAPS *aps = NULL;
-    if (aps_id < 16) {
-        aps = nvcl_ctx->alf_aps_list[aps_id];
+    if (aps_id < 16 && nvcl_ctx->aps_list[0][aps_id]) {
+        aps = (OVAPS *)nvcl_ctx->aps_list[0][aps_id]->data;
     } else {
         ov_log(NULL, 3, "Invalid APS ID  %d\n", aps_id);
     }
@@ -503,8 +503,8 @@ retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 {
     uint8_t aps_id = ph->ph_lmcs_aps_id;
     OVAPS *aps = NULL;
-    if (aps_id < 16) {
-        aps = nvcl_ctx->lmcs_aps_list[aps_id];
+    if (aps_id < 16 && nvcl_ctx->aps_list[1][aps_id]) {
+        aps = (OVAPS *)nvcl_ctx->aps_list[1][aps_id]->data;
     } else {
         ov_log(NULL, 3, "Invalid APS ID  %d\n", aps_id);
     }
@@ -516,8 +516,8 @@ retrieve_aps_scaling_list(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 {
     uint8_t aps_id = ph->ph_scaling_list_aps_id;
     OVAPS *aps = NULL;
-    if (aps_id < 16) {
-        aps = nvcl_ctx->scaling_list_aps_list[aps_id];
+    if (aps_id < 16 && nvcl_ctx->aps_list[2][aps_id]) {
+        aps = (OVAPS *)nvcl_ctx->aps_list[2][aps_id]->data;
     } else {
         ov_log(NULL, 3, "Invalid APS ID  %d\n", aps_id);
     }
@@ -620,6 +620,22 @@ decinit_unref_params(struct OVPS *const ps)
     hlsdata_unref(&ps->pps_ref);
     hlsdata_unref(&ps->ph_ref);
     hlsdata_unref(&ps->sh_ref);
+
+    for (int i = 0; i < 8; i++) {
+        hlsdata_unref(&(ps->aps_alf_ref[i]));
+    }
+    hlsdata_unref(&ps->aps_alf_c_ref);
+    hlsdata_unref(&ps->aps_cc_alf_cb_ref);
+    hlsdata_unref(&ps->aps_cc_alf_cr_ref);
+    hlsdata_unref(&ps->aps_lmcs_ref);
+    hlsdata_unref(&ps->aps_scaling_list_ref);
+
+    ps->aps_alf_c = NULL;
+    ps->aps_cc_alf_cb = NULL;
+    ps->aps_cc_alf_cr = NULL;
+    ps->aps_lmcs = NULL;
+    ps->aps_scaling_list = NULL;
+
     ps->sps = NULL;
     ps->pps = NULL;
     ps->ph = NULL;
@@ -637,10 +653,10 @@ sps_check_dimension_change(const OVSPS *const old, const OVSPS *const new)
     return 1;
 }
 
+/* Update activated parameter sets from slice header */
 int
 decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
 {
-    /* FIXME assert nvcl_ctx params sets are not NULL*/
     int ret;
     OVSH *sh = (OVSH *)nvcl_ctx->sh->data;
     OVPH *ph = (OVPH *)nvcl_ctx->ph->data;
@@ -711,35 +727,54 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         uint8_t aps_id = sh->sh_alf_aps_id_luma[i];
         OVAPS * aps_alf = retrieve_aps_alf(nvcl_ctx, aps_id);
         if (ps->aps_alf[i] != aps_alf) {
+            hlsdata_unref(&ps->aps_alf_ref[i]);
+            if (aps_alf)
+                hlsdata_newref(&ps->aps_alf_ref[i], nvcl_ctx->aps_list[0][aps_id]);
             ps->aps_alf[i] = aps_alf;
         }
     }
 
     for (int i=sh->sh_num_alf_aps_ids_luma; i < 8; i++){
+        hlsdata_unref(&ps->aps_alf_ref[i]);
         ps->aps_alf[i] = NULL;
     }
 
     OVAPS * aps_alf_c = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_aps_id_chroma);
     if (ps->aps_alf_c != aps_alf_c) {
+        hlsdata_unref(&ps->aps_alf_c_ref);
+        if (aps_alf_c)
+            hlsdata_newref(&ps->aps_alf_c_ref, nvcl_ctx->aps_list[0][sh->sh_alf_aps_id_chroma]);
         ps->aps_alf_c = aps_alf_c;
     }
 
     OVAPS * aps_cc_alf_cb = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cb_aps_id);
     if (ps->aps_cc_alf_cb != aps_cc_alf_cb) {
+        hlsdata_unref(&ps->aps_cc_alf_cb_ref);
+        if (aps_cc_alf_cb)
+            hlsdata_newref(&ps->aps_cc_alf_cb_ref, nvcl_ctx->aps_list[0][sh->sh_alf_cc_cb_aps_id]);
         ps->aps_cc_alf_cb = aps_cc_alf_cb;
     }
     OVAPS * aps_cc_alf_cr = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cr_aps_id);
     if (ps->aps_cc_alf_cr != aps_cc_alf_cr) {
+        hlsdata_unref(&ps->aps_cc_alf_cr_ref);
+        if (aps_cc_alf_cr)
+            hlsdata_newref(&ps->aps_cc_alf_cr_ref, nvcl_ctx->aps_list[0][sh->sh_alf_cc_cr_aps_id]);
         ps->aps_cc_alf_cr = aps_cc_alf_cr;
     }
 
     OVAPS * aps_lmcs = retrieve_aps_lmcs(nvcl_ctx, ph);
     if (ps->aps_lmcs != aps_lmcs) {
+        hlsdata_unref(&ps->aps_lmcs_ref);
+        if (aps_lmcs)
+            hlsdata_newref(&ps->aps_lmcs_ref, nvcl_ctx->aps_list[1][ph->ph_lmcs_aps_id]);
         ps->aps_lmcs = aps_lmcs;
     }
 
     OVAPS * aps_scaling_list = retrieve_aps_scaling_list(nvcl_ctx, ph);
     if (ps->aps_scaling_list != aps_scaling_list) {
+        hlsdata_unref(&ps->aps_scaling_list_ref);
+        if (aps_scaling_list)
+            hlsdata_newref(&ps->aps_scaling_list_ref, nvcl_ctx->aps_list[2][ph->ph_scaling_list_aps_id]);
         ps->aps_scaling_list = aps_scaling_list;
     }
 

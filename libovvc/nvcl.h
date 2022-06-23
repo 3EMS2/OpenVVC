@@ -42,6 +42,11 @@
 #define OV_MAX_NUM_SPS 16
 #define OV_MAX_NUM_PPS 64
 #define OV_MAX_NUM_APS 32
+/* Note: only 3 APS types are currently valid, however we read
+ * 3 bits in types description so we set this value to 8 since
+ * more types might come with later VVC extensions
+ */
+#define OV_NUM_APS_TYPES 8
 
 struct OVNVCLCtx
 {
@@ -51,9 +56,8 @@ struct OVNVCLCtx
     struct HLSDataRef *vps_list[OV_MAX_NUM_VPS];
     struct HLSDataRef *sps_list[OV_MAX_NUM_SPS];
     struct HLSDataRef *pps_list[OV_MAX_NUM_PPS];
-    OVAPS *lmcs_aps_list[OV_MAX_NUM_APS];
-    OVAPS *alf_aps_list[OV_MAX_NUM_APS];
-    OVAPS *scaling_list_aps_list[OV_MAX_NUM_APS];
+    struct HLSDataRef *aps_list[OV_NUM_APS_TYPES][OV_MAX_NUM_APS];
+
     struct HLSDataRef *ph;
     struct HLSDataRef *sh;
     OVSEI *sei;
@@ -80,8 +84,8 @@ int nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const sps,
 int nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const pps,
                   const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
-int nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
-                  const OVNVCLCtx *const nvcl_ctx);
+int nvcl_aps_read(OVNVCLReader *const rdr, OVHLSData *const pps,
+                  const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
 int nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const ph,
                  const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
@@ -97,7 +101,6 @@ int nvcl_decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNALUnit *nal_unit);
 
 int nvcl_decode_nalu_sh(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
-int nvcl_decode_nalu_aps(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t nalu_type);
 
 int nvcl_decode_nalu_sei(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t nalu_type);
 

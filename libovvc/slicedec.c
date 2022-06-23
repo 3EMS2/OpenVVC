@@ -523,61 +523,63 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
 {   
     struct OVPS* slice_params = &sldec->active_params;
 
-    if (!slice_params->sps) {
-
-        for (int i = 0; i < 8; i++) {
-            slice_params->aps_alf[i] = ov_mallocz(sizeof(struct OVAPS));
-        }
-
-        slice_params->aps_alf_c = ov_mallocz(sizeof(struct OVAPS));
-        slice_params->aps_cc_alf_cb = ov_mallocz(sizeof(struct OVAPS));
-        slice_params->aps_cc_alf_cr = ov_mallocz(sizeof(struct OVAPS));
-        slice_params->aps_lmcs = ov_mallocz(sizeof(struct OVAPS));
-        slice_params->aps_scaling_list = ov_mallocz(sizeof(struct OVAPS));
-    }
-
-    #if 1
     hlsdata_unref(&slice_params->sps_ref);
     hlsdata_unref(&slice_params->pps_ref);
     hlsdata_unref(&slice_params->ph_ref);
     hlsdata_unref(&slice_params->sh_ref);
-    #endif
 
     hlsdata_newref(&slice_params->sps_ref, dec_params->sps_ref);
     hlsdata_newref(&slice_params->pps_ref, dec_params->pps_ref);
     hlsdata_newref(&slice_params->ph_ref, dec_params->ph_ref);
     hlsdata_newref(&slice_params->sh_ref, dec_params->sh_ref);
 
+    hlsdata_unref(&slice_params->aps_alf_c_ref);
+    hlsdata_unref(&slice_params->aps_cc_alf_cb_ref);
+    hlsdata_unref(&slice_params->aps_cc_alf_cr_ref);
+    hlsdata_unref(&slice_params->aps_lmcs_ref);
+    hlsdata_unref(&slice_params->aps_scaling_list_ref);
+
+    /*FIXME do this according to Slice Header info */
+    if (dec_params->aps_alf_c_ref) {
+        hlsdata_newref(&slice_params->aps_alf_c_ref, dec_params->aps_alf_c_ref);
+    }
+    slice_params->aps_alf_c = dec_params->aps_alf_c;
+
+    if (dec_params->aps_cc_alf_cb_ref) {
+        hlsdata_newref(&slice_params->aps_cc_alf_cb_ref, dec_params->aps_cc_alf_cb_ref);
+    }
+    slice_params->aps_cc_alf_cb = dec_params->aps_cc_alf_cb;
+
+    if (dec_params->aps_cc_alf_cr_ref) {
+        hlsdata_newref(&slice_params->aps_cc_alf_cr_ref, dec_params->aps_cc_alf_cr_ref);
+    }
+    slice_params->aps_cc_alf_cr = dec_params->aps_cc_alf_cr;
+
+    if (dec_params->aps_lmcs_ref) {
+        hlsdata_newref(&slice_params->aps_lmcs_ref, dec_params->aps_lmcs_ref);
+    }
+    slice_params->aps_lmcs = dec_params->aps_lmcs;
+
+    if (dec_params->aps_scaling_list_ref) {
+        hlsdata_newref(&slice_params->aps_scaling_list_ref, dec_params->aps_scaling_list_ref);
+    }
+    slice_params->aps_scaling_list = dec_params->aps_scaling_list;
+
+    int i;
+    for (i = 0; i < 8; i++) {
+        hlsdata_unref(&slice_params->aps_alf_ref[i]);
+        if (dec_params->aps_alf_ref[i]) {
+            hlsdata_newref(&slice_params->aps_alf_ref[i], dec_params->aps_alf_ref[i]);
+        }
+    }
+
     slice_params->sps = (OVSPS *)slice_params->sps_ref->data;
     slice_params->pps = (OVPPS *)slice_params->pps_ref->data;
     slice_params->ph = (OVPH *)slice_params->ph_ref->data;
     slice_params->sh = (OVSH *)slice_params->sh_ref->data;
 
-
     for (int i = 0; i < 8; i++) {
-        if (dec_params->aps_alf[i]) {
-            *(slice_params->aps_alf[i]) = *(dec_params->aps_alf[i]);
-        }
-    }
-
-    if (dec_params->aps_alf_c) {
-        *(slice_params->aps_alf_c) = *(dec_params->aps_alf_c);
-    }
-
-    if (dec_params->aps_cc_alf_cb) {
-        *(slice_params->aps_cc_alf_cb) = *(dec_params->aps_cc_alf_cb);
-    }
-
-    if (dec_params->aps_cc_alf_cr) {
-        *(slice_params->aps_cc_alf_cr) = *(dec_params->aps_cc_alf_cr);
-    }
-
-    if (dec_params->aps_lmcs) {
-        *(slice_params->aps_lmcs) = *(dec_params->aps_lmcs);
-    }
-
-    if (dec_params->aps_scaling_list) {
-        *(slice_params->aps_scaling_list) = *(dec_params->aps_scaling_list);
+        slice_params->aps_alf[i] = dec_params->aps_alf[i];
     }
 
     slice_params->sps_info = dec_params->sps_info;
@@ -593,34 +595,24 @@ slicedec_free_params(OVSliceDec *sldec)
 {   
     struct OVPS* slice_params = &sldec->active_params;
 
-    if(slice_params->sps){
+    for (int i = 0; i < 8; i++) {
+        hlsdata_unref(&(slice_params->aps_alf_ref[i]));
     }
 
-    if (slice_params->aps_alf_c) {
-        for (int i = 0; i < 8; i++) {
-            ov_freep(&(slice_params->aps_alf[i]));
-        }
-        ov_freep(&slice_params->aps_alf_c);
-    }
+    hlsdata_unref(&slice_params->aps_alf_c_ref);
+    hlsdata_unref(&slice_params->aps_cc_alf_cb_ref);
+    hlsdata_unref(&slice_params->aps_cc_alf_cr_ref);
 
-    if (slice_params->aps_cc_alf_cb) {
-        ov_freep(&slice_params->aps_cc_alf_cb);
-        ov_freep(&slice_params->aps_cc_alf_cr);
-    }
+    hlsdata_unref(&slice_params->aps_lmcs_ref);
 
-    if (slice_params->aps_lmcs) {
-        ov_freep(&slice_params->aps_lmcs);
-    }
-
-    if (slice_params->aps_scaling_list) {
-        ov_freep(&slice_params->aps_scaling_list);
-    }
+    hlsdata_unref(&slice_params->aps_scaling_list_ref);
 }
 
 void
 slicedec_finish_decoding(OVSliceDec *sldec)
 {
     struct SliceSynchro *slice_sync = &sldec->slice_sync;
+    OVPS *slice_params = &sldec->active_params;
 
     /* There might be no NAL Unit attached to slicedec if
      * we failed before attaching NALU
@@ -629,14 +621,24 @@ slicedec_finish_decoding(OVSliceDec *sldec)
         ov_nalu_unref(&slice_sync->slice_nalu);
     }
 
-    hlsdata_unref(&sldec->active_params.sps_ref);
-    hlsdata_unref(&sldec->active_params.pps_ref);
-    hlsdata_unref(&sldec->active_params.ph_ref);
-    hlsdata_unref(&sldec->active_params.sh_ref);
+
+    hlsdata_unref(&slice_params->sps_ref);
+    hlsdata_unref(&slice_params->pps_ref);
+    hlsdata_unref(&slice_params->ph_ref);
+    hlsdata_unref(&slice_params->sh_ref);
+
+    for (int i = 0; i < 8; i++) {
+        hlsdata_unref(&(slice_params->aps_alf_ref[i]));
+    }
+
+    hlsdata_unref(&slice_params->aps_alf_c_ref);
+    hlsdata_unref(&slice_params->aps_cc_alf_cb_ref);
+    hlsdata_unref(&slice_params->aps_cc_alf_cr_ref);
+    hlsdata_unref(&slice_params->aps_lmcs_ref);
+    hlsdata_unref(&slice_params->aps_scaling_list_ref);
 
     if (sldec->pic) {
         ov_log(NULL, OVLOG_DEBUG, "Decoder with POC %d, finished frame \n", sldec->pic->poc);
-
         ovdpb_report_decoded_frame(sldec->pic);
     }
 
