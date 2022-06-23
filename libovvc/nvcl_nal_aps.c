@@ -1040,14 +1040,19 @@ nvcl_aps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     }
 
     aps->aps_extension_flag = nvcl_read_flag(rdr);
-    #if 0
     if(aps->aps_extension_flag) {
-        while(more_rbsp_data()) {
-            aps->aps_extension_data_flag = nvcl_read_flag(rdr);
+        int32_t nb_bits_read = nvcl_nb_bits_read(rdr) + 1;
+        int32_t stop_bit_pos = nvcl_find_rbsp_stop_bit(rdr);
+        int32_t nb_bits_remaining = stop_bit_pos - nb_bits_read;
+
+        if (nb_bits_remaining < 0) {
+            ov_log(NULL, OVLOG_ERROR, "Overread SPS %d", nb_bits_read, stop_bit_pos);
+            return OVVC_EINDATA;
         }
+
+        /* Ignore extension */
+        nvcl_skip_bits(rdr, nb_bits_remaining);
     }
-    rbsp_trailing_bits()
-    #endif
     return 0;
 }
 
