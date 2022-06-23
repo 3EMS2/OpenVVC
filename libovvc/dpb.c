@@ -134,15 +134,7 @@ dpbpriv_release_pic(OVPicture *pic)
 
         pic->frame = NULL;
 
-        if (pic->sei) {
-            if (pic->sei->sei_fg) {
-                ov_freep(&pic->sei->sei_fg);
-            }
-            if (pic->sei->sei_slhdr) {
-                ov_freep(&pic->sei->sei_slhdr);
-            }
-            ov_freep(&pic->sei);
-        }
+        ovpu_unref(&pic->pu);
     }
 }
 
@@ -623,7 +615,7 @@ vvc_unmark_refs(OVPicture * current_pic, OVPicture **dst_rpl, uint8_t nb_active_
 }
 
 static void
-dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst, struct OVSEI **sei_p)
+dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst, struct OVPictureUnit **punit_p)
 {
     if (pic->flags & OV_OUTPUT_PIC_FLAG) {
         ovframe_new_ref(dst, pic->frame);
@@ -631,17 +623,13 @@ dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst, struct OVSEI **sei_p)
        *dst = NULL;
     }
 
-    /* Move sei from pic to output
-     * FIXME use ref/unref instead
-     */
-    *sei_p = pic->sei;
-    pic->sei = NULL;
+    ovpu_new_ref(punit_p, pic->pu);
 
     ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
 }
 
 int
-ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
+ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
 {
     int output_cvs_id = find_min_cvs_id(dpb);
 
@@ -673,7 +661,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
             OVPicture *pic = &dpb->pictures[min_idx];
             dpb->pts += dpb->nb_units_in_ticks;
             pic->frame->pts = dpb->pts;
-            dpb_pic_to_frame_ref(pic, out, sei_p);
+            dpb_pic_to_frame_ref(pic, out, punit_p);
             return nb_output;
         }
 
@@ -694,7 +682,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
 }
 
 int
-ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
+ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
 {
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int i;
@@ -738,7 +726,7 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
         OVPicture *pic = &dpb->pictures[min_idx];
         dpb->pts += dpb->nb_units_in_ticks;
         pic->frame->pts = dpb->pts;
-        dpb_pic_to_frame_ref(pic, out, sei_p);
+        dpb_pic_to_frame_ref(pic, out, punit_p);
         return nb_output;
     }
 
@@ -997,10 +985,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     (*pic_p)->scale_info.chroma_hor_col_flag = ps->sps->sps_chroma_horizontal_collocated_flag;
     (*pic_p)->scale_info.chroma_ver_col_flag = ps->sps->sps_chroma_vertical_collocated_flag;
 
-    copy_sei_params(&(*pic_p)->sei, ovdec->active_params.sei);
-
-    (*pic_p)->sei->upscale_flag = ovdec->upscale_flag;
-    (*pic_p)->sei->scaling_info = (*pic_p)->scale_info;
+    ovpu_new_ref(&(*pic_p)->pu, ovdec->pu);
 
     ov_log(NULL, OVLOG_TRACE, "DPB start new picture POC: %d\n", (*pic_p)->poc);
 

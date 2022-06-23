@@ -122,7 +122,8 @@ struct OVPicture
     struct MVPlane mv_plane0;
     struct MVPlane mv_plane1;
 
-    OVSEI *sei;
+    /* Reference to the Picture Unit associated to this picture */
+    struct OVPictureUnit *pu;
 
     struct ScalingInfo scale_info;
     int32_t poc;
@@ -182,9 +183,9 @@ void ovdpb_unref_pic(OVPicture *pic, int flags);
 
 void ovdpb_release_pic(OVDPB *dpb, OVPicture *pic);
 
-int ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVSEI **sei_p);
+int ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, struct OVPictureUnit **punit_p);
 
-int ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p);
+int ovdpb_output_pic(OVDPB *dpb, OVFrame **out, struct OVPictureUnit **punit_p);
 
 void ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVSliceDec *const sldec);
 

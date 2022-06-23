@@ -60,7 +60,6 @@ struct OVNVCLCtx
 
     struct HLSDataRef *ph;
     struct HLSDataRef *sh;
-    OVSEI *sei;
 };
 
 typedef union HLSData OVHLSData;
@@ -103,6 +102,8 @@ int nvcl_decode_nalu_sh(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx, uint
 
 
 int nvcl_decode_nalu_sei(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t nalu_type);
+
+int nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type);
 
 void copy_sei_params(OVSEI **dst_p, OVSEI *src);
 

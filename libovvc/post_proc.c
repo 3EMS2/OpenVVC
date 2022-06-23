@@ -33,6 +33,7 @@
 
 #include "overror.h"
 #include "ovlog.h"
+#include "nvcl_utils.h"
 #include "ovdpb.h"
 #include "ovconfig.h"
 
@@ -73,7 +74,7 @@ pp_init_functions(const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
 }
 
 int
-pp_process_frame(const OVSEI* sei, OVFrame **frame_p)
+pp_process_frame2(const OVSEI* sei, OVFrame **frame_p)
 {
     int ret=0;
     struct PostProcFunctions pp_funcs;
@@ -136,4 +137,54 @@ no_writable_pic:
     ovframe_unref(frame_p);
 
     return OVVC_ENOMEM;
+}
+
+
+static int tmp_sei_wrap(OVNALUnit *const nalu, OVSEI **dst)
+{
+    uint8_t nalu_type = nalu->type & 0x1F;
+    OVNVCLReader rdr;
+
+    nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
+
+    nvcl_skip_bits(&rdr, 16);
+
+    return nvcl_decode_nalu_sei2(dst, &rdr, nalu_type);
+}
+
+int
+pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame **frame_p)
+{
+    int i;
+    int ret;
+    OVSEI *sei = NULL;
+
+    for (i = 0; i < pu->nb_nalus; ++i) {
+        if (pu->nalus[i]->type == OVNALU_PREFIX_SEI ||
+            pu->nalus[i]->type == OVNALU_SUFFIX_SEI) {
+
+            ret = tmp_sei_wrap(pu->nalus[i], &sei);
+
+            if (ret < 0) {
+                goto fail;
+            }
+        }
+    }
+    /* Check SEI SEI */
+    ret = pp_process_frame2(sei, frame_p);
+
+    if (sei) {
+        if (sei->sei_fg) {
+            ov_freep(&sei->sei_fg);
+        }
+
+        if (sei->sei_slhdr) {
+            ov_freep(&sei->sei_slhdr);
+        }
+    }
+
+    ov_free(sei);
+
+fail:
+return ret;
 }

@@ -220,11 +220,6 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
     if (nvcl_ctx->sh) {
         hlsdata_unref(&nvcl_ctx->sh);
     }
-
-    if (nvcl_ctx->sei) {
-        nvcl_free_sei_params(nvcl_ctx->sei);
-    }
-
 }
 
 static void
@@ -375,8 +370,8 @@ static const NALUnitAction nalu_action[32] =
     &log_ignored                , /* AUD */
     &log_ignored                , /* EOS */
     &log_ignored                , /* EOB */
-    &tmp_sei_wrap       , /* PREFIX_SEI */
-    &tmp_sei_wrap       , /* SUFFIX_SEI */
+    &log_ignored       , /* PREFIX_SEI */
+    &log_ignored       , /* SUFFIX_SEI */
     &log_ignored                , /* FD */
     &warn_unspec                , /* RSVD_NVCL */
     &warn_unspec                , /* RSVD_NVCL */

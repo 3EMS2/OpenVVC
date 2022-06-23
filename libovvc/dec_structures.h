@@ -334,7 +334,6 @@ struct OVVCDec
         OVAPS *aps_scaling_list;
         OVPH *ph;
         OVSH *sh;
-        OVSEI *sei;
 
         /* Human readable information from active parameter sets */
         struct SPSInfo sps_info;
@@ -362,8 +361,14 @@ struct OVVCDec
 
     } active_params;
 
+    struct OVPictureUnit* pu;
+
     //Boolean: output video upscaled to max resolution
     uint8_t upscale_flag;
+    struct PostProcessCtx {
+        uint8_t upscale_flag;
+
+    } ppctx;
     
     OVDPB *dpb;
 

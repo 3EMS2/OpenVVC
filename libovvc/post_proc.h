@@ -39,6 +39,7 @@
 struct OVSEIFGrain;
 struct OVVCDec;
 struct ScalingInfo;
+struct PostProcessCtx;
 
 typedef void (*FGFunc)(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain* fgrain, 
                           int pic_w, int pic_h, int poc, uint8_t isIdrPic, uint8_t enableDeblocking);
@@ -52,7 +53,7 @@ struct PostProcFunctions
     SLHDRFunc pp_sdr_to_hdr;
 };
 
-int pp_process_frame(const OVSEI* sei, OVFrame **frame_p);
+int pp_process_frame(struct PostProcessCtx *ppctx, const OVPictureUnit* sei, OVFrame **frame_p);
 
 
 //TODO: change function names.

@@ -663,7 +663,6 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
     OVPPS *pps = retrieve_pps(nvcl_ctx, ph);
     OVSPS *sps = retrieve_sps(nvcl_ctx, pps);
 
-    ps->sei = nvcl_ctx->sei;
 
     if (!sh || !ph || !pps || !sps) {
         ov_log(NULL, OVLOG_ERROR, "Missing Parameter sets for dec initialisation\n");

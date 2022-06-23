@@ -431,16 +431,19 @@ vvc_decode_picture_unit(OVVCDec *dec, const OVPictureUnit *pu)
 {
     int i;
     int ret;
+    ovpu_new_ref(&dec->pu, pu);
     for (i = 0; i < pu->nb_nalus; ++i) {
         ret = decode_nal_unit(dec, pu->nalus[i]);
         if (ret < 0) {
             goto fail;
         }
     }
+    ovpu_unref(&dec->pu);
     return 0;
 
 fail:
     /* Error processing if needed */
+    ovpu_unref(&dec->pu);
     return ret;
 }
 
@@ -457,7 +460,7 @@ ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
 int
 ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 {
-    struct OVSEI *sei;
+    struct OVPictureUnit *punit;
     OVDPB *dpb = dec->dpb;
     int ret = 0;
 
@@ -466,20 +469,11 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
         return 0;
     }
 
-    ret = ovdpb_output_pic(dpb, frame_p, &sei);
+    ret = ovdpb_output_pic(dpb, frame_p, &punit);
 
     if (*frame_p) {
-        pp_process_frame(sei, frame_p);
-
-        if (sei->sei_fg) {
-            ov_freep(&sei->sei_fg);
-        }
-
-        if (sei->sei_slhdr) {
-            ov_freep(&sei->sei_slhdr);
-        }
-
-        ov_freep(&sei);
+        pp_process_frame(&dec->ppctx, punit, frame_p);
+        ovpu_unref(&punit);
     }
 
     if (*frame_p) {
@@ -507,7 +501,7 @@ ovdec_wait_entry_threads(OVVCDec *vvcdec)
 int
 ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 {
-    struct OVSEI *sei;
+    struct OVPictureUnit *punit;
     OVDPB *dpb = dec->dpb;
     int ret;
 
@@ -518,20 +512,11 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
         return 0;
     }
 
-    ret = ovdpb_drain_frame(dpb, frame_p, &sei);
+    ret = ovdpb_drain_frame(dpb, frame_p, &punit);
 
     if (*frame_p) {
-        pp_process_frame(sei, frame_p);
-
-        if (sei->sei_fg) {
-            ov_freep(&sei->sei_fg);
-        }
-
-        if (sei->sei_slhdr) {
-            ov_freep(&sei->sei_slhdr);
-        }
-
-        ov_freep(&sei);
+        pp_process_frame(&dec->ppctx, punit, frame_p);
+        ovpu_unref(&punit);
     }
 
     return ret;
