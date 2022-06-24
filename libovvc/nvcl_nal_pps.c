@@ -322,71 +322,9 @@ nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     }
 
     if (!pps->pps_no_pic_partition_flag) {
-
-        /* TODO confirm sub functions*/
-        #if 0
-        int nb_tiles_pic;
         pps->pps_log2_ctu_size_minus5 = nvcl_read_bits(rdr, 2);
 
-        pps->pps_num_exp_tile_columns_minus1 = nvcl_read_u_expgolomb(rdr);
-        pps->pps_num_exp_tile_rows_minus1    = nvcl_read_u_expgolomb(rdr);
-
-        nb_tiles_pic = (pps->pps_num_exp_tile_columns_minus1 + 1)
-                       * (pps->pps_num_exp_tile_rows_minus1 + 1);
-        for(i = 0; i <= pps->pps_num_exp_tile_columns_minus1; i++) {
-            pps->pps_tile_column_width_minus1[i] = nvcl_read_u_expgolomb(rdr);
-        }
-
-        for(i = 0; i <= pps->pps_num_exp_tile_rows_minus1; i++) {
-            pps->pps_tile_row_height_minus1[i] = nvcl_read_u_expgolomb(rdr);
-        }
-
-        if (nb_tiles_pic > 1) {
-            pps->pps_loop_filter_across_tiles_enabled_flag = nvcl_read_flag(rdr);
-            pps->pps_rect_slice_flag = nvcl_read_flag(rdr);
-        }
-
-        if (pps->pps_rect_slice_flag) {
-            pps->pps_single_slice_per_subpic_flag = nvcl_read_flag(rdr);
-        }
-
-        if (pps->pps_rect_slice_flag && !pps->pps_single_slice_per_subpic_flag) {
-            pps->pps_num_slices_in_pic_minus1 = nvcl_read_u_expgolomb(rdr);
-            if (pps->pps_num_slices_in_pic_minus1 > 1) {
-                pps->pps_tile_idx_delta_present_flag = nvcl_read_flag(rdr);
-            }
-
-            for(i = 0; i < pps->pps_num_slices_in_pic_minus1; i++) {
-                if (SliceTopLeftTileIdx[i] % NumTileColumns != NumTileColumns − 1) {
-                    pps->pps_slice_width_in_tiles_minus1[i] = nvcl_read_u_expgolomb(rdr);
-                }
-
-                if (SliceTopLeftTileIdx[i] / NumTileColumns != NumTileRows − 1 && (pps->pps_tile_idx_delta_present_flag || SliceTopLeftTileIdx[i] % NumTileColumns == 0)) {
-                    pps->pps_slice_height_in_tiles_minus1[i] = nvcl_read_u_expgolomb(rdr);
-                }
-
-                if (pps->pps_slice_width_in_tiles_minus1[i] == 0 && pps->pps_slice_height_in_tiles_minus1[i] == 0 && RowHeightVal[SliceTopLeftTileIdx[i] / NumTileColumns] > 1) {
-                    pps->pps_num_exp_slices_in_tile[i] = nvcl_read_u_expgolomb(rdr);
-                    for(j = 0; j < pps->pps_num_exp_slices_in_tile[i]; j++) {
-                        pps->pps_exp_slice_height_in_ctus_minus1[i][j] = nvcl_read_u_expgolomb(rdr);
-                    }
-                    i += NumSlicesInTile[i] − 1;
-                }
-
-                if (pps->pps_tile_idx_delta_present_flag && i < pps->pps_num_slices_in_pic_minus1) {
-                    pps->pps_tile_idx_delta_val[i] = nvcl_read_s_expgolomb(rdr);
-                }
-            }
-        }
-
-        if (!pps->pps_rect_slice_flag || pps->pps_single_slice_per_subpic_flag || pps->pps_num_slices_in_pic_minus1 > 0) {
-            pps->pps_loop_filter_across_slices_enabled_flag = nvcl_read_flag(rdr);
-        }
-    #else
-    pps->pps_log2_ctu_size_minus5 = nvcl_read_bits(rdr, 2);
-
-    pps_read_pic_partition(rdr, pps);
-    #endif
+        pps_read_pic_partition(rdr, pps);
     }
 
     pps->pps_cabac_init_present_flag = nvcl_read_flag(rdr);
