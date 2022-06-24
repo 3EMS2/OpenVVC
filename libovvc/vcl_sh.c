@@ -309,6 +309,155 @@ pred_weight_table_sh(OVNVCLReader *const rdr, struct RPLWeightInfo *const wgt_in
         }
     }
 }
+#if 0
+static int
+add_ctb_to_slice(slice_idx, start_x, stop_x, start_y, stop_y)
+{
+    for(ctb_y = start_y; ctb_y < stop_y; ctb_y++ ) {
+        for(ctb_x = start_x; ctb_x < stop_x; ctb_x++ ) {
+            CtbAddrInSlice[slice_idx][NumCtusInSlice[slice_idx]] = ctb_y * nb_ctb_pic_w + ctb_x;
+            NumCtusInSlice[slice_idx]++;
+        }
+    }
+}
+static int
+bal()
+{
+    int i, j, k, l;
+    if (pps->pps_single_slice_per_subpic_flag) {
+        if (!sps->sps_subpic_info_present_flag) {
+            /* There is no subpicture info and only one slice in a picture. */
+            /* => TILES_IN_SLICE */
+            for (j = 0; j < nb_tile_rows; j++) {
+                for (i = 0; i < nb_tile_cols; i++) {
+                    add_ctb_to_slice(0, tile_ctb_x[i], tile_ctb_x[i + 1],
+                                        tile_ctb_y[j], tile_ctb_y[j + 1]);
+                }
+            }
+        } else {
+            /* => MULTIPLE SUBPICTURES ONE SLICE PER SUBPIC */
+            for (i = 0; i <= sps->sps_num_subpics_minus1; i++) {
+                if (subpicHeightLessThanOneTileFlag[i]) {
+                    /* The slice consists of a set of CTU rows in a tile. */
+                    /* SUB PIC IN TILE */
+                    add_ctb_to_slice(i, sps_subpic_ctu_top_left_x[i], sps_subpic_ctu_top_left_x[i] + sps_subpic_width_minus1[i] + 1,
+                                        sps_subpic_ctu_top_left_y[i], sps_subpic_ctu_top_left_y[i] + sps_subpic_height_minus1[i] + 1);
+                } else {
+                    /* The slice consists of a number of complete tiles covering a rectangular region. */
+                    /* TILES IN SUB PIC*/
+                    uint16_t tile_x = ctbToTileColIdx[sps_subpic_ctu_top_left_x[i]];
+                    uint16_t tile_y = ctbToTileRowIdx[sps_subpic_ctu_top_left_y[i]];
+                    for (j = 0; j < SubpicHeightInTiles[i]; j++) {
+                        for (k = 0; k < SubpicWidthInTiles[i]; k++) {
+                            add_ctb_to_slice(i, tile_ctb_x[tile_x + k], tile_ctb_x[tile_x + k + 1],
+                                                tile_ctb_y[tile_y + j], tile_ctb_y[tile_y + j + 1]);
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        uint16_t tile_idx = 0;
+        for (i = 0; i <= pps->pps_num_slices_in_pic_minus1; i++) {
+
+            uint16_t tile_x = tile_idx % nb_tile_cols;
+            uint16_t tile_y = tile_idx / nb_tile_cols;
+
+            if (i < pps->pps_num_slices_in_pic_minus1) {
+                slice_tile_w[i] = pps_slice_width_in_tiles_minus1[i] + 1;
+                slice_tile_h[i] = pps_slice_height_in_tiles_minus1[i] + 1;
+            } else {
+                /* implicit last slice dimension */
+                slice_tile_w[i] = nb_tile_cols - tile_x;
+                slice_tile_h[i] = nb_tile_rows - tile_y;
+                NumSlicesInTile[i] = 1;
+            }
+
+            if (slice_tile_w[i] == 1 && slice_tile_h[i] == 1) {
+
+                if (pps->pps_num_exp_slices_in_tile[i] == 0) {
+                    /* exactly one tile in slice */
+                    slice_ctb_h[i] = tile_ctb_h[tile_idx / nb_tile_cols];
+                    NumSlicesInTile[i] = 1;
+                } else {
+                    /* EXPLICIT RECTANGLE SLICES IN TILES */
+                    /* Fill next slices up to last slice in tile and increase slice_index */
+                    int16_t rem_ctb_h = tile_ctb_h[tile_idx / nb_tile_cols];
+
+                    for (j = 0; j < pps->pps_num_exp_slices_in_tile[i]; j++) {
+                        slice_ctb_h[i + j] = pps->pps_exp_slice_height_in_ctus_minus1[i][j] + 1;
+                        rem_ctb_h -= slice_ctb_h[i + j];
+                    }
+
+                    /* Implicit last slices rectangles */
+                    uniform_slice_ctb_h = slice_ctb_h[i + j - 1];
+
+                    while (rem_ctb_h >= uniform_slice_ctb_h) {
+                        slice_ctb_h[i + j] = uniform_slice_ctb_h;
+                        rem_ctb_h -= uniform_slice_ctb_h;
+                        j++;
+                    }
+
+                    if (rem_ctb_h > 0) {
+                        slice_ctb_h[i + j] = rem_ctb_h;
+                        j++;
+                    }
+
+                    NumSlicesInTile[i] = j;
+                }
+
+                uint16_t ctb_y = tile_ctb_y[tile_y];
+                for (j = 0; j < NumSlicesInTile[i]; j++) {
+                    add_ctb_to_slice(i + j, tile_ctb_x[tile_x], tile_ctb_x[tile_x + 1],
+                                     ctb_y, ctb_y + slice_ctb_h[i + j]);
+                    ctb_y += slice_ctb_h[i + j];
+                    slice_tile_w[i + j] = 1;
+                    slice_tile_h[i + j] = 1;
+                }
+
+                i += NumSlicesInTile[i] - 1;
+            } else {
+                /* EXPLICIT TILES RECTANGLES in SLICES W H  */
+                for (j = 0; j < slice_tile_h[i]; j++) {
+                    for (k = 0; k < slice_tile_w[i]; k++) {
+                        add_ctb_to_slice(i, tile_ctb_x[tile_x + k], tile_ctb_x[tile_x + k + 1],
+                                            tile_ctb_y[tile_y + j], tile_ctb_y[tile_y + j + 1]);
+                    }
+                }
+            }
+
+            /* Tile delta idx resolution */
+            if (i < pps->pps_num_slices_in_pic_minus1) {
+                if (pps->pps_tile_idx_delta_present_flag) {
+                    tile_idx += pps->pps_tile_idx_delta_val[i];
+                } else {
+                    tile_idx += slice_tile_w[i];
+                    if (tile_idx % nb_tile_cols == 0) {
+                        tile_idx += (slice_tile_h[i] - 1) * nb_tile_cols;
+                    }
+                }
+            }
+        }
+    }
+}
+
+static int
+derive_nb_slice_in_subpic(const OVSPS *const sps, const OVPPS *const pps, uint16_t i)
+{
+    int j;
+    int nb_slices_in_subpic = 0;
+    for (j = 0; j <= pps->pps_num_slices_in_pic_minus1; j++) {
+        uint16_t ctu_x = CtbAddrInSlice[j][0] % pic_ctb_w;
+        uint16_t ctu_y = CtbAddrInSlice[j][0] / pic_ctb_w;
+        if ((ctu_x >= sps->sps_subpic_ctu_top_left_x[i]) &&
+            (ctu_x  < sps->sps_subpic_ctu_top_left_x[i] + sps->sps_subpic_width_minus1[i] + 1) &&
+            (ctu_y >= sps->sps_subpic_ctu_top_left_y[i]) &&
+            (ctu_y  < sps->sps_subpic_ctu_top_left_y[i] + sps->sps_subpic_height_minus1[i] + 1)) {
+            nb_slices_in_subpic++;
+        }
+    }
+}
+#endif
 
 int
 nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
