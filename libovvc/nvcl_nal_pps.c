@@ -175,55 +175,50 @@ pps_read_slices_in_subpic(OVNVCLReader *const rdr, OVPPS *const pps)
 static void
 pps_implicit_pic_partition(OVPPS *const pps)
 {
-    int nb_cols = pps->pps_num_exp_tile_columns_minus1 + 1;
-    int nb_rows = pps->pps_num_exp_tile_rows_minus1 + 1;
+    int nb_explicit_cols = pps->pps_num_exp_tile_columns_minus1 + 1;
+    int nb_explicit_rows = pps->pps_num_exp_tile_rows_minus1 + 1;
 
-    const int log2_ctu_s = pps->pps_log2_ctu_size_minus5 + 5;
+    const int log2_ctb_s = pps->pps_log2_ctu_size_minus5 + 5;
 
     const int pic_w = pps->pps_pic_width_in_luma_samples;
     const int pic_h = pps->pps_pic_height_in_luma_samples;
 
-    /* FIXME harmonize this with sps
-    */
-    const int nb_ctu_w = (pic_w >> log2_ctu_s) + !!(pic_w & ((1 << log2_ctu_s) - 1));
-    const int nb_ctu_h = (pic_h >> log2_ctu_s) + !!(pic_h & ((1 << log2_ctu_s) - 1));
+    const int nb_ctu_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    const int nb_ctu_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
 
     int rem_ctu_w = nb_ctu_w;
     int rem_ctu_h = nb_ctu_h;
 
-
+    int tile_ctb_h = 0;
+    int tile_ctb_w = 0;
     int i;
 
-    /* FIXME review implicit last tile x and y
-    */
-    int tile_nb_ctu_h = 0;
-    for (i = 0; i <  nb_rows; ++i) {
-        tile_nb_ctu_h = pps->pps_tile_row_height_minus1[i] + 1;
-        rem_ctu_h -= tile_nb_ctu_h;
+    for (i = 0; i <  nb_explicit_rows; ++i) {
+        tile_ctb_h = pps->pps_tile_row_height_minus1[i] + 1;
+        rem_ctu_h -= tile_ctb_h;
     }
-    // divide remaining picture height into uniform tile columns
-    while( rem_ctu_h > 0 )
-    {
-        tile_nb_ctu_h = OVMIN(rem_ctu_h, tile_nb_ctu_h);
-        pps->pps_tile_row_height_minus1[i] = tile_nb_ctu_h - 1;
-        rem_ctu_h -= tile_nb_ctu_h;
+
+    while (rem_ctu_h > 0) {
+        tile_ctb_h = OVMIN(rem_ctu_h, tile_ctb_h);
+        pps->pps_tile_row_height_minus1[i] = tile_ctb_h - 1;
+        rem_ctu_h -= tile_ctb_h;
         i++;
     }
+
     pps->pps_num_tile_rows_minus1 = i - 1;
 
-    int tile_nb_ctu_w = 0;
-    for (i = 0; i < nb_cols; ++i) {
-        tile_nb_ctu_w = pps->pps_tile_column_width_minus1[i] + 1;
-        rem_ctu_w -= tile_nb_ctu_w;
+    for (i = 0; i < nb_explicit_cols; ++i) {
+        tile_ctb_w = pps->pps_tile_column_width_minus1[i] + 1;
+        rem_ctu_w -= tile_ctb_w;
     }
-    // divide remaining picture width into uniform tile columns
-    while( rem_ctu_w > 0 )
-    {
-        tile_nb_ctu_w = OVMIN(rem_ctu_w, tile_nb_ctu_w);
-        pps->pps_tile_column_width_minus1[i] = tile_nb_ctu_w - 1;
-        rem_ctu_w -= tile_nb_ctu_w;
+
+    while (rem_ctu_w > 0) {
+        tile_ctb_w = OVMIN(rem_ctu_w, tile_ctb_w);
+        pps->pps_tile_column_width_minus1[i] = tile_ctb_w - 1;
+        rem_ctu_w -= tile_ctb_w;
         i++;
     }
+
     pps->pps_num_tile_columns_minus1 = i - 1;
 }
 
