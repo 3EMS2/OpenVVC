@@ -41,7 +41,10 @@
 #include "rcn_structures.h"
 
 
-void ov_sao_band_filter_neon(uint16_t *dst,const int16_t *src, int16_t sao_offset_val0, int16_t sao_offset_val1, int16_t sao_offset_val2, int16_t sao_offset_val3, uint8_t sao_left_class);
+void ov_band_filter_neon(uint16_t *dst,const int16_t *src, int16_t sao_offset_val0, int16_t sao_offset_val1, int16_t sao_offset_val2, int16_t sao_offset_val3, uint8_t sao_left_class);
+// edge filter 10
+void ov_edge_filter_10_neon(uint16_t *dst,const int16_t *src, int a_stride, int b_stride,int16_t* sao_offset_val);
+void ov_edge_filter_7_10_neon(uint16_t *dst,const int16_t *src, int a_stride, int b_stride,int16_t* sao_offset_val);
 
 static void
 sao_band_filter_0_10_neon(OVSample* _dst,
@@ -64,7 +67,7 @@ sao_band_filter_0_10_neon(OVSample* _dst,
 
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 8) {
-      ov_sao_band_filter_neon(dst, src, sao_offset_val[0], sao_offset_val[1], sao_offset_val[2], sao_offset_val[3], sao_left_class);
+      ov_band_filter_neon(dst, src, sao_offset_val[0], sao_offset_val[1], sao_offset_val[2], sao_offset_val[3], sao_left_class);
     }
     dst += stride_dst;
     src += stride_src;
@@ -83,7 +86,30 @@ sao_edge_filter_10_neon(OVSample* _dst,
                         int height,
                         int c_idx){
 
+  int x, y;
+  int16_t* sao_offset_val = sao->offset_val[c_idx];
+  int eo = sao->eo_class[c_idx];
+  const int8_t pos[4][2][2] = {
+    { { -1, 0 }, { 1, 0 } },
+    { { 0, -1 }, { 0, 1 } },
+    { { -1, -1 }, { 1, 1 } },
+    { { 1, -1 }, { -1, 1 } },
+  };
+  uint16_t* dst = (uint16_t*)_dst;
+  uint16_t* src = (uint16_t*)_src;
+  ptrdiff_t stride_dst = _stride_dst;
+  ptrdiff_t stride_src = _stride_src;
 
+  int a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;
+  int b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
+
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x += 8) {
+      ov_edge_filter_10_neon(dst+x, src+x,(x+a_stride)>>1, (x+b_stride)>>1, sao_offset_val);
+    }
+    src += stride_src;
+    dst += stride_dst;
+  }
 }
 
 
@@ -97,15 +123,34 @@ sao_edge_filter_7_10_neon(OVSample* _dst,
                           int width,
                           int height,
                           int c_idx){
+  int x, y;
+  int16_t* sao_offset_val = sao->offset_val[c_idx];
+  int eo = sao->eo_class[c_idx];
+  const int8_t pos[4][2][2] = {
+    { { -1, 0 }, { 1, 0 } },
+    { { 0, -1 }, { 0, 1 } },
+    { { -1, -1 }, { 1, 1 } },
+    { { 1, -1 }, { -1, 1 } },
+  };
+  uint16_t* dst = (uint16_t*)_dst;
+  uint16_t* src = (uint16_t*)_src;
+  ptrdiff_t stride_dst = _stride_dst;
+  ptrdiff_t stride_src = _stride_src;
 
+  int a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;
+  int b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
+
+
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width - width%8; x += 8) {
+      ov_edge_filter_10_neon(dst+x, src+x,(x+a_stride)>>1, (x+b_stride)>>1, sao_offset_val);
+    }
+
+    ov_edge_filter_7_10_neon(dst+x, src+x,(x+a_stride)>>1, (x+b_stride)>>1, sao_offset_val);
+    src += stride_src;
+    dst += stride_dst;
+  }
 }
-
-
-
-
-
-
-
 
 
 void rcn_init_sao_functions_neon(struct RCNFunctions *const rcn_funcs){
