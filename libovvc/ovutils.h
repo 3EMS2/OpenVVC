@@ -50,7 +50,10 @@
 #define ov_clz64(x) __builtin_clzll(x)
 #define ov_ctz64(x) __builtin_ctzll(x)
 
-#define ov_ceil_log2(x) 32 - __builtin_clz((x - !!x) + !(x - !!x))
+static inline uint8_t ov_ceil_log2(unsigned x)
+{
+    return 32 - __builtin_clz((x - !!x) + !(x - !!x));
+}
 
 /* FIXME
  * Add specific clip for unsigned */
