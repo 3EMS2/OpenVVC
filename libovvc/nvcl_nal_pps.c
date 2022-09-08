@@ -223,34 +223,21 @@ static void
 pps_read_pic_partition(OVNVCLReader *const rdr, OVPPS *const pps)
 {
     int i;
-    int row_sum = 0;
-    int col_sum = 0;
 
     pps->pps_num_exp_tile_columns_minus1 = nvcl_read_u_expgolomb(rdr);
     pps->pps_num_exp_tile_rows_minus1    = nvcl_read_u_expgolomb(rdr);
 
     for (i = 0; i <=  pps->pps_num_exp_tile_columns_minus1; i++){
         pps->pps_tile_column_width_minus1[i] = nvcl_read_u_expgolomb(rdr);
-        col_sum += pps->pps_tile_column_width_minus1[i] + 1;
     }
 
     for (i = 0; i <=  pps->pps_num_exp_tile_rows_minus1; i++){
         pps->pps_tile_row_height_minus1[i] = nvcl_read_u_expgolomb(rdr);
-        row_sum += pps->pps_tile_row_height_minus1[i] + 1;
     }
 
     pps_implicit_pic_partition(pps);
-    // const int log2_ctu_s = pps->pps_log2_ctu_size_minus5 + 5;
-    // const int pic_w = pps->pps_pic_width_in_luma_samples;
-    // const int pic_h = pps->pps_pic_height_in_luma_samples;
-    // const int nb_ctu_w = (pic_w >> log2_ctu_s) + !!(pic_w & ((1 << log2_ctu_s) - 1));
-    // const int nb_ctu_h = (pic_h >> log2_ctu_s) + !!(pic_h & ((1 << log2_ctu_s) - 1));
-    // pps->pps_num_tile_columns_minus1 = pps->pps_num_exp_tile_columns_minus1 + (col_sum != nb_ctu_w);
-    // pps->pps_num_tile_rows_minus1    = pps->pps_num_exp_tile_rows_minus1    + (row_sum != nb_ctu_h);
 
-    /* Default initialisation values
-     * TODO confirm this is correct
-     */
+    /* Default initialisation values */
     pps->pps_loop_filter_across_tiles_enabled_flag = 1;
     pps->pps_rect_slice_flag                       = 1;
 
