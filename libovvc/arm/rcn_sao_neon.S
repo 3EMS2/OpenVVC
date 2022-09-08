@@ -39,7 +39,7 @@
 .endm 
 
 
-function sao_band_filter_neon, export=1
+function band_filter_neon, export=1
 
     sub w11, xzr , #5 // -shift 
     dup V28.8h, w11
@@ -93,3 +93,57 @@ function sao_band_filter_neon, export=1
     ret lr
 endfunc
 
+
+function edge_filter_10_neon, export=1
+
+    sub w11, xzr , #5 // -shift 
+    dup V28.8h, w11
+    mov w10, #0x03FF
+    dup v30.8h, w10
+    dup v31.8h, wzr
+
+    ld1 {v0.8h}, [x1]
+    
+   
+    // ADD, CLIP and store
+    ADD  V0.8H , V0.8H , V6.8H
+    CLIP V0.8h, v31.8h, v30.8h
+    ST1 {v0.8h}, [x0]
+    ret lr
+endfunc
+
+function edge_filter_7_10_neon1, export=1
+
+    sub w11, xzr , #5 // -shift 
+    dup V28.8h, w11
+    mov w10, #0x03FF
+    dup v30.8h, w10
+    dup v31.8h, wzr
+
+    ld1 {v0.8h}, [x1]
+    
+   
+    // ADD, CLIP and store
+    ADD  V0.8H , V0.8H , V6.8H
+    CLIP V0.8h, v31.8h, v30.8h
+    ST1 {v0.8h}, [x0]
+    ret lr
+endfunc
+
+function edge_filter_7_10_neon2, export=1
+
+    sub w11, xzr , #5 // -shift 
+    dup V28.8h, w11
+    mov w10, #0x03FF
+    dup v30.8h, w10
+    dup v31.8h, wzr
+
+    ld1 {v0.8h}, [x1]
+    
+   
+    // ADD, CLIP and store
+    ADD  V0.8H , V0.8H , V6.8H
+    CLIP V0.8h, v31.8h, v30.8h
+    ST1 {v0.8h}, [x0]
+    ret lr
+endfunc

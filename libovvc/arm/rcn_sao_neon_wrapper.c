@@ -44,7 +44,8 @@
 void ov_band_filter_neon(uint16_t *dst,const int16_t *src, int16_t sao_offset_val0, int16_t sao_offset_val1, int16_t sao_offset_val2, int16_t sao_offset_val3, uint8_t sao_left_class);
 // edge filter 10
 void ov_edge_filter_10_neon(uint16_t *dst,const int16_t *src, int a_stride, int b_stride,int16_t* sao_offset_val);
-void ov_edge_filter_7_10_neon(uint16_t *dst,const int16_t *src, int a_stride, int b_stride,int16_t* sao_offset_val);
+void ov_edge_filter_7_10_neon1(uint16_t *dst,const int16_t *src, int a_stride, int b_stride,int16_t* sao_offset_val);
+void ov_edge_filter_7_10_neon2(uint16_t *dst,const int16_t *src, int a_stride, int b_stride,int16_t* sao_offset_val);
 
 static void
 sao_band_filter_0_10_neon(OVSample* _dst,
@@ -143,10 +144,10 @@ sao_edge_filter_7_10_neon(OVSample* _dst,
 
   for (y = 0; y < height; y++) {
     for (x = 0; x < width - width%8; x += 8) {
-      ov_edge_filter_10_neon(dst+x, src+x,(x+a_stride)>>1, (x+b_stride)>>1, sao_offset_val);
+      ov_edge_filter_10_neon1(dst+x, src+x,(x+a_stride)>>1, (x+b_stride)>>1, sao_offset_val);
     }
 
-    ov_edge_filter_7_10_neon(dst+x, src+x,(x+a_stride)>>1, (x+b_stride)>>1, sao_offset_val);
+    ov_edge_filter_7_10_neon2(dst+x, src+x,(x+a_stride)>>1, (x+b_stride)>>1, sao_offset_val);
     src += stride_src;
     dst += stride_dst;
   }
