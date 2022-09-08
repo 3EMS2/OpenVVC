@@ -934,23 +934,25 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     cra_flag |= nalu_type == OVNALU_GDR;
 
     /* TODO move to dec init */
-    if (idr_flag){
-        /* New IDR involves a POC refresh and mark the start of
-         * a new coded video sequence
-         */
-        dpb->cvs_id = (dpb->cvs_id + 1) & 0xFF;
-        if (ps->ph->ph_poc_msb_cycle_present_flag) {
-            uint8_t log2_max_poc_lsb = ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
-            poc = ps->ph->ph_poc_msb_cycle_val << log2_max_poc_lsb;
+    if (!ps->sh->sh_slice_address) {
+        if (idr_flag){
+            /* New IDR involves a POC refresh and mark the start of
+             * a new coded video sequence
+             */
+            dpb->cvs_id = (dpb->cvs_id + 1) & 0xFF;
+            if (ps->ph->ph_poc_msb_cycle_present_flag) {
+                uint8_t log2_max_poc_lsb = ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
+                poc = ps->ph->ph_poc_msb_cycle_val << log2_max_poc_lsb;
+            } else {
+                poc = 0;
+            }
+            poc += ps->ph->ph_pic_order_cnt_lsb;
         } else {
-            poc = 0;
+            uint32_t last_poc = dpb->poc;
+            poc = derive_poc(ps->ph->ph_pic_order_cnt_lsb,
+                             ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
+                             last_poc);
         }
-        poc += ps->ph->ph_pic_order_cnt_lsb;
-    } else {
-        uint32_t last_poc = dpb->poc;
-        poc = derive_poc(ps->ph->ph_pic_order_cnt_lsb,
-                         ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
-                         last_poc);
     }
 
     dpb->poc = poc;
@@ -1051,8 +1053,10 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     ovdpb_clear_refs(dpb);
 
     /* Init picture TMVP info */
-    if (ps->sps->sps_temporal_mvp_enabled_flag) {
-        ret = init_tmvp_info(*pic_p, ps, ovdec);
+    if (!ps->sh->sh_slice_address) {
+        if (ps->sps->sps_temporal_mvp_enabled_flag) {
+            ret = init_tmvp_info(*pic_p, ps, ovdec);
+        }
     }
 
     return ret;
