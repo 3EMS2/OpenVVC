@@ -367,10 +367,10 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         }
     }
 
-    /* FIXME to be derived from sps */
-    int nb_extra_sh_bits = 0;
+    int nb_extra_sh_bits = sps->sps_num_extra_sh_bytes * 8;
     for (i = 0; i < nb_extra_sh_bits; i++) {
-        sh->sh_extra_bit[i] = nvcl_read_bits(rdr, 1);
+        if (sps->sps_extra_sh_bit_present_flag[i])
+            sh->sh_extra_bit[i] = nvcl_read_bits(rdr, 1);
     }
 
     if (!pps->pps_rect_slice_flag && nb_tiles_pic - sh->sh_slice_address > 1) {
