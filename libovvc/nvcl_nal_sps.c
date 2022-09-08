@@ -402,7 +402,6 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     sps->sps_subpic_info_present_flag = nvcl_read_flag(rdr);
     if (sps->sps_subpic_info_present_flag) {
-    /* FIXME move to specialized function */
        subpic_info(rdr, sps);
     }
 
