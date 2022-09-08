@@ -347,20 +347,24 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
      *    - Numbers of extra sh bits
      */
 
+    int nb_slices_subpic = 1;
     if (sps->sps_subpic_info_present_flag) {
-        /*FIXME check subpic_id_len_minus1 overrides */
         sh->sh_subpic_id = nvcl_read_bits(rdr, sps->sps_subpic_id_len_minus1 + 1);
+        nb_slices_subpic = 1;
+    } else {
+        nb_slices_subpic = pps->pps_num_slices_in_pic_minus1 + 1;
     }
 
-    /* FIXME subpic/tile  support */
-    int nb_slices_subpic = 1; /*NumSlicesInSubpic[CurrSubpicIdx] */
-    int nb_tiles_pic = (pps->pps_num_tile_columns_minus1 + 1) * (pps->pps_num_tile_rows_minus1 + 1);
+    int nb_tiles_pic = (uint16_t)pps->part_info.nb_tile_w * pps->part_info.nb_tile_h;
+
+    uint8_t slice_in_tiles = !pps->pps_rect_slice_flag && nb_tiles_pic > 1;
+    uint8_t rect_slice_in_tiles = pps->pps_rect_slice_flag && pps->pps_num_slices_in_pic_minus1;
+    uint8_t slice_in_subpic = rect_slice_in_tiles || pps->pps_rect_slice_flag && nb_slices_subpic > 1;
+    uint8_t tiles_in_slice = !slice_in_tiles && nb_tiles_pic > 1;
 
     /* FIXME would be better to distinguish in two different branches */
-    if ((pps->pps_rect_slice_flag && nb_slices_subpic > 1) ||
-        (!pps->pps_rect_slice_flag && nb_tiles_pic > 1)) {
-        /*TODO ceil log2_num_tiles_in_pic / num_slices_in_sub_pc*/
-        int nb_bits_in_slice_address = ov_ceil_log2(nb_tiles_pic);
+    if (slice_in_tiles || slice_in_subpic) {
+        int nb_bits_in_slice_address = ov_ceil_log2(slice_in_subpic ? nb_slices_subpic : nb_tiles_pic);
         sh->sh_slice_address = nvcl_read_bits(rdr, nb_bits_in_slice_address);
         if (sh->sh_slice_address) {
             ov_log(NULL, OVLOG_TRACE, "Slice address %d\n", sh->sh_slice_address);
