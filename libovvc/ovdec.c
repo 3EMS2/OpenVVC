@@ -378,7 +378,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         if (ret < 0) {
             return ret;
         } else {
-            /* Select the first available subdecoder, or wait until one is available */
+            /* Select the first available slice decoder, or wait until one is available */
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
 
             uint32_t nb_sh_bytes = nvcl_nb_bytes_read(&rdr);
