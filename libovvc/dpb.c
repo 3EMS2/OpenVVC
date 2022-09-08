@@ -405,12 +405,19 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc, uint8_t ph_pic_ou
 
         if (pic->frame && pic->frame->data[0] && pic->cvs_id == dpb->cvs_id &&
             pic->poc == poc) {
+
             ov_log(NULL, OVLOG_ERROR, "Duplicate POC in a sequence: %d for cvs_id: %d.\n",
                    poc, pic->cvs_id);
-            //*pic_p = pic;
-            *pic_p = NULL;
-            //ovdpb_report_decoded_frame(ref_pic);
-            return OVVC_EINDATA;
+
+            *pic_p = pic;
+
+            if (ph_pic_output_flag) {
+                ovdpb_new_ref_pic(pic, OV_OUTPUT_PIC_FLAG);
+                ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
+            } else {
+                ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
+            }
+            return 0;
         }
     }
 
