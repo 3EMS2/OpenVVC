@@ -493,8 +493,8 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
     const struct PPSInfo *const pps_info   = &prms->pps_info;
     const struct TileInfo *const tile_info = &pps_info->tile_info;
 
-    int tile_x = entry_idx % tile_info->nb_tile_cols;
-    int tile_y = entry_idx / tile_info->nb_tile_cols;
+    int tile_x = (entry_idx + prms->sh->sh_slice_address) % tile_info->nb_tile_cols;
+    int tile_y = (entry_idx + prms->sh->sh_slice_address) / tile_info->nb_tile_cols;
 
     einfo->tile_x = tile_x;
     einfo->tile_y = tile_y;
@@ -703,7 +703,7 @@ slicedec_submit_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct E
     int i;
     for (i = 0; i < nb_entries; ++i) {
         slicedec_update_entry_decoder(sldec, entry_th->ctudec);
-        ret = slicedec_decode_rect_entry(sldec, entry_th->ctudec, prms, i);
+        ret = slicedec_decode_rect_entry(sldec, entry_th->ctudec, prms, i + sh->sh_slice_address);
     }
     slicedec_finish_decoding(sldec);
     ret = 0;
