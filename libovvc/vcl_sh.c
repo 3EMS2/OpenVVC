@@ -363,8 +363,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         int nb_bits_in_slice_address = ov_ceil_log2(nb_tiles_pic);
         sh->sh_slice_address = nvcl_read_bits(rdr, nb_bits_in_slice_address);
         if (sh->sh_slice_address) {
-           ov_log(NULL, OVLOG_ERROR, "Invalid slice address\n");
-           return -1;
+            ov_log(NULL, OVLOG_TRACE, "Slice address %d\n", sh->sh_slice_address);
         }
     }
 

@@ -131,17 +131,9 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
     //Temporary: copy active parameters
     slicedec_copy_params(sldec, &dec->active_params);
 
-    if (!dec->active_params.sh->sh_slice_address) {
-        ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &sldec->active_params, nalu->type, sldec, dec);
-        if (ret < 0) {
-            return ret;
-        }
-    } else {
-        /* FIXME clean way on new slice with address 0 */
-        ov_log(dec, OVLOG_ERROR, "Multiple slices in pic is not supported yet.\n");
-        if (ret < 0) {
-            return OVVC_EINDATA;
-        }
+    ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &sldec->active_params, nalu->type, sldec, dec);
+    if (ret < 0) {
+        return ret;
     }
 
     ov_nalu_new_ref(&sldec->slice_sync.slice_nalu, nalu);
