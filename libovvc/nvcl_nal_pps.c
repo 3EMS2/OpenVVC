@@ -108,48 +108,48 @@ replace_pps(const struct HLSReader *const manager,
 #endif
 
 static void
-pps_read_slices_in_subpic(OVNVCLReader *const rdr, OVPPS *const pps)
+pps_read_slices_in_subpic(OVNVCLReader *const rdr, OVPPS *const pps,
+                          const struct PicPartitionInfo *const part_info)
 {
     int i;
     int tile_id = 0;
 
-    /* FIXME not tested */
-    if (pps->pps_num_slices_in_pic_minus1 > 1){
+    if (pps->pps_num_slices_in_pic_minus1 > 1) {
         pps->pps_tile_idx_delta_present_flag = nvcl_read_flag(rdr);
     }
 
-    for (i = 0; i < pps->pps_num_slices_in_pic_minus1; i++){
-        int tile_pos_x = tile_id % (pps->pps_num_tile_columns_minus1 + 1);
-        int tile_pos_y = tile_id / (pps->pps_num_tile_columns_minus1 + 1);
+    for (i = 0; i < pps->pps_num_slices_in_pic_minus1; i++) {
+        int tile_x = tile_id % part_info->nb_tile_w;
+        int tile_y = tile_id / part_info->nb_tile_w;
 
         /* Each new tile column read slice width exept for implicit last column */
-        if (tile_pos_x != pps->pps_num_tile_columns_minus1){
+        if (tile_x != part_info->nb_tile_w - 1) {
             pps->pps_slice_width_in_tiles_minus1[i] = nvcl_read_u_expgolomb(rdr);
         }
 
         /* Each new tile row read slice height except for implicit last row */
-        if (tile_pos_y !=  pps->pps_num_tile_rows_minus1){
-            if(pps->pps_tile_idx_delta_present_flag || tile_pos_x == 0){
+        if (tile_y !=  part_info->nb_tile_h - 1) {
+            if(pps->pps_tile_idx_delta_present_flag || tile_x == 0) {
                 pps->pps_slice_height_in_tiles_minus1[i] = nvcl_read_u_expgolomb(rdr);
             }
         }
 
         /* Multiple slices in tiles */
-        if (!pps->pps_slice_width_in_tiles_minus1[i] && !pps->pps_slice_height_in_tiles_minus1[i]){
-            if (pps->pps_tile_row_height_minus1[tile_pos_y] > 1){
+        if (!pps->pps_slice_width_in_tiles_minus1[i] && !pps->pps_slice_height_in_tiles_minus1[i]) {
+            if (part_info->tile_row_h[tile_y] > 1) {
                 pps->pps_num_exp_slices_in_tile[i] = nvcl_read_u_expgolomb(rdr);
-                if (pps->pps_num_exp_slices_in_tile[i]){
-                    int sum = 0;
+                if (pps->pps_num_exp_slices_in_tile[i]) {
                     int j;
-                    for (j = 0; j < pps->pps_num_exp_slices_in_tile[i]; j++){
-                        pps->pps_exp_slice_height_in_ctus_minus1[i + j] = nvcl_read_u_expgolomb(rdr);
-                        sum += pps->pps_exp_slice_height_in_ctus_minus1[i + j] + 1;
+                    int sum = 0;
+                    for (j = 0; j < pps->pps_num_exp_slices_in_tile[i]; j++) {
+                        pps->pps_exp_slice_height_in_ctus_minus1[i][j] = nvcl_read_u_expgolomb(rdr);
+                        sum += pps->pps_exp_slice_height_in_ctus_minus1[i][j] + 1;
                     }
 
-                    if (sum < pps->pps_tile_row_height_minus1[i] + 1) {
-                        int last_read = pps->pps_exp_slice_height_in_ctus_minus1[i + j - 1] + 1;
-                        j += (pps->pps_tile_row_height_minus1[i] + 1 - sum) / last_read;
-                        j += !!((pps->pps_tile_row_height_minus1[i] + 1 - sum) % last_read);
+                    if (sum < part_info->tile_row_h[i]) {
+                        int last_read = pps->pps_exp_slice_height_in_ctus_minus1[i][j - 1] + 1;
+                        j += (part_info->tile_row_h[i] - sum) / last_read;
+                        j += !!((part_info->tile_row_h[i] - sum) % last_read);
                     }
 
                     i += (j - 1);
@@ -157,15 +157,15 @@ pps_read_slices_in_subpic(OVNVCLReader *const rdr, OVPPS *const pps)
             }
         }
 
-        if (pps->pps_tile_idx_delta_present_flag){
+        if (pps->pps_tile_idx_delta_present_flag && i < pps->pps_num_slices_in_pic_minus1) {
             pps->pps_tile_idx_delta_val[i] = nvcl_read_s_expgolomb(rdr);
             tile_id += pps->pps_tile_idx_delta_val[i];
         } else {
             int offset_y;
-            tile_id += pps->pps_slice_width_in_tiles_minus1[i] + 1;
+            tile_id  += pps->pps_slice_width_in_tiles_minus1[i] + 1;
             offset_y  = pps->pps_slice_height_in_tiles_minus1[i];
-            offset_y *= pps->pps_num_tile_columns_minus1 + 1;
-            if (tile_id % (pps->pps_num_tile_columns_minus1 + 1) == 0){
+            offset_y *= part_info->nb_tile_w;
+            if (tile_id % part_info->nb_tile_w == 0) {
                 tile_id += offset_y;
             }
         }
@@ -173,7 +173,7 @@ pps_read_slices_in_subpic(OVNVCLReader *const rdr, OVPPS *const pps)
 }
 
 static void
-pps_implicit_pic_partition(OVPPS *const pps)
+pps_implicit_pic_partition(OVPPS *const pps, struct PicPartitionInfo *const part_info)
 {
     int nb_explicit_cols = pps->pps_num_exp_tile_columns_minus1 + 1;
     int nb_explicit_rows = pps->pps_num_exp_tile_rows_minus1 + 1;
@@ -189,37 +189,39 @@ pps_implicit_pic_partition(OVPPS *const pps)
     int rem_ctu_w = nb_ctu_w;
     int rem_ctu_h = nb_ctu_h;
 
-    int tile_ctb_h = 0;
-    int tile_ctb_w = 0;
     int i;
 
+    part_info->nb_ctu_w = nb_ctu_w;
+    part_info->nb_ctu_h = nb_ctu_h;
+    part_info->log2_ctb_s = log2_ctb_s;
+
     for (i = 0; i <  nb_explicit_rows; ++i) {
-        tile_ctb_h = pps->pps_tile_row_height_minus1[i] + 1;
-        rem_ctu_h -= tile_ctb_h;
+        part_info->tile_row_h[i] = pps->pps_tile_row_height_minus1[i] + 1;
+        rem_ctu_h -= (int)part_info->tile_row_h[i];
     }
 
     while (rem_ctu_h > 0) {
-        tile_ctb_h = OVMIN(rem_ctu_h, tile_ctb_h);
-        pps->pps_tile_row_height_minus1[i] = tile_ctb_h - 1;
-        rem_ctu_h -= tile_ctb_h;
+        part_info->tile_row_h[i] = OVMIN(rem_ctu_h, part_info->tile_row_h[i - 1]);
+        rem_ctu_h -= part_info->tile_row_h[i];
         i++;
     }
 
-    pps->pps_num_tile_rows_minus1 = i - 1;
+
+    part_info->nb_tile_h = i;
 
     for (i = 0; i < nb_explicit_cols; ++i) {
-        tile_ctb_w = pps->pps_tile_column_width_minus1[i] + 1;
-        rem_ctu_w -= tile_ctb_w;
+        part_info->tile_col_w[i] = pps->pps_tile_column_width_minus1[i] + 1;
+        rem_ctu_w -= (int)part_info->tile_col_w[i];
     }
 
     while (rem_ctu_w > 0) {
-        tile_ctb_w = OVMIN(rem_ctu_w, tile_ctb_w);
-        pps->pps_tile_column_width_minus1[i] = tile_ctb_w - 1;
-        rem_ctu_w -= tile_ctb_w;
+        part_info->tile_col_w[i] = OVMIN(rem_ctu_w, part_info->tile_col_w[i - 1]);
+        rem_ctu_w -= part_info->tile_col_w[i];
         i++;
     }
 
-    pps->pps_num_tile_columns_minus1 = i - 1;
+
+    part_info->nb_tile_w = i;
 }
 
 static void
@@ -230,22 +232,24 @@ pps_read_pic_partition(OVNVCLReader *const rdr, OVPPS *const pps)
     pps->pps_num_exp_tile_columns_minus1 = nvcl_read_u_expgolomb(rdr);
     pps->pps_num_exp_tile_rows_minus1    = nvcl_read_u_expgolomb(rdr);
 
-    for (i = 0; i <=  pps->pps_num_exp_tile_columns_minus1; i++){
+    for (i = 0; i <=  pps->pps_num_exp_tile_columns_minus1; i++) {
         pps->pps_tile_column_width_minus1[i] = nvcl_read_u_expgolomb(rdr);
     }
 
-    for (i = 0; i <=  pps->pps_num_exp_tile_rows_minus1; i++){
+    for (i = 0; i <=  pps->pps_num_exp_tile_rows_minus1; i++) {
         pps->pps_tile_row_height_minus1[i] = nvcl_read_u_expgolomb(rdr);
     }
 
-    pps_implicit_pic_partition(pps);
+    pps_implicit_pic_partition(pps, &pps->part_info);
 
     /* Default initialisation values */
     pps->pps_loop_filter_across_tiles_enabled_flag = 1;
     pps->pps_rect_slice_flag                       = 1;
 
+    uint8_t nb_tiles_gt1  = pps->pps_tile_row_height_minus1  [0] != pps->part_info.nb_ctu_h - 1;
+            nb_tiles_gt1 |= pps->pps_tile_column_width_minus1[0] != pps->part_info.nb_ctu_w - 1;
 
-    if (pps->pps_num_tile_columns_minus1 || pps->pps_num_tile_rows_minus1) {
+    if (nb_tiles_gt1) {
         pps->pps_loop_filter_across_tiles_enabled_flag = nvcl_read_flag(rdr);
         pps->pps_rect_slice_flag                       = nvcl_read_flag(rdr);
     }
@@ -254,7 +258,7 @@ pps_read_pic_partition(OVNVCLReader *const rdr, OVPPS *const pps)
         pps->pps_single_slice_per_subpic_flag = nvcl_read_flag(rdr);
         if (!pps->pps_single_slice_per_subpic_flag) {
             pps->pps_num_slices_in_pic_minus1 = nvcl_read_u_expgolomb(rdr);
-            pps_read_slices_in_subpic(rdr, pps);
+            pps_read_slices_in_subpic(rdr, pps, &pps->part_info);
         }
     }
 

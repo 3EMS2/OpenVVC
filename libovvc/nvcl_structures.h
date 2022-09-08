@@ -508,14 +508,14 @@ struct OVPPS
     uint8_t pps_num_slices_in_pic_minus1;
     uint8_t pps_tile_idx_delta_present_flag;
 
-    uint8_t pps_slice_width_in_tiles_minus1[16];
+    uint8_t pps_slice_width_in_tiles_minus1[256];
 
-    uint8_t pps_slice_height_in_tiles_minus1[16];
+    uint8_t pps_slice_height_in_tiles_minus1[256];
 
-    uint8_t pps_num_exp_slices_in_tile[16];
-    uint8_t pps_exp_slice_height_in_ctus_minus1[16*16];
+    uint8_t pps_num_exp_slices_in_tile[256];
+    uint8_t pps_exp_slice_height_in_ctus_minus1[256][256];
 
-    int8_t pps_tile_idx_delta_val[16*16];
+    int8_t pps_tile_idx_delta_val[256];
 
     uint8_t pps_loop_filter_across_slices_enabled_flag;
 
@@ -567,6 +567,20 @@ struct OVPPS
     uint8_t pps_extension_flag;
 
     uint8_t pps_extension_data_flag;
+
+    struct PicPartitionInfo
+    {
+        /* Note uint8_t is sufficient since for 8K with 32x32 CTUs.
+        */
+        uint8_t nb_ctu_w;
+        uint8_t nb_ctu_h;
+        uint8_t nb_tile_w;
+        uint8_t nb_tile_h;
+        uint8_t log2_ctb_s;
+        uint8_t tile_col_w[256];
+        uint8_t tile_row_h[256];
+    } part_info;
+
 };
 
 struct OVPH
