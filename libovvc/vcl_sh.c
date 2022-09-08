@@ -566,8 +566,19 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         }
     }
 
-    /*FIXME derive nb entry points */
-    int nb_entry_points_minus1 = (pps->pps_num_tile_columns_minus1 + 1) * (pps->pps_num_tile_rows_minus1 + 1) - 1;
+    int16_t nb_entry_points_minus1 = 0;
+    if (pps->pps_rect_slice_flag && !pps->pps_num_slices_in_pic_minus1) {
+        int16_t nb_tiles_pic = (uint16_t)pps->part_info.nb_tile_w * pps->part_info.nb_tile_h;
+        nb_entry_points_minus1 = nb_tiles_pic - 1;
+    } else if (pps->pps_rect_slice_flag) {
+        int16_t slice_w = pps->pps_slice_width_in_tiles_minus1[sh->sh_slice_address]  + 1;
+        int16_t slice_h = pps->pps_slice_height_in_tiles_minus1[sh->sh_slice_address] + 1;
+        int16_t nb_tiles_in_slice = slice_w * slice_h;
+        nb_entry_points_minus1 = nb_tiles_in_slice - 1;
+    } else {
+        nb_entry_points_minus1 = sh->sh_num_tiles_in_slice_minus1;
+    }
+
     if (nb_entry_points_minus1) {
         if (nb_entry_points_minus1 > 64) return -1;
         sh->sh_entry_offset_len_minus1 = nvcl_read_u_expgolomb(rdr);

@@ -678,8 +678,23 @@ int
 slicedec_submit_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct EntryThread* entry_th)
 {
     /* FIXME do not recompute everywhere */
-    int nb_entries = prms->pps_info.tile_info.nb_tile_cols *
-                     prms->pps_info.tile_info.nb_tile_rows;
+    const OVPPS *const pps = prms->pps;
+    const OVSH *const sh = prms->sh;
+    int nb_entry_points_minus1 = 0;
+    if (pps->pps_rect_slice_flag && !pps->pps_num_slices_in_pic_minus1) {
+        int16_t nb_tiles_pic = (uint16_t)pps->part_info.nb_tile_w * pps->part_info.nb_tile_h;
+        nb_entry_points_minus1 = nb_tiles_pic - 1;
+    } else if (pps->pps_rect_slice_flag) {
+        int16_t slice_w = pps->pps_slice_width_in_tiles_minus1[sh->sh_slice_address]  + 1;
+        int16_t slice_h = pps->pps_slice_height_in_tiles_minus1[sh->sh_slice_address] + 1;
+        int16_t nb_tiles_in_slice = slice_w * slice_h;
+        nb_entry_points_minus1 = nb_tiles_in_slice - 1;
+    } else {
+        nb_entry_points_minus1 = sh->sh_num_tiles_in_slice_minus1;
+    }
+
+    int nb_entries = nb_entry_points_minus1 + 1;
+
 
     int ret = 0;
     #if USE_THREADS
