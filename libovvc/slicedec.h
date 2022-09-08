@@ -148,11 +148,13 @@ struct DRVLines
 
 typedef struct OVSliceDec
 {
-   uint8_t slice_type;
+   struct SliceSynchro slice_sync;
 
    OVPS active_params;
 
-   /* Lins for CABAC context derivation luma and chroma */
+
+   uint8_t slice_type;
+
    struct CCLines cabac_lines[2];
 
    /* Lines used to retrieve local informations to be used 
@@ -167,12 +169,11 @@ typedef struct OVSliceDec
 
    int16_t dist_ref_0[16];
    int16_t dist_ref_1[16];
+
    uint8_t nb_refs0;
    uint8_t nb_refs1;
    uint8_t nb_active_refs0;
    uint8_t nb_active_refs1;
-
-   struct SliceSynchro slice_sync;
 
 } OVSliceDec;
 
