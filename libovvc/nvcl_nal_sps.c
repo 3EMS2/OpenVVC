@@ -81,7 +81,6 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
 
     if (sps->sps_subpic_info_present_flag) {
         ov_log(NULL, OVLOG_ERROR, "Unsupported subpicture\n");
-        return OVVC_EINDATA;
     }
 
     if (sps->sps_entropy_coding_sync_enabled_flag) {
