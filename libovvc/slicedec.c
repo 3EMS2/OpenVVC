@@ -675,7 +675,7 @@ slicedec_finish_decoding(OVSliceDec *sldec)
 }
 
 int
-slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct EntryThread* entry_th)
+slicedec_submit_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct EntryThread* entry_th)
 {
     /* FIXME do not recompute everywhere */
     int nb_entries = prms->pps_info.tile_info.nb_tile_cols *

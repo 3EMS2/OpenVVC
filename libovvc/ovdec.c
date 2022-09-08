@@ -392,8 +392,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
                 goto failvcl;
             }
 
-            /* FIXME handle non rect entries later */
-            ret = slicedec_decode_rect_entries(sldec, &sldec->active_params, vvcdec->main_thread.entry_threads_list);
+            ret = slicedec_submit_rect_entries(sldec, &sldec->active_params, vvcdec->main_thread.entry_threads_list);
         }
 
         break;
