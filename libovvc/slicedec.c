@@ -822,7 +822,6 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         }
     }
 
-    /* FIXME if inter only */
     if (slice_type != SLICE_I) {
         store_inter_maps(drv_lines, ctudec, ctb_x, 1);
     }
