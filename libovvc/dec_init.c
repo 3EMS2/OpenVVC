@@ -673,16 +673,15 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
     uint8_t sps_id = pps->pps_seq_parameter_set_id;
 
     if (ps->sps != sps) {
+        uint8_t req_dpb_realloc = sps_check_dimension_change(ps->sps, sps);
         ret = update_sps_info(&ps->sps_info, sps);
         if (ret < 0) {
             goto failsps;
         }
-        if (ps->sps) {
-            uint8_t req_dpb_realloc = sps_check_dimension_change(ps->sps, sps);
-            ps->sps_info.req_dpb_realloc = req_dpb_realloc;
-        }
         hlsdata_unref(&ps->sps_ref);
         hlsdata_newref(&ps->sps_ref, nvcl_ctx->sps_list[sps_id]);
+        ps->sps_info.req_dpb_realloc    = req_dpb_realloc;
+        ps->sps_info.req_mvpool_realloc = req_dpb_realloc && sps->sps_temporal_mvp_enabled_flag;
         ps->sps = sps;
     }
 

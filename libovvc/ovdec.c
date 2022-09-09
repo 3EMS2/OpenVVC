@@ -116,16 +116,18 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
          if (ret < 0) {
              return ret;
          }
-         if (dec->mv_pool) {
-             mvpool_uninit(&dec->mv_pool);
-             ret = mvpool_init(&dec->mv_pool, &dec->active_params.pic_info_max);
-         }
          dec->active_params.sps_info.req_dpb_realloc = 0;
     }
 
-    //TODOpar: protect mv pool when more than one thread ?
-    if (!dec->mv_pool) {
+    if (dec->active_params.sps_info.req_mvpool_realloc) {
+        if (dec->mv_pool) {
+            mvpool_uninit(&dec->mv_pool);
+        }
         ret = mvpool_init(&dec->mv_pool, &dec->active_params.pic_info_max);
+        if (ret < 0) {
+            return ret;
+        }
+        dec->active_params.sps_info.req_mvpool_realloc = 0;
     }
 
     //Temporary: copy active parameters

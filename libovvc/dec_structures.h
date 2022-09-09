@@ -149,11 +149,11 @@ struct SPSInfo
     } color_desc;
 
     uint8_t req_dpb_realloc;
+    uint8_t req_mvpool_realloc;
 };
 
 struct PPSInfo
 {
-
     /* Sub Picture / Tiles overrides */
     struct {
         uint16_t pic_w;
