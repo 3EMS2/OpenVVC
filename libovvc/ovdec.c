@@ -273,7 +273,7 @@ ovdec_init_entry_fifo(OVVCDec *vvcdec, int nb_entry_th)
     pthread_mutex_unlock(&main_thread->io_mtx);
 }
 
-void
+static void
 ovdec_uninit_entry_jobs(OVVCDec *vvcdec)
 {
     struct MainThread* main_thread = &vvcdec->main_thread;
@@ -292,7 +292,7 @@ ovdec_wait_entries(OVDec *ovdec)
     pthread_mutex_unlock(&th_main->io_mtx);
 }
 
-void
+static void
 ovdec_uninit_entry_threads(OVVCDec *vvcdec)
 {
     int i;
@@ -322,7 +322,7 @@ ovdec_uninit_entry_threads(OVVCDec *vvcdec)
     ov_freep(&entry_threads_list);
 }
 
-int
+static int
 ovdec_init_entry_threads(OVVCDec *vvcdec, int nb_entry_th)
 {
     int i, ret;
@@ -347,7 +347,7 @@ failthread:
     return OVVC_ENOMEM;
 }
 
-int
+static int
 ovdec_init_main_thread(OVVCDec *vvcdec)
 {
     struct MainThread* main_thread = &vvcdec->main_thread;
@@ -366,7 +366,7 @@ ovdec_init_main_thread(OVVCDec *vvcdec)
 
 }
 
-int
+static int
 ovdec_uninit_main_thread(OVVCDec *vvcdec)
 {
     ovdec_uninit_entry_threads(vvcdec);
@@ -511,7 +511,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
     return ret;
 }
 
-void
+static void
 ovdec_wait_entry_threads(OVVCDec *vvcdec)
 {
     struct MainThread *th_main = &vvcdec->main_thread;
@@ -523,6 +523,7 @@ ovdec_wait_entry_threads(OVVCDec *vvcdec)
         ovdec_wait_entry_thread(vvcdec, i);
     }
 }
+
 int
 ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 {
