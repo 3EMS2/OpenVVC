@@ -913,6 +913,32 @@ update_rpl(const OVPPS *const pps,
 }
 
 int
+update_pic_params(OVPicture **pic_p, const OVPS *const ps)
+{
+    (*pic_p)->frame->width  = ps->pps->pps_pic_width_in_luma_samples;
+    (*pic_p)->frame->height = ps->pps->pps_pic_height_in_luma_samples;
+
+    if (ps->pps->pps_conformance_window_flag) {
+        (*pic_p)->frame->output_window.offset_lft = ps->pps->pps_conf_win_left_offset;
+        (*pic_p)->frame->output_window.offset_rgt = ps->pps->pps_conf_win_right_offset;
+        (*pic_p)->frame->output_window.offset_abv = ps->pps->pps_conf_win_top_offset;
+        (*pic_p)->frame->output_window.offset_blw = ps->pps->pps_conf_win_bottom_offset;
+    } else {
+        (*pic_p)->frame->output_window.offset_lft = ps->sps->sps_conf_win_left_offset;
+        (*pic_p)->frame->output_window.offset_rgt = ps->sps->sps_conf_win_right_offset;
+        (*pic_p)->frame->output_window.offset_abv = ps->sps->sps_conf_win_top_offset;
+        (*pic_p)->frame->output_window.offset_blw = ps->sps->sps_conf_win_bottom_offset;
+    }
+
+    (*pic_p)->scale_info.scaling_win_left   = ps->pps->pps_scaling_win_left_offset;
+    (*pic_p)->scale_info.scaling_win_right  = ps->pps->pps_scaling_win_right_offset;
+    (*pic_p)->scale_info.scaling_win_top    = ps->pps->pps_scaling_win_top_offset;
+    (*pic_p)->scale_info.scaling_win_bottom = ps->pps->pps_scaling_win_bottom_offset;
+    (*pic_p)->scale_info.chroma_hor_col_flag = ps->sps->sps_chroma_horizontal_collocated_flag;
+    (*pic_p)->scale_info.chroma_ver_col_flag = ps->sps->sps_chroma_vertical_collocated_flag;
+}
+
+int
 ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t nalu_type,
                    OVSliceDec *const sldec, const OVVCDec *ovdec)
 {
@@ -961,28 +987,9 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     if (ret < 0) {
         goto fail;
     }
-    //TODOrpr: put width and height as parameters of ovdpb_init_current_pic
-    (*pic_p)->frame->width  = ps->pps->pps_pic_width_in_luma_samples;
-    (*pic_p)->frame->height = ps->pps->pps_pic_height_in_luma_samples;
 
-    if (ps->pps->pps_conformance_window_flag) {
-        (*pic_p)->frame->output_window.offset_lft = ps->pps->pps_conf_win_left_offset;
-        (*pic_p)->frame->output_window.offset_rgt = ps->pps->pps_conf_win_right_offset;
-        (*pic_p)->frame->output_window.offset_abv = ps->pps->pps_conf_win_top_offset;
-        (*pic_p)->frame->output_window.offset_blw = ps->pps->pps_conf_win_bottom_offset;
-    } else {
-        (*pic_p)->frame->output_window.offset_lft = ps->sps->sps_conf_win_left_offset;
-        (*pic_p)->frame->output_window.offset_rgt = ps->sps->sps_conf_win_right_offset;
-        (*pic_p)->frame->output_window.offset_abv = ps->sps->sps_conf_win_top_offset;
-        (*pic_p)->frame->output_window.offset_blw = ps->sps->sps_conf_win_bottom_offset;
-    }
+    update_pic_params(pic_p, ps);
 
-    (*pic_p)->scale_info.scaling_win_left   = ps->pps->pps_scaling_win_left_offset;
-    (*pic_p)->scale_info.scaling_win_right  = ps->pps->pps_scaling_win_right_offset;
-    (*pic_p)->scale_info.scaling_win_top    = ps->pps->pps_scaling_win_top_offset;
-    (*pic_p)->scale_info.scaling_win_bottom = ps->pps->pps_scaling_win_bottom_offset;
-    (*pic_p)->scale_info.chroma_hor_col_flag = ps->sps->sps_chroma_horizontal_collocated_flag;
-    (*pic_p)->scale_info.chroma_ver_col_flag = ps->sps->sps_chroma_vertical_collocated_flag;
 
     ovpu_new_ref(&(*pic_p)->pu, ovdec->pu);
 
