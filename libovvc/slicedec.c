@@ -94,105 +94,11 @@ init_slice_tree_ctx(OVCTUDec *const ctudec, const struct OVPS *prms)
     ctudec->active_part_map = &ctudec->part_map;
 }
 
-
-#if 0
-static int
-init_filter_info()
-{
-    uint8_t flag = 0;
-    if (sh->slice_sao_luma_flag)
-        flag |= VVC_SAO_LUMA_SLICE_FLAG;
-    if (sh->slice_sao_chroma_flag)
-        flag |= VVC_SAO_CHROMA_SLICE_FLAG;
-    if (sh->slice_alf_enabled_flag) {
-        flag |= VVC_ALF_LUMA_SLICE_FLAG;
-        flag |= (sh->slice_alf_cb_enabled_flag & 1) ? VVC_ALF_CB_SLICE_FLAG : 0;
-        flag |= (sh->slice_alf_cr_enabled_flag & 2) ? VVC_ALF_CR_SLICE_FLAG : 0;
-    }
-    ctudec->alf_num_chroma_alt = vvc_ctx->alf_num_alt_chroma;
-
-    ctudec->loop_filter_state_flags = flag;
-    /* ALF */
-    uint8_t sh_alf_enabled_flag;
-    uint8_t sh_alf_cb_enabled_flag;
-    uint8_t sh_alf_cr_enabled_flag;
-    uint8_t sh_alf_cc_cb_enabled_flag;
-    uint8_t sh_alf_cc_cr_enabled_flag;
-
-    /* SAO from PH */
-    uint8_t ph_sao_luma_enabled_flag;
-    uint8_t ph_sao_chroma_enabled_flag;
-
-    /* SAO */
-    uint8_t sh_sao_luma_used_flag;
-    uint8_t sh_sao_chroma_used_flag;
-
-    /* ALF info */
-    uint8_t sh_num_alf_aps_ids_luma;
-    uint8_t sh_alf_aps_id_luma[16];
-    uint8_t sh_alf_aps_id_chroma;
-    uint8_t sh_alf_cc_cb_aps_id;
-    uint8_t sh_alf_cc_cr_aps_id;
-
-    /* LMCS */
-    uint8_t sh_lmcs_used_flag;
-
-    /* DBF */
-    uint8_t sh_deblocking_params_present_flag;
-    uint8_t sh_deblocking_filter_disabled_flag;
-    int8_t sh_luma_beta_offset_div2;
-    int8_t sh_luma_tc_offset_div2;
-    int8_t sh_cb_beta_offset_div2;
-    int8_t sh_cb_tc_offset_div2;
-    int8_t sh_cr_beta_offset_div2;
-    int8_t sh_cr_tc_offset_div2;
-
-    /* DBF from PH */
-    uint8_t ph_deblocking_params_present_flag;
-    uint8_t ph_deblocking_filter_disabled_flag;
-    int8_t ph_luma_beta_offset_div2;
-    int8_t ph_luma_tc_offset_div2;
-    int8_t ph_cb_beta_offset_div2;
-    int8_t ph_cb_tc_offset_div2;
-    int8_t ph_cr_beta_offset_div2;
-    int8_t ph_cr_tc_offset_div2;
-
-}
-
-static int
-init_qp_ctx()
-{
-    uint8_t ph_qp_delta;
-    uint8_t ph_joint_cbcr_sign_flag;
-    int8_t sh_qp_delta;
-    int8_t sh_cb_qp_offset;
-    int8_t sh_cr_qp_offset;
-    int8_t sh_joint_cbcr_qp_offset;
-    uint8_t sh_cu_chroma_qp_offset_enabled_flag;
-    uint8_t ph_qp_delta;
-}
-
-static int
-dequant_tools()
-{
-}
-#endif
-
 static void
 init_coding_coeff_coding_ctx(OVCTUDec *ctudec, const OVPS *prms)
 {
     const OVSPS *const sps = prms->sps;
     const OVSH *const sh = prms->sh;
-
-    #if 0
-    uint8_t ph_joint_cbcr_sign_flag;
-
-    uint8_t sh_ts_residual_coding_disabled_flag;
-
-    uint8_t ph_chroma_residual_scale_flag;
-    uint8_t ph_explicit_scaling_list_enabled_flag;
-    uint8_t ph_scaling_list_aps_id;
-    #endif
 
     /* FIXME replace this with a status on MTS */
     uint8_t mts_enabled = sps->sps_mts_enabled_flag;
@@ -213,64 +119,6 @@ init_coding_coeff_coding_ctx(OVCTUDec *ctudec, const OVPS *prms)
         ctudec->residual_coding_l = residual_coding_sdh;
         ctudec->enable_sdh = sh->sh_sign_data_hiding_used_flag;
     }
-}
-
-#if 0
-static int
-init_inter_ctx()
-{
-    struct OVHRPL hrpl;
-    uint8_t ph_temporal_mvp_enabled_flag;
-    uint8_t ph_collocated_ref_idx;
-    uint8_t ph_mmvd_fullpel_only_flag;
-    uint8_t ph_mvd_l1_zero_flag;
-    uint8_t ph_bdof_disabled_flag;
-    uint8_t ph_dmvr_disabled_flag;
-    uint8_t ph_prof_disabled_flag;
-}
-
-static int
-init_partition_info()
-{
-    /* Separate Picture size info from CTU sie info */
-    uint8_t ph_virtual_boundaries_present_flag;
-    uint8_t ph_num_ver_virtual_boundaries;
-    uint8_t ph_virtual_boundary_pos_x_minus1[32];
-    uint8_t ph_num_hor_virtual_boundaries;
-    uint8_t ph_virtual_boundary_pos_y_minus1[32];
-
-    uint8_t ph_partition_constraints_override_flag;
-    uint8_t ph_log2_diff_min_qt_min_cb_intra_slice_luma;
-    uint8_t ph_max_mtt_hierarchy_depth_intra_slice_luma;
-    uint8_t ph_log2_diff_max_bt_min_qt_intra_slice_luma;
-    uint8_t ph_log2_diff_max_tt_min_qt_intra_slice_luma;
-    uint8_t ph_log2_diff_min_qt_min_cb_intra_slice_chroma;
-    uint8_t ph_max_mtt_hierarchy_depth_intra_slice_chroma;
-    uint8_t ph_log2_diff_max_bt_min_qt_intra_slice_chroma;
-    uint8_t ph_log2_diff_max_tt_min_qt_intra_slice_chroma;
-    uint8_t ph_cu_qp_delta_subdiv_intra_slice;
-    uint8_t ph_cu_chroma_qp_offset_subdiv_intra_slice;
-    uint8_t ph_log2_diff_min_qt_min_cb_inter_slice;
-    uint8_t ph_max_mtt_hierarchy_depth_inter_slice;
-    uint8_t ph_log2_diff_max_bt_min_qt_inter_slice;
-    uint8_t ph_log2_diff_max_tt_min_qt_inter_slice;
-    uint8_t ph_cu_qp_delta_subdiv_inter_slice;
-    uint8_t ph_cu_chroma_qp_offset_subdiv_inter_slice;
-}
-
-#endif
-
-int
-slicedec_alloc_cabac_lines(OVSliceDec *const sldec, const struct OVPS *const prms)
-{
-   #if 0
-   int nb_pu_w;
-
-
-   ov_mallocz(sizeof(
-   #endif
-   return 0;
-
 }
 
 static void
