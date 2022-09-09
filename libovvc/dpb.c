@@ -393,43 +393,39 @@ full:
 static int
 ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc, uint8_t ph_pic_output_flag)
 {
+    const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     OVPicture *pic;
     int i;
-    const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
 
-    *pic_p = NULL;
-
-    /* check that this POC doesn't already exist */
+    /* Check that this picture does not already exist */
     for (i = 0; i < nb_dpb_pic; i++) {
-        OVPicture *pic = &dpb->pictures[i];
+        pic = &dpb->pictures[i];
 
         if (pic->frame && pic->frame->data[0] && pic->cvs_id == dpb->cvs_id &&
             pic->poc == poc) {
 
-            ov_log(NULL, OVLOG_ERROR, "Duplicate POC in a sequence: %d for cvs_id: %d.\n",
+            ov_log(NULL, OVLOG_TRACE, "Multiple slices duplicated POC in a sequence: %d for cvs_id: %d.\n",
                    poc, pic->cvs_id);
 
-            *pic_p = pic;
-
-            if (ph_pic_output_flag) {
-                ovdpb_new_ref_pic(pic, OV_OUTPUT_PIC_FLAG);
-                ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
-            } else {
-                ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
-            }
-            return 0;
+            goto end;
         }
     }
 
     pic = alloc_frame(dpb, poc);
 
     if (!pic) {
+        *pic_p = NULL;
         return OVVC_ENOMEM;
     }
 
-    *pic_p = pic;
+    pic->poc    = poc;
+    pic->cvs_id = dpb->cvs_id;
+    pic->frame->poc = poc;
 
     ovdpb_reset_decoded_ctus(pic);
+
+end:
+    *pic_p = pic;
 
     if (ph_pic_output_flag) {
         ovdpb_new_ref_pic(pic, OV_OUTPUT_PIC_FLAG);
@@ -437,12 +433,6 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc, uint8_t ph_pic_ou
     } else {
         ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
     }
-
-    pic->poc    = poc;
-    pic->cvs_id = dpb->cvs_id;
-    pic->frame->poc = poc;
-
-    /* Copy display or conformance window properties */
 
     return 0;
 }
