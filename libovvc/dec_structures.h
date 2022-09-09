@@ -200,11 +200,26 @@ struct MainThread
     pthread_cond_t io_cnd;
 };
 
+struct PicPartInfo
+{
+    uint16_t pic_w;
+    uint16_t pic_h;
+
+    uint16_t nb_ctb_w;
+    uint16_t nb_ctb_h;
+
+    uint16_t nb_pb_w;
+    uint16_t nb_pb_h;
+
+    uint8_t log2_min_cb_s;
+    uint8_t log2_ctu_s;
+};
+
 struct OVVCDec
 {
     const char *name;
 
-    /* Paramters sets context */
+    /* Parameters sets context */
     OVNVCLCtx nvcl_ctx;
 
     struct OVPS {
@@ -235,24 +250,6 @@ struct OVVCDec
         struct SPSInfo sps_info;
         struct PPSInfo pps_info;
         struct SHInfo sh_info;
-        /* FIXME define this somewhere meaningful */
-
-        struct PicPartInfo
-        {
-            uint16_t pic_w;
-            uint16_t pic_h;
-
-            uint16_t nb_ctb_w;
-            uint16_t nb_ctb_h;
-
-            uint16_t nb_pb_w;
-            uint16_t nb_pb_h;
-
-            uint8_t log2_min_cb_s;
-            uint8_t log2_ctu_s;
-        } pic_info;
-
-        struct PicPartInfo pic_info_max;
 
     } active_params;
 
