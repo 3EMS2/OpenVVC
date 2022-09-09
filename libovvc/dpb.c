@@ -990,6 +990,12 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
 
     update_pic_params(pic_p, ps);
 
+    /* Init picture TMVP info */
+    if (!ps->sh->sh_slice_address) {
+        if (ps->sps->sps_temporal_mvp_enabled_flag) {
+            ret = init_tmvp_info(*pic_p, ps, ovdec);
+        }
+    }
 
     ovpu_new_ref(&(*pic_p)->pu, ovdec->pu);
 
@@ -1054,17 +1060,6 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
             }
         }
     }
-
-    ovdpb_clear_refs(dpb);
-
-    /* Init picture TMVP info */
-    if (!ps->sh->sh_slice_address) {
-        if (ps->sps->sps_temporal_mvp_enabled_flag) {
-            ret = init_tmvp_info(*pic_p, ps, ovdec);
-        }
-    }
-
-    return ret;
 
 fail:
     ovdpb_clear_refs(dpb);
