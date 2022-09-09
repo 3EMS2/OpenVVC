@@ -324,16 +324,17 @@ struct OVVCDec
         struct HLSDataRef *aps_cc_alf_cr_ref;
         struct HLSDataRef *aps_lmcs_ref;
         struct HLSDataRef *aps_scaling_list_ref;
-        OVSPS *sps;
-        OVPPS *pps;
-        OVAPS *aps_alf[8];
-        OVAPS *aps_alf_c;
-        OVAPS *aps_cc_alf_cb;
-        OVAPS *aps_cc_alf_cr;
-        OVAPS *aps_lmcs;
-        OVAPS *aps_scaling_list;
-        OVPH *ph;
-        OVSH *sh;
+
+        const OVSPS *sps;
+        const OVPPS *pps;
+        const OVAPS *aps_alf[8];
+        const OVAPS *aps_alf_c;
+        const OVAPS *aps_cc_alf_cb;
+        const OVAPS *aps_cc_alf_cr;
+        const OVAPS *aps_lmcs;
+        const OVAPS *aps_scaling_list;
+        const OVPH *ph;
+        const OVSH *sh;
 
         /* Human readable information from active parameter sets */
         struct SPSInfo sps_info;
