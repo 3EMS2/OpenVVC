@@ -1606,8 +1606,7 @@ slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
     } else {
         uint8_t slice_type = sldec->slice_type;
         const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
-            : &prms->sps_info.part_info[1];
-        const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
+                                                              : &prms->sps_info.part_info[1];
 
         uint8_t log2_ctb_s = pinfo->log2_ctu_s;
         uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
