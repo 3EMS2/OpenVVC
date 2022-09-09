@@ -112,7 +112,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
          }
     } else if (dec->active_params.sps_info.req_dpb_realloc) {
          dpbpriv_uninit_framepool(&dec->dpb->internal);
-         dpbpriv_init_framepool(&dec->dpb->internal, dec->active_params.sps);
+         ret = dpbpriv_init_framepool(&dec->dpb->internal, dec->active_params.sps);
          if (ret < 0) {
              return ret;
          }
@@ -140,7 +140,6 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 
     ov_nalu_new_ref(&sldec->slice_sync.slice_nalu, nalu);
 
-    /*FIXME return checks */
     ret = slicedec_init_lines(sldec, &sldec->active_params);
     if (ret < 0) {
         return ret;
