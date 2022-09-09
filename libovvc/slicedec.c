@@ -432,9 +432,7 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
 
     slice_params->sps_info = dec_params->sps_info;
     slice_params->pps_info = dec_params->pps_info;
-    slice_params->ph_info = dec_params->ph_info;
     slice_params->sh_info = dec_params->sh_info;
-    slice_params->pic_info = dec_params->pic_info;
 }
 
 //TODOpar: temporary function, change with refs and ref_counts when functional

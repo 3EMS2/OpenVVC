@@ -49,7 +49,6 @@
 #define RPR_SCALE_BITS 14
 
 struct MVPool;
-// struct EntryThread;
 
 struct RectEntryInfo {
     int tile_x;
@@ -95,52 +94,18 @@ struct OVPartInfo
     uint8_t log2_max_tb_s;
 };
 
-struct QPInfo
-{
-    /* Slice QP used to CABAC tables initialisation */
-    uint8_t slice_qp;
-
-    /* Chroma QP tables used to derive chroma QP from slice QP
-     * Note this is used when delta qp is on.
-     */
-    struct OVChromaQPTable{
-        int8_t qp[64];
-    } chroma_qp_tables[3];
-
-    /* TODO add chroma qp offsets lists */
+struct OVChromaQPTable{
+    int8_t qp[64];
 };
 
 /* Main decoder structure */
 struct SPSInfo
 {
-    struct {
-      uint8_t lfnst;
-      uint8_t mts;
-      uint8_t mrl;
-      uint8_t mip;
-      uint8_t isp;
-      uint8_t cclm;
-    } tool_flags;
-
-    struct {
-        uint8_t chroma_format;
-        uint16_t pic_w;
-        uint16_t pic_h;
-        /*TODO conformance window */
-
-    } pic_info;
-
     struct OVPartInfo part_info[4];
-
-    #if 0
-    struct {
-    } DPBInfo;
-    #endif
 
     /* Chroma QP tables */
     struct OVChromaQPTable qp_tables_c[3];
 
-    uint8_t bitdepth;
     struct {
         uint8_t colour_primaries;
         uint8_t transfer_characteristics;
@@ -159,90 +124,20 @@ struct PPSInfo
         uint16_t pic_w;
         uint16_t pic_h;
         uint8_t log2_ctb_s;
-        /*TODO conformance and scaling window */
-
     } pic_info;
-
-    struct {
-        uint8_t pic_init_qp;
-        /* TODO use offset tables */
-        uint8_t qp_offset_c[3];
-        struct {
-            int8_t qp_offset[16];
-        } offset_list[3];
-    } pic_qp_info;
 
     struct TileInfo {
         int16_t nb_ctu_w[16];
         int16_t nb_ctu_h[16];
         int16_t ctu_x[16];
         int16_t ctu_y[16];
-        /*FIXME determine properly max_num_tiles */
         uint8_t nb_tile_rows;
         uint8_t nb_tile_cols;
     } tile_info;
-
-};
-
-/* FIXME make PH/SH joint info for overrides ? */
-struct PHInfo
-{
-    struct {
-      uint8_t lfnst;
-      uint8_t mts;
-      uint8_t mrl;
-      uint8_t mip;
-      uint8_t isp;
-      uint8_t cclm;
-    } tool_flags;
-
-    struct {
-        uint8_t chroma_format;
-        uint16_t pic_w;
-        uint16_t pic_h;
-        /*TODO conformance window */
-
-    } pic_info;
-
-    struct {
-      uint8_t log2_ctb_s;
-      uint8_t log2_min_cb_s;
-
-    } part_info[2];
-
-    #if 0
-    struct {
-    } DPBInfo;
-
-    /* Chroma QP tables */
-    struct {
-    } qp_tables[3];
-    #endif
-
-    uint8_t bitdepth;
 };
 
 struct SHInfo
 {
-
-    /* Sub Picture / Tiles overrides */
-    struct {
-        uint16_t pic_w;
-        uint16_t pic_h;
-        uint8_t log2_ctb_s;
-        /*TODO conformance and scaling window */
-
-    } pic_info;
-
-    struct {
-      uint8_t pic_init_qp;
-      /* TODO use offset tables */
-      uint8_t qp_offset_c[3];
-      struct {
-        int8_t qp_offset[16];
-      } offset_list[3];
-    } pic_qp_info;
-
     /* Entries points in  RBSP */
     const uint8_t *rbsp_entry[256];
     uint16_t nb_entries;
@@ -312,7 +207,7 @@ struct OVVCDec
     /* Paramters sets context */
     OVNVCLCtx nvcl_ctx;
 
-    struct OVPS{
+    struct OVPS {
         /* Pointers to active parameter sets */
         struct HLSDataRef *sps_ref;
         struct HLSDataRef *pps_ref;
@@ -339,7 +234,6 @@ struct OVVCDec
         /* Human readable information from active parameter sets */
         struct SPSInfo sps_info;
         struct PPSInfo pps_info;
-        struct PHInfo ph_info;
         struct SHInfo sh_info;
         /* FIXME define this somewhere meaningful */
 
