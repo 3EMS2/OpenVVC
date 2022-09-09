@@ -120,12 +120,6 @@ struct SPSInfo
 struct PPSInfo
 {
     /* Sub Picture / Tiles overrides */
-    struct {
-        uint16_t pic_w;
-        uint16_t pic_h;
-        uint8_t log2_ctb_s;
-    } pic_info;
-
     struct TileInfo {
         int16_t nb_ctu_w[16];
         int16_t nb_ctu_h[16];
