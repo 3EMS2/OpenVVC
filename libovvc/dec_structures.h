@@ -57,10 +57,8 @@ struct RectEntryInfo {
     int ctb_y;
     int nb_ctu_w;
     int nb_ctu_h;
-    int nb_ctu_rect;
     const uint8_t *entry_start;
     const uint8_t *entry_end;
-    uint8_t ngh_flag;
     uint8_t implicit_h;
     uint8_t implicit_w;
     int last_ctu_w;
