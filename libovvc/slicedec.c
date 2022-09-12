@@ -405,6 +405,7 @@ clear_cabac_lines(const OVSliceDec *sldec, const OVPS *const prms)
      uint8_t slice_type = sldec->slice_type;
      const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
                                                            : &prms->sps_info.part_info[1];
+
      const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
 
      const struct CCLines *const lns   = &sldec->cabac_lines[0];
@@ -488,7 +489,6 @@ init_pic_border_info(struct RectEntryInfo *einfo, const OVPS *const prms, int en
 void
 slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
 {
-    /* FIXME retrieve values from parameter sets */
     const struct SHInfo *const sh_info     = &prms->sh_info;
     const struct PPSInfo *const pps_info   = &prms->pps_info;
     const struct TileInfo *const tile_info = &pps_info->tile_info;
@@ -879,13 +879,14 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     const uint8_t slice_type = sldec->slice_type;
     int ctb_x = 0;
     int ret;
-    /* FIXME not really required ?*/
     uint8_t backup_qp = ctudec->drv_ctx.qp_map_x[0];
 
+    /* FIXME not really required ?*/
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_w = 1 << log2_ctb_s;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_h = 1 << log2_ctb_s;
 
     ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx, log2_ctb_s, 0);
+
     /* Do not copy on first line */
     if (ctb_addr_rs >= nb_ctu_w) {
         ctudec->rcn_funcs.rcn_intra_line_to_ctu(rcn_ctx, 0, log2_ctb_s);
@@ -913,6 +914,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         if (!((ctb_x + 1) & ctb_addr_msk)) {
             ctudec->rcn_funcs.rcn_update_ctu_border(rcn_ctx, log2_ctb_s);
         }
+
         ctudec->rcn_funcs.rcn_update_frame_buff(rcn_ctx, log2_ctb_s);
 
         if (slice_type != SLICE_I) {
@@ -932,11 +934,9 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         ctb_addr_rs++;
         ctb_x++;
 
-        /* FIXME
-       * Move this somewhere else to avoid first line check
-       */
+        /* FIXME Move this somewhere else to avoid first line check
+         */
         if (ctb_addr_rs >= nb_ctu_w) {
-            // rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
             ctudec->rcn_funcs.rcn_intra_line_to_ctu(rcn_ctx, ctb_x << log2_ctb_s, log2_ctb_s);
         }
     }
@@ -1532,6 +1532,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     }
 
     ctudec->ctb_y = einfo.ctb_y + ctb_y;
+
     /* Last line */
     if (!einfo.implicit_h) {
         ret = decode_ctu_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
@@ -1539,7 +1540,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         ret = decode_ctu_last_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
     }
 
-    /*FIXME decide return value */
     return ctb_addr_rs;
 }
 

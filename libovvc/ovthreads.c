@@ -224,7 +224,6 @@ ovthread_slice_add_entry_jobs(struct SliceSynchro *slice_sync, DecodeFunc decode
     for (int i = 0; i < main_thread->nb_entry_th; ++i){
         struct EntryThread *th_entry = &entry_threads_list[i];
         pthread_mutex_lock(&th_entry->entry_mtx);
-        // ov_log(NULL, OVLOG_DEBUG,"main sign entry\n");
         pthread_cond_signal(&th_entry->entry_cnd);
         pthread_mutex_unlock(&th_entry->entry_mtx);
     }
