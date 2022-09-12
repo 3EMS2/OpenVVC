@@ -765,12 +765,6 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         ret = decode_ctu(ctudec, einfo, ctb_addr_rs);
 
-        if (!ctudec->dbf_disable) {
-            const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
-            struct DBFInfo *const dbf_info = &ctudec->dbf_info;
-            dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
-        }
-
     } else {
         int ctu_w = einfo->last_ctu_w;
 
@@ -783,12 +777,12 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                    ctu_w, ctu_h);
+    }
 
-        if (!ctudec->dbf_disable) {
-            const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
-            struct DBFInfo *const dbf_info = &ctudec->dbf_info;
-            dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
-        }
+    if (!ctudec->dbf_disable) {
+        const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
+        struct DBFInfo *const dbf_info = &ctudec->dbf_info;
+        dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
     }
 
     if (slice_type != SLICE_I) {
