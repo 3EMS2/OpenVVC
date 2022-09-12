@@ -298,10 +298,11 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_pic, int y_pic, int
 
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
-    int ctb_w = (OVMIN(  (1 << log2_ctb_s), ctudec->pic_w - x_pic));
-    int ctb_h = (OVMIN((y_end_pic - y_pic), ctudec->pic_h - y_pic));
-
     const OVFrame *frame = ctudec->rcn_ctx.frame_start;
+
+    int ctb_w = (OVMIN(  (1 << log2_ctb_s), frame->width - x_pic));
+    int ctb_h = (OVMIN((y_end_pic - y_pic), frame->height - y_pic));
+
     struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
     struct SAOBuff tmp;
 

@@ -869,9 +869,6 @@ struct OVCTUDec
     uint16_t nb_ctb_pic_w;
     uint16_t prev_nb_ctu_w_rect_entry;
     
-    //image height and width in luma samples
-    uint16_t pic_h;
-    uint16_t pic_w;
     /* FIXME to be removed */
     uint8_t bitdepth_minus8;
     uint8_t intra_mode_c;

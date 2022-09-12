@@ -1492,6 +1492,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
     int ctu_s  = 1 << log2_ctb_s;
+    uint16_t pic_w = frame->width;
+    uint16_t pic_h = frame->height;
 
     RCNALF* alf = &alf_info->rcn_alf;
     for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ctb_x++) {
@@ -1500,8 +1502,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
         int x_pos_pic = ctu_s * ctb_x_pic;
         int y_pos_pic = ctu_s * ctb_y_pic;
 
-        int ctu_w = (x_pos_pic + ctu_s > ctudec->pic_w) ? (ctudec->pic_w - x_pos_pic) : ctu_s;
-        int ctu_h = (y_pos_pic + ctu_s > ctudec->pic_h) ? (ctudec->pic_h - y_pos_pic) : ctu_s;
+        int ctu_w = (x_pos_pic + ctu_s > pic_w) ? (pic_w - x_pos_pic) : ctu_s;
+        int ctu_h = (y_pos_pic + ctu_s > pic_h) ? (pic_h - y_pos_pic) : ctu_s;
 
         //left | right | up | down
         uint8_t is_border = 0;
@@ -1536,7 +1538,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             };
 
             rcn_alf_derive_classification(alf, src_luma, stride_src, blk_dst,
-                                          ctu_s, ctudec->pic_h,
+                                          ctu_s, pic_h,
                                           ctudec->rcn_funcs.alf.classif,
                                           class_idx, transpose_idx);
 
@@ -1544,8 +1546,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             int16_t *coeff = alf->filter_coeff_dec[filter_idx];
             int16_t *clip  = alf->filter_clip_dec [filter_idx];
 
-            int virbnd_pos = (y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h
-                                                                 : ctu_h - ALF_VB_POS_ABOVE_CTUROW_LUMA;
+            int virbnd_pos = (y_pos_pic + ctu_s > pic_h) ? pic_h
+                                                         : ctu_h - ALF_VB_POS_ABOVE_CTUROW_LUMA;
 
             uint8_t req_vb = check_virtual_bound(y_pos_pic, ctu_h, virbnd_pos, log2_ctb_s);
 
@@ -1565,8 +1567,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             };
 
             int stride_dst = frame->linesize[1] / sizeof(OVSample);
-            int virbnd_pos = (y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h
-                                                                 : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA);
+            int virbnd_pos = (y_pos_pic + ctu_s > pic_h) ? pic_h
+                                                         : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA);
 
             uint8_t req_vb = check_virtual_bound(y_pos_pic, ctu_h, virbnd_pos, log2_ctb_s) || ctu_h != ctu_s
                                                                                            || ctu_w != ctu_s;
