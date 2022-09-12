@@ -356,9 +356,6 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
     einfo->ctb_x = tile_info->ctu_x[tile_x];
     einfo->ctb_y = tile_info->ctu_y[tile_y];
 
-    /* FIXME test if need for init */
-    einfo->implicit_h = 0;
-    einfo->implicit_w = 0;
 
     init_pic_border_info(einfo, prms, entry_idx);
 }
