@@ -923,23 +923,28 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     }
 
     int ctb_y = ctudec->ctb_y - einfo->ctb_y;
-    if(ctb_y == 0){
+    if (!ctb_y) {
+
         ctudec->rcn_funcs.sao.rcn_sao_first_pix_rows(ctudec, einfo, ctb_y);
         ctudec->rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y);
         ctudec->rcn_funcs.alf.rcn_alf_filter_line(ctudec, einfo, ctb_y);
-        ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
-    }    
-    else{
-        ctudec->rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
-        ctudec->rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y);
 
-        ctudec->rcn_funcs.alf.rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
-        ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
+        ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
+    } else {
+
+        ctudec->rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y - 1);
+        ctudec->rcn_funcs.alf.rcn_alf_filter_line(ctudec, einfo, ctb_y - 1);
+
+        ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y - 1, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
+
+        ctudec->rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y);
         ctudec->rcn_funcs.alf.rcn_alf_filter_line(ctudec, einfo, ctb_y);
-        ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
+
+        ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
     }
 
     ret = 0;
+
     /* FIXME Temporary error report on CABAC end of stream */
     if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream < -2) {
         ov_log(NULL, OVLOG_ERROR, "CABAC error diff end %d \n", ctb_addr_rs / nb_ctu_w);
