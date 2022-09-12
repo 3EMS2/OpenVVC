@@ -449,8 +449,8 @@ slicedec_finish_decoding(OVSliceDec *sldec)
     /* There might be no NAL Unit attached to slicedec if
      * we failed before attaching NALU
      */
-    if (slice_sync->slice_nalu) {
-        ov_nalu_unref(&slice_sync->slice_nalu);
+    if (sldec->slice_nalu) {
+        ov_nalu_unref(&sldec->slice_nalu);
     }
 
     if (sldec->pic) {
@@ -497,6 +497,7 @@ slicedec_submit_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct E
     const OVPPS *const pps = prms->pps;
     const OVSH *const sh = prms->sh;
     int nb_entry_points_minus1 = 0;
+
     if (pps->pps_rect_slice_flag && !pps->pps_num_slices_in_pic_minus1) {
         int16_t nb_tiles_pic = (uint16_t)pps->part_info.nb_tile_w * pps->part_info.nb_tile_h;
         nb_entry_points_minus1 = nb_tiles_pic - 1;

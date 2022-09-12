@@ -48,13 +48,9 @@ typedef int (*DecodeFunc)(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS 
 struct SliceSynchro
 {
     OVSliceDec *owner;
-    // struct EntryThread *tdec;
     
     struct MainThread* main_thread;
     
-    OVNALUnit* slice_nalu;
-
-    //int nb_threads;
     uint8_t active_state;
 
     /* Information on current task */
@@ -144,33 +140,36 @@ struct DRVLines
 
 typedef struct OVSliceDec
 {
-   struct SliceSynchro slice_sync;
+    struct SliceSynchro slice_sync;
 
-   OVPS active_params;
+    OVNALUnit* slice_nalu;
 
-   int32_t poc;
 
-   uint8_t slice_type;
+    OVPS active_params;
 
-   struct CCLines cabac_lines[2];
+    int32_t poc;
 
-   /* Lines used to retrieve local informations to be used 
-    * by reconstructions such as MVs or intra modes
-    */
-   struct DRVLines drv_lines;
+    uint8_t slice_type;
 
-   /* Reference to current pic being decoded */
-   OVPicture *pic;
-   struct OVPicture *rpl0[16];
-   struct OVPicture *rpl1[16];
+    struct CCLines cabac_lines[2];
 
-   int16_t dist_ref_0[16];
-   int16_t dist_ref_1[16];
+    /* Lines used to retrieve local informations to be used
+     * by reconstructions such as MVs or intra modes
+     */
+    struct DRVLines drv_lines;
 
-   uint8_t nb_refs0;
-   uint8_t nb_refs1;
-   uint8_t nb_active_refs0;
-   uint8_t nb_active_refs1;
+    /* Reference to current pic being decoded */
+    OVPicture *pic;
+    struct OVPicture *rpl0[16];
+    struct OVPicture *rpl1[16];
+
+    int16_t dist_ref_0[16];
+    int16_t dist_ref_1[16];
+
+    uint8_t nb_refs0;
+    uint8_t nb_refs1;
+    uint8_t nb_active_refs0;
+    uint8_t nb_active_refs1;
 
 } OVSliceDec;
 

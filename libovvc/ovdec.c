@@ -170,7 +170,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
         return ret;
     }
 
-    ov_nalu_new_ref(&sldec->slice_sync.slice_nalu, nalu);
+    ov_nalu_new_ref(&sldec->slice_nalu, nalu);
 
     ret = slicedec_init_lines(sldec, &sldec->active_params);
     if (ret < 0) {
