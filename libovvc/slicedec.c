@@ -204,7 +204,7 @@ cabac_lines_uninit(OVSliceDec *sldec)
 }
 
 
-int
+static int
 init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
     uint8_t slice_type = sldec->slice_type;
@@ -247,7 +247,7 @@ init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
 /* FIXME
  * reset according to entry info instead of whole line
  */
-void
+static void
 clear_cabac_lines(const OVSliceDec *sldec, const OVPS *const prms)
 {
      uint8_t slice_type = sldec->slice_type;
@@ -334,7 +334,7 @@ init_pic_border_info(struct RectEntryInfo *einfo, const OVPS *const prms, int en
     return 0;
 }
 
-void
+static void
 slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
 {
     const struct SHInfo *const sh_info     = &prms->sh_info;
