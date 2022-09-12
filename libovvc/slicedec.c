@@ -350,12 +350,11 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
     einfo->nb_ctu_w = tile_info->nb_ctu_w[tile_x];
     einfo->nb_ctu_h = tile_info->nb_ctu_h[tile_y];
 
-    einfo->entry_start = sh_info->rbsp_entry[entry_idx];
-    einfo->entry_end   = sh_info->rbsp_entry[entry_idx + 1];
-
     einfo->ctb_x = tile_info->ctu_x[tile_x];
     einfo->ctb_y = tile_info->ctu_y[tile_y];
 
+    einfo->entry_start = sh_info->rbsp_entry[entry_idx];
+    einfo->entry_end   = sh_info->rbsp_entry[entry_idx + 1];
 
     init_pic_border_info(einfo, prms, entry_idx);
 }
