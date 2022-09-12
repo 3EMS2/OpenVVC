@@ -827,7 +827,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     ret = 0;
 
-    /* FIXME Temporary error report on CABAC end of stream */
+    /* Temporary error report on CABAC end of stream */
     if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream < -2) {
         ov_log(NULL, OVLOG_ERROR, "CABAC error diff end %d \n", ctb_addr_rs / nb_ctu_w);
     }
@@ -1323,7 +1323,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
                &drv_lines, sldec->cabac_lines);
 
     ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx, log2_ctb_s, 0);
-
     ctudec->rcn_funcs.rcn_attach_frame_buff(rcn_ctx, sldec->pic->frame, &einfo, log2_ctb_s);
 
     if (nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry) {
@@ -1336,7 +1335,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
         ctudec->ctb_y = einfo.ctb_y + ctb_y;
 
-        /* New ctu line */
         ret = decode_ctu_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
 
         cabac_line_next_line(ctudec, sldec->cabac_lines);
@@ -1361,7 +1359,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     return ctb_addr_rs;
 }
 
-static uint8_t ict_type(const OVPH *const ph)
+static uint8_t
+ict_type(const OVPH *const ph)
 {
     uint8_t type = (ph->ph_joint_cbcr_sign_flag << 1);
     type |= ph->ph_chroma_residual_scale_flag;
