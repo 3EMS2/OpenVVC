@@ -360,9 +360,8 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
     init_pic_border_info(einfo, prms, entry_idx);
 }
 
-//TODOpar: temporary function, change with refs and ref_counts when functional
-void
-slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
+static void
+slicedec_free_params(OVSliceDec *sldec)
 {   
     struct OVPS* slice_params = &sldec->active_params;
 
@@ -371,16 +370,27 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
     hlsdata_unref(&slice_params->ph_ref);
     hlsdata_unref(&slice_params->sh_ref);
 
-    hlsdata_newref(&slice_params->sps_ref, dec_params->sps_ref);
-    hlsdata_newref(&slice_params->pps_ref, dec_params->pps_ref);
-    hlsdata_newref(&slice_params->ph_ref, dec_params->ph_ref);
-    hlsdata_newref(&slice_params->sh_ref, dec_params->sh_ref);
+    for (int i = 0; i < 8; i++) {
+        hlsdata_unref(&(slice_params->aps_alf_ref[i]));
+    }
 
     hlsdata_unref(&slice_params->aps_alf_c_ref);
     hlsdata_unref(&slice_params->aps_cc_alf_cb_ref);
     hlsdata_unref(&slice_params->aps_cc_alf_cr_ref);
     hlsdata_unref(&slice_params->aps_lmcs_ref);
     hlsdata_unref(&slice_params->aps_scaling_list_ref);
+}
+
+void
+slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
+{
+    struct OVPS* slice_params = &sldec->active_params;
+    slicedec_free_params(sldec);
+
+    hlsdata_newref(&slice_params->sps_ref, dec_params->sps_ref);
+    hlsdata_newref(&slice_params->pps_ref, dec_params->pps_ref);
+    hlsdata_newref(&slice_params->ph_ref, dec_params->ph_ref);
+    hlsdata_newref(&slice_params->sh_ref, dec_params->sh_ref);
 
     /*FIXME do this according to Slice Header info */
     if (dec_params->aps_alf_c_ref) {
@@ -410,7 +420,6 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
 
     int i;
     for (i = 0; i < 8; i++) {
-        hlsdata_unref(&slice_params->aps_alf_ref[i]);
         if (dec_params->aps_alf_ref[i]) {
             hlsdata_newref(&slice_params->aps_alf_ref[i], dec_params->aps_alf_ref[i]);
         }
@@ -430,30 +439,13 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
     slice_params->sh_info = dec_params->sh_info;
 }
 
-//TODOpar: temporary function, change with refs and ref_counts when functional
-void
-slicedec_free_params(OVSliceDec *sldec)
-{   
-    struct OVPS* slice_params = &sldec->active_params;
-
-    for (int i = 0; i < 8; i++) {
-        hlsdata_unref(&(slice_params->aps_alf_ref[i]));
-    }
-
-    hlsdata_unref(&slice_params->aps_alf_c_ref);
-    hlsdata_unref(&slice_params->aps_cc_alf_cb_ref);
-    hlsdata_unref(&slice_params->aps_cc_alf_cr_ref);
-
-    hlsdata_unref(&slice_params->aps_lmcs_ref);
-
-    hlsdata_unref(&slice_params->aps_scaling_list_ref);
-}
-
 void
 slicedec_finish_decoding(OVSliceDec *sldec)
 {
     struct SliceSynchro *slice_sync = &sldec->slice_sync;
     OVPS *slice_params = &sldec->active_params;
+
+    slicedec_free_params(sldec);
 
     /* There might be no NAL Unit attached to slicedec if
      * we failed before attaching NALU
@@ -461,22 +453,6 @@ slicedec_finish_decoding(OVSliceDec *sldec)
     if (slice_sync->slice_nalu) {
         ov_nalu_unref(&slice_sync->slice_nalu);
     }
-
-
-    hlsdata_unref(&slice_params->sps_ref);
-    hlsdata_unref(&slice_params->pps_ref);
-    hlsdata_unref(&slice_params->ph_ref);
-    hlsdata_unref(&slice_params->sh_ref);
-
-    for (int i = 0; i < 8; i++) {
-        hlsdata_unref(&(slice_params->aps_alf_ref[i]));
-    }
-
-    hlsdata_unref(&slice_params->aps_alf_c_ref);
-    hlsdata_unref(&slice_params->aps_cc_alf_cb_ref);
-    hlsdata_unref(&slice_params->aps_cc_alf_cr_ref);
-    hlsdata_unref(&slice_params->aps_lmcs_ref);
-    hlsdata_unref(&slice_params->aps_scaling_list_ref);
 
     if (sldec->pic) {
         ov_log(NULL, OVLOG_DEBUG, "Decoder with POC %d, finished frame \n", sldec->pic->poc);
