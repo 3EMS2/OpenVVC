@@ -60,7 +60,7 @@ enum SliceType {
 
 static int
 slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms,
-                           uint16_t entry_idx);
+                           uint16_t entry_idx, const struct RectEntryInfo *const einfo);
 
 static void derive_ctu_neighborhood(OVCTUDec *const ctudec,
                                     int ctb_address, int nb_ctu_w);
@@ -299,6 +299,7 @@ offset_cabac_lines(struct CCLines *const cc_lns, uint16_t ctb_x, uint8_t log2_ct
 /* FIXME
  * reset according to entry info instead of whole line
  */
+#if 0
 static int
 init_pic_border_info(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
 {
@@ -358,6 +359,7 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
 
     init_pic_border_info(einfo, prms, entry_idx);
 }
+#endif
 
 static void
 slicedec_free_params(OVSliceDec *sldec)
@@ -1283,7 +1285,7 @@ copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVP
 
 static int
 slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms,
-                           uint16_t entry_idx)
+                           uint16_t entry_idx, const struct RectEntryInfo *const einfo)
 {
     int ctb_addr_rs = 0;
     int ctb_y = 0;
@@ -1292,22 +1294,19 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     /*FIXME handle cabac alloc or keep it on the stack ? */
     OVCABACCtx cabac_ctx;
     struct DRVLines drv_lines;
-    struct RectEntryInfo einfo;
     struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
 
-    slicedec_init_rect_entry(&einfo, prms, entry_idx);
-
-    const int nb_ctu_w = einfo.nb_ctu_w;
-    const int nb_ctu_h = einfo.nb_ctu_h;
+    const int nb_ctu_w = einfo->nb_ctu_w;
+    const int nb_ctu_h = einfo->nb_ctu_h;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
-    ctudec->nb_ctb_pic_w = einfo.nb_ctb_pic_w;
+    ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
 
     copy_init_stuff(sldec, ctudec, prms);
 
     ctudec->cabac_ctx = &cabac_ctx;
 
-    ret = ovcabac_attach_entry(ctudec->cabac_ctx, einfo.entry_start, einfo.entry_end);
+    ret = ovcabac_attach_entry(ctudec->cabac_ctx, einfo->entry_start, einfo->entry_end);
     if (ret < 0) {
         return OVVC_EINDATA;
     }
@@ -1319,23 +1318,23 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     ovcabac_init_slice_context_table(cabac_ctx.ctx_table, prms->sh->sh_slice_type ^ prms->sh->sh_cabac_init_flag,
                                      ctudec->slice_qp);
 
-    init_lines(ctudec, sldec, &einfo, prms, ctudec->part_ctx,
+    init_lines(ctudec, sldec, einfo, prms, ctudec->part_ctx,
                &drv_lines, sldec->cabac_lines);
 
     ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx, log2_ctb_s, 0);
-    ctudec->rcn_funcs.rcn_attach_frame_buff(rcn_ctx, sldec->pic->frame, &einfo, log2_ctb_s);
+    ctudec->rcn_funcs.rcn_attach_frame_buff(rcn_ctx, sldec->pic->frame, einfo, log2_ctb_s);
 
     if (nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry) {
-        ctudec->rcn_funcs.rcn_alloc_filter_buffers(rcn_ctx, einfo.nb_ctu_w, log2_ctb_s);
-        ctudec->rcn_funcs.rcn_alloc_intra_line_buff(rcn_ctx, einfo.nb_ctu_w + 2, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_alloc_filter_buffers(rcn_ctx, einfo->nb_ctu_w, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_alloc_intra_line_buff(rcn_ctx, einfo->nb_ctu_w + 2, log2_ctb_s);
         ctudec->prev_nb_ctu_w_rect_entry = nb_ctu_w;
     }
 
     while (ctb_y < nb_ctu_h - 1) {
 
-        ctudec->ctb_y = einfo.ctb_y + ctb_y;
+        ctudec->ctb_y = einfo->ctb_y + ctb_y;
 
-        ret = decode_ctu_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
+        ret = decode_ctu_line(ctudec, sldec, &drv_lines, einfo, ctb_addr_rs);
 
         cabac_line_next_line(ctudec, sldec->cabac_lines);
 
@@ -1347,13 +1346,13 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         ctb_y++;
     }
 
-    ctudec->ctb_y = einfo.ctb_y + ctb_y;
+    ctudec->ctb_y = einfo->ctb_y + ctb_y;
 
     /* Last line */
-    if (!einfo.implicit_h) {
-        ret = decode_ctu_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
+    if (!einfo->implicit_h) {
+        ret = decode_ctu_line(ctudec, sldec, &drv_lines, einfo, ctb_addr_rs);
     } else {
-        ret = decode_ctu_last_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
+        ret = decode_ctu_last_line(ctudec, sldec, &drv_lines, einfo, ctb_addr_rs);
     }
 
     return ctb_addr_rs;

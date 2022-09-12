@@ -43,6 +43,66 @@
 #include "ovdpb.h"
 
 static int
+init_pic_border_info(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
+{
+    /* Various info on pic_border */
+    /* TODO check entry is border pic */
+    /*TODO use derived value instead */
+    const OVPPS *const pps = prms->pps;
+    uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
+    uint16_t pic_h = pps->pps_pic_height_in_luma_samples;
+
+    const OVSPS *const sps = prms->sps;
+    uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
+
+    const int last_ctu_w = pic_w & ((1 << log2_ctb_s) - 1);
+    const int last_ctu_h = pic_h & ((1 << log2_ctb_s) - 1);
+
+    int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    int nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+
+    /* FIXME report an error when > nb_ctb_pic earlier */
+    int pic_last_ctb_x = (einfo->ctb_x + einfo->nb_ctu_w) == nb_ctb_pic_w;
+    int pic_last_ctb_y = (einfo->ctb_y + einfo->nb_ctu_h) == nb_ctb_pic_h;
+
+    uint8_t full_ctb_w = (!pic_last_ctb_x || !last_ctu_w);
+    uint8_t full_ctb_h = (!pic_last_ctb_y || !last_ctu_h);
+
+    einfo->implicit_w = !full_ctb_w;
+    einfo->implicit_h = !full_ctb_h;
+    einfo->last_ctu_w = full_ctb_w ? (1 << log2_ctb_s) : last_ctu_w;
+    einfo->last_ctu_h = full_ctb_h ? (1 << log2_ctb_s) : last_ctu_h;
+    einfo->nb_ctb_pic_w = nb_ctb_pic_w;
+
+    return 0;
+}
+
+static void
+slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
+{
+    const struct SHInfo *const sh_info     = &prms->sh_info;
+    const struct PPSInfo *const pps_info   = &prms->pps_info;
+    const struct TileInfo *const tile_info = &pps_info->tile_info;
+
+    int tile_x = (entry_idx + prms->sh->sh_slice_address) % tile_info->nb_tile_cols;
+    int tile_y = (entry_idx + prms->sh->sh_slice_address) / tile_info->nb_tile_cols;
+
+    einfo->tile_x = tile_x;
+    einfo->tile_y = tile_y;
+
+    einfo->nb_ctu_w = tile_info->nb_ctu_w[tile_x];
+    einfo->nb_ctu_h = tile_info->nb_ctu_h[tile_y];
+
+    einfo->ctb_x = tile_info->ctu_x[tile_x];
+    einfo->ctb_y = tile_info->ctu_y[tile_y];
+
+    einfo->entry_start = sh_info->rbsp_entry[entry_idx];
+    einfo->entry_end   = sh_info->rbsp_entry[entry_idx + 1];
+
+    init_pic_border_info(einfo, prms, entry_idx);
+}
+
+static int
 ovthread_decode_entry(struct EntryJob *entry_job, struct EntryThread *entry_th)
 {   
     struct SliceSynchro* slice_sync = entry_job->slice_sync;
@@ -55,7 +115,7 @@ ovthread_decode_entry(struct EntryJob *entry_job, struct EntryThread *entry_th)
     OVSliceDec *const sldec = slice_sync->owner;
     const OVPS *const prms  = &sldec->active_params;
 
-    slice_sync->decode_entry(sldec, ctudec, prms, entry_idx);
+    slice_sync->decode_entry(sldec, ctudec, prms, entry_idx, &entry_job->einfo);
 
     uint16_t nb_entries_decoded = atomic_fetch_add_explicit(&slice_sync->nb_entries_decoded, 1, memory_order_acq_rel);
 
@@ -180,6 +240,8 @@ fifo_push_entry(struct EntriesFIFO *fifo,
     do {
         if (&fifo->entries[next_pos] != fifo->first) {
             struct EntryJob *entry_job = &fifo->entries[position];
+
+            slicedec_init_rect_entry(&entry_job->einfo, &slice_sync->owner->active_params, entry_idx);
 
             entry_job->entry_idx  = entry_idx;
             entry_job->slice_sync = slice_sync;

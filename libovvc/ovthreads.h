@@ -68,6 +68,7 @@ struct EntryThread
 
 struct EntryJob
 {
+    struct RectEntryInfo einfo;
     struct SliceSynchro *slice_sync;
     uint8_t entry_idx;
 };

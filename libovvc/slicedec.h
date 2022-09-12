@@ -42,8 +42,9 @@
 #include "dec_structures.h"
 
 struct EntryThread;
+struct RectEntryInfo;
 
-typedef int (*DecodeFunc)(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms, uint16_t entry_idx);
+typedef int (*DecodeFunc)(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms, uint16_t entry_idx, const struct RectEntryInfo *const einfo);
 
 struct SliceSynchro
 {
