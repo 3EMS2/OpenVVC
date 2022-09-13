@@ -69,7 +69,8 @@ struct CCLines
     uint8_t *qt_depth_map_x;
     uint8_t *log2_cu_w_map_x;
     uint8_t *cu_mode_x;
-    uint16_t nb_pb_w;
+    uint16_t nb_units_w;
+    uint8_t data[3][8192 >> 2];
 };
 
 /* Structure used to retrieve above modes information for modes
@@ -151,8 +152,6 @@ typedef struct OVSliceDec
     int32_t poc;
 
     uint8_t slice_type;
-
-    struct CCLines cabac_lines[2];
 
     /* Lines used to retrieve local informations to be used
      * by reconstructions such as MVs or intra modes

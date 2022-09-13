@@ -186,180 +186,66 @@ init_part_info(OVCTUDec *const ctudec, const struct OVPS *const prms)
 }
 
 static void
-cabac_lines_uninit(OVSliceDec *sldec)
+cabac_line_next_line(OVCTUDec *const ctudec, const struct CCLines *cclines)
 {
-     struct CCLines *const lns = &sldec->cabac_lines[0];
-     struct CCLines *const lns_c = &sldec->cabac_lines[1];
+    struct PartMap *const pmap_l = &ctudec->part_map;
+    struct PartMap *const pmap_c = &ctudec->part_map_c;
+    const struct CCLines *const lns_l = &cclines[0];
+    const struct CCLines *const lns_c = &cclines[1];
 
-     /* FIXME avoid double free ensure it is allocated before
-      * freeing it (in case of allocation failure.
-      */
-     ov_freep(&lns->qt_depth_map_x);
-     ov_freep(&lns->log2_cu_w_map_x);
-     ov_freep(&lns->cu_mode_x);
+    /* CTU Decoder part maps points to cabac_lines start */
+    pmap_l->log2_cu_w_map_x = lns_l->log2_cu_w_map_x;
+    pmap_l->qt_depth_map_x  = lns_l->qt_depth_map_x;
+    pmap_l->cu_mode_x       = lns_l->cu_mode_x;
 
-     ov_freep(&lns_c->qt_depth_map_x);
-     ov_freep(&lns_c->log2_cu_w_map_x);
-     ov_freep(&lns_c->cu_mode_x);
-}
+    pmap_c->log2_cu_w_map_x = lns_c->log2_cu_w_map_x;
+    pmap_c->qt_depth_map_x  = lns_c->qt_depth_map_x;
+    pmap_c->cu_mode_x       = lns_c->cu_mode_x;
 
+    /* CTU Decoder part maps points to cabac_lines start */
 
-static int
-init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
-{
-    uint8_t slice_type = sldec->slice_type;
-    const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
-                                                          : &prms->sps_info.part_info[1];
-     const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
+    /* FIXME done twice on new entry see (reset lines function) */
+    /* FIXME use nb_pb_ctb instead of size */
+    memset(pmap_l->qt_depth_map_y,     0, sizeof(pmap_l->qt_depth_map_y));
+    memset(pmap_l->cu_mode_y,       0xFF, sizeof(pmap_l->cu_mode_y));
+    memset(pmap_l->log2_cu_h_map_y, 0xFF, sizeof(pmap_l->log2_cu_h_map_y));
 
-     struct CCLines *const lns   = &sldec->cabac_lines[0];
-     struct CCLines *const lns_c = &sldec->cabac_lines[1];
-
-     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
-     uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
-
-     uint16_t pic_w = prms->sps->sps_pic_width_max_in_luma_samples;
-
-     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-     uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
-
-     lns->qt_depth_map_x  = ov_mallocz(sizeof(*lns->qt_depth_map_x)  * nb_pb_pic_w * tinfo->nb_tile_rows);
-     lns->log2_cu_w_map_x = ov_mallocz(sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w * tinfo->nb_tile_rows);
-     lns->cu_mode_x       = ov_mallocz(sizeof(*lns->cu_mode_x)       * nb_pb_pic_w * tinfo->nb_tile_rows);
-
-     lns_c->qt_depth_map_x  = ov_mallocz(sizeof(*lns_c->qt_depth_map_x)  * nb_pb_pic_w * tinfo->nb_tile_rows);
-     lns_c->log2_cu_w_map_x = ov_mallocz(sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w * tinfo->nb_tile_rows);
-     lns_c->cu_mode_x       = ov_mallocz(sizeof(*lns_c->cu_mode_x)       * nb_pb_pic_w * tinfo->nb_tile_rows);
-
-     lns->nb_pb_w   = nb_pb_pic_w;
-     lns_c->nb_pb_w = nb_pb_pic_w;
-
-     if (!lns->qt_depth_map_x || !lns->log2_cu_w_map_x || !lns->cu_mode_x ||
-         !lns_c->qt_depth_map_x || !lns_c->log2_cu_w_map_x || !lns_c->cu_mode_x) {
-         cabac_lines_uninit(sldec);
-         return OVVC_ENOMEM;
-     }
-
-     return 0;
-}
-
-
-/* FIXME
- * reset according to entry info instead of whole line
- */
-static void
-clear_cabac_lines(const OVSliceDec *sldec, const OVPS *const prms)
-{
-     uint8_t slice_type = sldec->slice_type;
-     const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
-                                                           : &prms->sps_info.part_info[1];
-
-     const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
-
-     const struct CCLines *const lns   = &sldec->cabac_lines[0];
-     const struct CCLines *const lns_c = &sldec->cabac_lines[1];
-
-     uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
-     uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
-
-     /* TODO use active parameters such as generic pic info
-      * see init_cabac_lines
-      */
-     const OVPPS *const pps = prms->pps;
-     uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
-     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-     uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
-
-     memset(lns->qt_depth_map_x,     0,  sizeof(*lns->qt_depth_map_x)  * nb_pb_pic_w * tinfo->nb_tile_rows);
-     memset(lns->log2_cu_w_map_x, 0xFF,  sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w * tinfo->nb_tile_rows);
-     memset(lns->cu_mode_x,       0xFF,  sizeof(*lns->cu_mode_x)       * nb_pb_pic_w * tinfo->nb_tile_rows);
-
-     memset(lns_c->qt_depth_map_x,     0,  sizeof(*lns_c->qt_depth_map_x)  * nb_pb_pic_w * tinfo->nb_tile_rows);
-     memset(lns_c->log2_cu_w_map_x, 0xFF,  sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w * tinfo->nb_tile_rows);
-     memset(lns_c->cu_mode_x,       0xFF,  sizeof(*lns_c->cu_mode_x)       * nb_pb_pic_w * tinfo->nb_tile_rows);
+    memset(pmap_c->qt_depth_map_y,     0, sizeof(pmap_c->qt_depth_map_y));
+    memset(pmap_c->log2_cu_h_map_y, 0xFF, sizeof(pmap_c->log2_cu_h_map_y));
 }
 
 static void
-offset_cabac_lines(struct CCLines *const cc_lns, uint16_t ctb_x, uint8_t log2_ctb_s, uint8_t log2_min_cb_s)
+init_cabac_lines(OVCTUDec *const ctudec, const OVPartInfo *const pinfo, uint16_t nb_ctb_w, struct CCLines cc_lines[])
 {
-     struct CCLines *const lns   = &cc_lns[0];
-     struct CCLines *const lns_c = &cc_lns[1];
+    struct CCLines *const lns_l = &cc_lines[0];
+    struct CCLines *const lns_c = &cc_lines[1];
 
-     int offset = ((uint32_t)ctb_x << log2_ctb_s) >> log2_min_cb_s;
+    uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
+    uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
 
-     lns->qt_depth_map_x  += offset;
-     lns->log2_cu_w_map_x += offset;
-     lns->cu_mode_x       += offset;
+    uint16_t nb_units_w = (nb_ctb_w << log2_ctb_s) >> log2_min_cb_s;
 
-     lns_c->qt_depth_map_x  += offset;
-     lns_c->log2_cu_w_map_x += offset;
-     lns_c->cu_mode_x       += offset;
+    lns_l->qt_depth_map_x  = lns_l->data[0];
+    lns_l->log2_cu_w_map_x = lns_l->data[1];
+    lns_l->cu_mode_x       = lns_l->data[2];
+
+    lns_c->qt_depth_map_x  = lns_c->data[0];
+    lns_c->log2_cu_w_map_x = lns_c->data[1];
+    lns_c->cu_mode_x       = lns_c->data[2];
+
+    memset(lns_l->qt_depth_map_x,     0,  sizeof(*lns_l->qt_depth_map_x)  * nb_units_w);
+    memset(lns_l->log2_cu_w_map_x, 0xFF,  sizeof(*lns_l->log2_cu_w_map_x) * nb_units_w);
+    memset(lns_l->cu_mode_x,       0xFF,  sizeof(*lns_l->cu_mode_x)       * nb_units_w);
+
+    memset(lns_c->qt_depth_map_x,     0,  sizeof(*lns_c->qt_depth_map_x)  * nb_units_w);
+    memset(lns_c->log2_cu_w_map_x, 0xFF,  sizeof(*lns_c->log2_cu_w_map_x) * nb_units_w);
+    memset(lns_c->cu_mode_x,       0xFF,  sizeof(*lns_c->cu_mode_x)       * nb_units_w);
+
+    lns_l->nb_units_w = nb_units_w;
+    lns_c->nb_units_w = nb_units_w;
+
+    cabac_line_next_line(ctudec, cc_lines);
 }
-
-/* FIXME
- * reset according to entry info instead of whole line
- */
-#if 0
-static int
-init_pic_border_info(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
-{
-    /* Various info on pic_border */
-    /* TODO check entry is border pic */
-    /*TODO use derived value instead */
-    const OVPPS *const pps = prms->pps;
-    uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
-    uint16_t pic_h = pps->pps_pic_height_in_luma_samples;
-
-    const OVSPS *const sps = prms->sps;
-    uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
-
-    const int last_ctu_w = pic_w & ((1 << log2_ctb_s) - 1);
-    const int last_ctu_h = pic_h & ((1 << log2_ctb_s) - 1);
-
-    int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-    int nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-
-    /* FIXME report an error when > nb_ctb_pic earlier */
-    int pic_last_ctb_x = (einfo->ctb_x + einfo->nb_ctu_w) == nb_ctb_pic_w;
-    int pic_last_ctb_y = (einfo->ctb_y + einfo->nb_ctu_h) == nb_ctb_pic_h;
-
-    uint8_t full_ctb_w = (!pic_last_ctb_x || !last_ctu_w);
-    uint8_t full_ctb_h = (!pic_last_ctb_y || !last_ctu_h);
-
-    einfo->implicit_w = !full_ctb_w;
-    einfo->implicit_h = !full_ctb_h;
-    einfo->last_ctu_w = full_ctb_w ? (1 << log2_ctb_s) : last_ctu_w;
-    einfo->last_ctu_h = full_ctb_h ? (1 << log2_ctb_s) : last_ctu_h;
-    einfo->nb_ctb_pic_w = nb_ctb_pic_w;
-
-    return 0;
-}
-
-static void
-slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
-{
-    const struct SHInfo *const sh_info     = &prms->sh_info;
-    const struct PPSInfo *const pps_info   = &prms->pps_info;
-    const struct TileInfo *const tile_info = &pps_info->tile_info;
-
-    int tile_x = (entry_idx + prms->sh->sh_slice_address) % tile_info->nb_tile_cols;
-    int tile_y = (entry_idx + prms->sh->sh_slice_address) / tile_info->nb_tile_cols;
-
-    einfo->tile_x = tile_x;
-    einfo->tile_y = tile_y;
-
-    einfo->nb_ctu_w = tile_info->nb_ctu_w[tile_x];
-    einfo->nb_ctu_h = tile_info->nb_ctu_h[tile_y];
-
-    einfo->ctb_x = tile_info->ctu_x[tile_x];
-    einfo->ctb_y = tile_info->ctu_y[tile_y];
-
-    einfo->entry_start = sh_info->rbsp_entry[entry_idx];
-    einfo->entry_end   = sh_info->rbsp_entry[entry_idx + 1];
-
-    init_pic_border_info(einfo, prms, entry_idx);
-}
-#endif
 
 static void
 slicedec_free_params(OVSliceDec *sldec)
@@ -528,35 +414,6 @@ slicedec_submit_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct E
     ret = 0;
     #endif
     return ret;
-}
-
-static void
-cabac_line_next_line(OVCTUDec *const ctudec, const struct CCLines *cclines)
-{
-    struct PartMap *const pmap_l = &ctudec->part_map;
-    struct PartMap *const pmap_c = &ctudec->part_map_c;
-    const struct CCLines *const lns_l = &cclines[0];
-    const struct CCLines *const lns_c = &cclines[1];
-
-    /* CTU Decoder part maps points to cabac_lines start */
-    pmap_l->log2_cu_w_map_x = lns_l->log2_cu_w_map_x;
-    pmap_l->qt_depth_map_x  = lns_l->qt_depth_map_x;
-    pmap_l->cu_mode_x       = lns_l->cu_mode_x;
-
-    pmap_c->log2_cu_w_map_x = lns_c->log2_cu_w_map_x;
-    pmap_c->qt_depth_map_x  = lns_c->qt_depth_map_x;
-    pmap_c->cu_mode_x       = lns_c->cu_mode_x;
-
-    /* CTU Decoder part maps points to cabac_lines start */
-
-    /* FIXME done twice on new entry see (reset lines function) */
-    /* FIXME use nb_pb_ctb instead of size */
-    memset(pmap_l->qt_depth_map_y,     0, sizeof(pmap_l->qt_depth_map_y));
-    memset(pmap_l->cu_mode_y,       0xFF, sizeof(pmap_l->cu_mode_y));
-    memset(pmap_l->log2_cu_h_map_y, 0xFF, sizeof(pmap_l->log2_cu_h_map_y));
-
-    memset(pmap_c->qt_depth_map_y,     0, sizeof(pmap_c->qt_depth_map_y));
-    memset(pmap_c->log2_cu_h_map_y, 0xFF, sizeof(pmap_c->log2_cu_h_map_y));
 }
 
 static void
@@ -995,7 +852,7 @@ tmvp_entry_init(OVCTUDec *ctudec, const OVSliceDec *const sldec, const OVPS *con
 }
 
 static void
-init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo *const einfo, const OVPS *const prms, const OVPartInfo*const part_ctx, struct DRVLines *drv_lines, struct CCLines *cc_lines)
+init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo *const einfo, const OVPS *const prms, const OVPartInfo*const part_ctx, struct DRVLines *drv_lines)
 {
     uint8_t log2_ctb_s    = part_ctx->log2_ctu_s;
     uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
@@ -1005,14 +862,11 @@ init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo
 
     uint16_t ctb_offset = nb_ctb_pic_w * einfo->tile_y + einfo->ctb_x;
 
-    offset_cabac_lines(cc_lines, ctb_offset, log2_ctb_s, log2_min_cb_s);
-
     *drv_lines = sldec->drv_lines;
 
     offset_drv_lines(drv_lines, einfo->tile_x, einfo->tile_y, einfo->ctb_x, log2_ctb_s,
                      log2_min_cb_s, tinfo->nb_tile_cols, nb_ctb_pic_w);
 
-    cabac_line_next_line(ctudec, cc_lines);
 
     drv_line_next_line(ctudec, drv_lines);
 
@@ -1294,6 +1148,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     /*FIXME handle cabac alloc or keep it on the stack ? */
     OVCABACCtx cabac_ctx;
     struct DRVLines drv_lines;
+    struct CCLines cc_lines[2];
     struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
 
     const int nb_ctu_w = einfo->nb_ctu_w;
@@ -1306,10 +1161,14 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
     ctudec->cabac_ctx = &cabac_ctx;
 
+    init_lines(ctudec, sldec, einfo, prms, ctudec->part_ctx, &drv_lines);
+
     ret = ovcabac_attach_entry(ctudec->cabac_ctx, einfo->entry_start, einfo->entry_end);
     if (ret < 0) {
         return OVVC_EINDATA;
     }
+
+    init_cabac_lines(ctudec, ctudec->part_ctx, nb_ctu_w, cc_lines);
 
     /* FIXME Note cabac context tables could be initialised earlier
      * so we could only init once and recopy context tables to others
@@ -1317,9 +1176,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
      */
     ovcabac_init_slice_context_table(cabac_ctx.ctx_table, prms->sh->sh_slice_type ^ prms->sh->sh_cabac_init_flag,
                                      ctudec->slice_qp);
-
-    init_lines(ctudec, sldec, einfo, prms, ctudec->part_ctx,
-               &drv_lines, sldec->cabac_lines);
 
     ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx, log2_ctb_s, 0);
     ctudec->rcn_funcs.rcn_attach_frame_buff(rcn_ctx, sldec->pic->frame, einfo, log2_ctb_s);
@@ -1336,7 +1192,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
         ret = decode_ctu_line(ctudec, sldec, &drv_lines, einfo, ctb_addr_rs);
 
-        cabac_line_next_line(ctudec, sldec->cabac_lines);
+        cabac_line_next_line(ctudec, cc_lines);
 
         drv_line_next_line(ctudec, &drv_lines);
 
@@ -1562,36 +1418,8 @@ int
 slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
 {
     const OVSH *sh = prms->sh;
+
     sldec->slice_type = sh->sh_slice_type;
-
-    if (!sldec->cabac_lines[0].qt_depth_map_x) {
-        int ret;
-        ret = init_cabac_lines(sldec, prms);
-        if (ret < 0) {
-            ov_log(NULL, 3, "FAILED init cabac lines\n");
-            return ret;
-        }
-    } else {
-        uint8_t slice_type = sldec->slice_type;
-        const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
-                                                              : &prms->sps_info.part_info[1];
-
-        uint8_t log2_ctb_s = pinfo->log2_ctu_s;
-        uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
-        uint16_t pic_w = prms->sps->sps_pic_width_max_in_luma_samples;
-        uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-        uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
-
-        if (nb_pb_pic_w != sldec->cabac_lines[0].nb_pb_w) {
-            cabac_lines_uninit(sldec);
-            int ret = init_cabac_lines(sldec, prms);
-            if (ret < 0) {
-                ov_log(NULL, 3, "FAILED init cabac lines\n");
-                return ret;
-            }
-        }
-    }
-    clear_cabac_lines(sldec, prms);
 
     if (!sldec->drv_lines.intra_luma_x) {
         int ret;
@@ -1634,8 +1462,7 @@ slicedec_uninit(OVSliceDec **sldec_p)
     ovthread_slice_sync_uninit(&sldec->slice_sync);
 
     /*FIXME is init test */
-    if (sldec->cabac_lines[0].log2_cu_w_map_x) {
-        cabac_lines_uninit(sldec);
+    if (sldec->drv_lines.intra_luma_x) {
         drv_lines_uninit(sldec);
     }
 
