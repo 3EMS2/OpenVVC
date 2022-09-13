@@ -119,60 +119,6 @@ offset_inter_drv_lines(struct DRVLines *const drv_lns, int ctb_offset,
     lns->aff_info += ctb_offset;
 }
 
-#if 0
-/* Reset inter direction maps according to CTU neighbourhood
- */
-static void
-fill_inter_map(OVCTUDec *const ctudec, uint64_t above_map, uint64_t tr_map)
-{
-    const int nb_ctb_pb =  (1 << ((ctudec->part_ctx->log2_ctu_s) & 7)) >> ctudec->part_ctx->log2_min_cb_s;
-    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-
-    uint64_t *const rows_map = inter_ctx->mv_ctx0.map.hfield;
-    uint64_t *const cols_map = inter_ctx->mv_ctx0.map.vfield;
-
-    const uint8_t ctb_ngh_flg = ctudec->ctu_ngh_flags;
-    int i;
-
-    rows_map[0] = 0;
-    cols_map[0] = 0;
-
-    if (ctb_ngh_flg & CTU_LFT_FLG) {
-        cols_map[0] = cols_map[nb_ctb_pb];
-        for (i = 1; i < nb_ctb_pb + 1; ++i) {
-            uint8_t left_available = !!(cols_map[nb_ctb_pb] & (1llu << i));
-            rows_map[i] = (uint64_t)left_available;
-        }
-    } else {
-        for (int i = 1; i < nb_ctb_pb + 1; ++i) {
-            rows_map[i] = 0;
-        }
-    }
-
-    if (ctb_ngh_flg & CTU_LFT_FLG) {
-
-        rows_map[0] = above_map << 1;
-
-        if (ctb_ngh_flg & CTU_UPRGT_FLG) {
-            rows_map[0] |= tr_map << (nb_ctb_pb + 1);
-        }
-
-        if (ctb_ngh_flg & CTU_UPLFT_FLG) {
-            rows_map[0] |= cols_map[0] & 0x1;
-        }
-
-        for (i = 1; i < nb_ctb_pb + 1; i++) {
-            uint8_t top_available = !!(above_map & (1llu << (i - 1)));
-            cols_map[i] = (uint64_t)top_available;
-        }
-    } else {
-        for (i = 1; i < nb_ctb_pb + 1; i++) {
-            cols_map[i] = 0;
-        }
-    }
-}
-#endif
-
 static void
 free_ibc_drv_lines(struct DRVLines *const drv_lns)
 {
@@ -988,9 +934,6 @@ load_first_ctu_ibc(const struct DRVLines *const l,
 void
 drv_line_next_line(OVCTUDec *const ctudec, const struct DRVLines *const lns)
 {
-    #if 0
-    struct OVDrvCtx *const drv_ctx        = &ctudec->drv_ctx;
-    #endif
     struct IntraDRVInfo *const intra_info = &ctudec->drv_ctx.intra_info;
     const OVPartInfo *const pinfo = ctudec->part_ctx;
 
@@ -1016,50 +959,12 @@ drv_line_next_line(OVCTUDec *const ctudec, const struct DRVLines *const lns)
         load_first_ctu_ibc(lns, ctudec, 0);
 
     memset(intra_info->luma_mode_y, 0, sizeof(*intra_info->luma_mode_y) * nb_pb_ctb_w);
+
     memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
     memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
 
-    #if 0
-    memset(&ctudec->dbf_info, 0, sizeof(ctudec->dbf_info));
-    #endif
     dbf_load_info(&ctudec->dbf_info, &lns->dbf_lines, log2_ctb_s, 0);
 }
-
-
-#if 0
-void
-drv_line_next_ctu(OVCTUDec *const ctudec, OVSliceDec *sldec, struct DRVLines *drv_lns,
-                  const OVPS *const prms, uint16_t ctb_x)
-{
-    const OVPartInfo *const pinfo = ctudec->part_ctx;
-    #if 0
-    struct IntraDRVInfo *const intra_info = &ctudec->drv_ctx.intra_info;
-    #endif
-    struct OVDrvCtx *const drv_ctx = &ctudec->drv_ctx;
-
-    uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
-    uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
-
-    uint16_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
-
-    int8_t qp_val = ctudec->qp_ctx.current_qp;
-
-    /* FIXME Unecessary ? */
-    #if 0
-    memset(intra_info->luma_mode_x, 0, sizeof(*intra_info->luma_mode_x) * nb_pb_ctb_w);
-    #endif
-
-    /* Reset QP prediction map to previous current QP prediction
-     * value
-     */
-    #if 1
-
-    memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
-    memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
-
-    #endif
-}
-#endif
 
 void
 offset_drv_lines(struct DRVLines *const lns, uint8_t tile_x, uint8_t tile_y,
@@ -1076,8 +981,6 @@ offset_drv_lines(struct DRVLines *const lns, uint8_t tile_x, uint8_t tile_y,
 
      offset_ibc_drv_lines(lns, (ctb_offset << log2_ctb_s) >> LOG2_UNIT_S);
 
-     //ctb_offset -= tile_x;
-     //ctb_offset -= tile_y * nb_tile_cols;
      /* FIXME return */
      offset_dbf_lines(&lns->dbf_lines, ctb_offset, log2_ctb_s, LOG2_UNIT_S);
 }
