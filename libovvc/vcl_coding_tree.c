@@ -240,9 +240,10 @@ coding_quadtree(OVCTUDec *const ctu_dec,
                unsigned int x0, unsigned int y0,
                unsigned int log2_cb_s, unsigned int qt_depth)
 {
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     uint8_t split_cu_flag = 0;
 
-    if (ctu_dec->coding_unit != coding_unit_intra && ((log2_cb_s > 6) || (log2_cb_s * 2 + 2 * (ctu_dec->coding_unit == coding_unit_intra_c)) >= (2 * part_ctx->log2_ctu_s - (ctu_dec->cu_qp_chroma_offset_subdiv)))) {
+    if (ctu_dec->coding_unit != coding_unit_intra && ((log2_cb_s > 6) || (log2_cb_s * 2 + 2 * (ctu_dec->coding_unit == coding_unit_intra_c)) >= (2 * part_ctx->log2_ctu_s - (tools->cu_qp_chroma_offset_subdiv)))) {
         ctu_dec->qp_ctx.dqp_cb = 0;
         ctu_dec->qp_ctx.dqp_cr = 0;
         ctu_dec->qp_ctx.dqp_jcbcr = 0;
@@ -848,6 +849,7 @@ multi_type_tree(OVCTUDec *const ctu_dec,
                uint8_t mtt_depth,
                uint8_t middle_tt_flag, uint8_t implicit_mt_depth)
 {
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     uint8_t can_split = mtt_depth - implicit_mt_depth < part_ctx->max_mtt_depth;
 
     if (ctu_dec->share == 1 && ctu_dec->active_part_map == &ctu_dec->part_map_c) {
@@ -855,7 +857,7 @@ multi_type_tree(OVCTUDec *const ctu_dec,
     }
     uint8_t allow_tt_v = 0, allow_tt_h = 0, allow_bt_h = 0, allow_bt_v = 0;
 
-    if (ctu_dec->coding_unit != coding_unit_intra && (log2_cb_h > 6 || log2_cb_w > 6 || (log2_cb_h + log2_cb_w + 2 * (ctu_dec->coding_unit == coding_unit_intra_c)) >= (2 * part_ctx->log2_ctu_s - (ctu_dec->cu_qp_chroma_offset_subdiv)))) {
+    if (ctu_dec->coding_unit != coding_unit_intra && (log2_cb_h > 6 || log2_cb_w > 6 || (log2_cb_h + log2_cb_w + 2 * (ctu_dec->coding_unit == coding_unit_intra_c)) >= (2 * part_ctx->log2_ctu_s - (tools->cu_qp_chroma_offset_subdiv)))) {
         ctu_dec->qp_ctx.dqp_cb = 0;
         ctu_dec->qp_ctx.dqp_cr = 0;
         ctu_dec->qp_ctx.dqp_jcbcr = 0;

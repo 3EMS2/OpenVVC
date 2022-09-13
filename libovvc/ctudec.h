@@ -575,6 +575,58 @@ struct CTURCNData
 
 };
 
+struct ToolsInfo
+{
+    uint8_t transform_skip_enabled;
+    uint8_t sh_ts_disabled;
+    uint8_t max_log2_transform_skip_size;
+    uint8_t enable_sdh;
+    uint8_t jcbcr_enabled;
+    uint8_t mts_implicit;
+    uint8_t mts_enabled;
+    uint8_t mts_explicit_intra;
+    uint8_t mts_explicit_inter;
+    uint8_t enable_lfnst;
+
+    uint8_t delta_qp_enabled;
+    uint8_t cu_qp_delta_subdiv;
+    uint8_t cu_qp_chroma_offset_subdiv;
+    uint8_t chroma_qp_offset_enabled;
+    uint8_t chroma_qp_offset_len;
+
+    uint8_t isp_enabled;
+    uint8_t enabled_mip;
+    uint8_t enable_mrl;
+    uint8_t bdpcm_enabled;
+
+    uint8_t lm_chroma_enabled;
+    uint8_t max_num_merge_candidates;
+    uint8_t max_gpm_cand;
+
+    uint8_t sbt_enabled;
+
+    uint8_t sbtmvp_enabled;
+    uint8_t affine_enabled;
+    uint8_t affine_status;
+    uint8_t affine_nb_merge_cand;
+
+    uint8_t ciip_enabled;
+    uint8_t mmvd_enabled;
+    uint8_t smvd_enabled;
+    uint8_t bcw_enabled;
+    uint8_t gpm_enabled;
+    uint8_t amvr_enabled;
+    uint8_t affine_amvr_enabled;
+    uint8_t mvd1_zero_enabled;
+
+    uint8_t ibc_enabled;
+    uint8_t nb_ibc_cand_min1;
+    uint8_t scaling_list_enabled;
+    uint8_t lfnst_scaling_list_enabled;
+
+    uint8_t dbf_disable;
+};
+
 struct OVCTUDec
 {
     /**
@@ -665,6 +717,8 @@ struct OVCTUDec
 
     struct LMCSInfo lmcs_info;
 
+    struct ToolsInfo tools;
+
     /* CTU neighbours availability flags
      * An aggregation of flag used to tell the decoder if
      * the CTU neighbours are supposed to be known from
@@ -686,55 +740,7 @@ struct OVCTUDec
      * by a max_log2_trskip_s to zere, mts_implicit and
      * mts_enabled could be replace by a mts status etc.)
      */
-    uint8_t transform_skip_enabled;
-    uint8_t sh_ts_disabled;
-    uint8_t max_log2_transform_skip_size;
-    uint8_t enable_sdh;
-    uint8_t jcbcr_enabled;
-    uint8_t mts_implicit;
-    uint8_t mts_enabled;
-    uint8_t mts_explicit_intra;
-    uint8_t mts_explicit_inter;
-    uint8_t enable_lfnst;
 
-    uint8_t delta_qp_enabled;
-    uint8_t cu_qp_delta_subdiv;
-    uint8_t cu_qp_chroma_offset_subdiv;
-    uint8_t chroma_qp_offset_enabled;
-    uint8_t chroma_qp_offset_len;
-    uint8_t read_qp;
-    uint8_t read_qp_c;
-
-    uint8_t isp_enabled;
-    uint8_t enabled_mip;
-    uint8_t enable_mrl;
-    uint8_t bdpcm_enabled;
-
-    uint8_t lm_chroma_enabled;
-    uint8_t enable_cclm;
-    uint8_t max_num_merge_candidates;
-    uint8_t max_gpm_cand;
-
-    uint8_t sbt_enabled;
-
-    uint8_t sbtmvp_enabled;
-    uint8_t affine_enabled;
-    uint8_t affine_status;
-    uint8_t affine_nb_merge_cand;
-
-    uint8_t ciip_enabled;
-    uint8_t mmvd_enabled;
-    uint8_t smvd_enabled;
-    uint8_t bcw_enabled;
-    uint8_t gpm_enabled;
-    uint8_t amvr_enabled;
-    uint8_t affine_amvr_enabled;
-    uint8_t mvd1_zero_enabled;
-
-    uint8_t ibc_enabled;
-    uint8_t nb_ibc_cand_min1;
-    uint8_t scaling_list_enabled;
-    uint8_t lfnst_scaling_list_enabled;
     struct TBScalingLUTs {
         int16_t intra_luts[9024];
         int16_t inter_luts[9024];
@@ -744,12 +750,11 @@ struct OVCTUDec
         int16_t inter_luts_cr[9024];
     } tb_scaling_luts;
 
-    uint8_t dbf_disable;
-
     /* Separate chroma tree */
     uint8_t share;
 
     uint8_t tmp_disable_cclm;
+    uint8_t enable_cclm;
 
     /**
      * Depths of left and up neighbours during in the decision tree
@@ -877,6 +882,10 @@ struct OVCTUDec
     uint8_t tmp_ciip;
     uint8_t tmp_red;
     uint8_t tmp_slice_type;
+
+    uint8_t read_qp;
+    uint8_t read_qp_c;
+
 };
 
 int ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms);

@@ -397,6 +397,7 @@ static uint8_t
 decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, CUFlags cu_flags)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
     uint8_t tu_cbf_cb = ovcabac_read_ae_tu_cbf_cb(cabac_ctx, intra_bdpcm_chroma_flag);
     uint8_t tu_cbf_cr = ovcabac_read_ae_tu_cbf_cr(cabac_ctx, tu_cbf_cb, intra_bdpcm_chroma_flag);
@@ -409,7 +410,7 @@ decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, C
     }
 
     /* FIXME delta_qp is only read on first significant TU in CU */
-    if (ctu_dec->delta_qp_enabled && (rqt_root_cbf | cbf_mask | tu_cbf_luma) && ctu_dec->read_qp) {
+    if (tools->delta_qp_enabled && (rqt_root_cbf | cbf_mask | tu_cbf_luma) && ctu_dec->read_qp) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
         derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
@@ -417,10 +418,10 @@ decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, C
     }
 
     #if 1
-    if (ctu_dec->chroma_qp_offset_enabled && cbf_mask && ctu_dec->read_qp_c) {
+    if (tools->chroma_qp_offset_enabled && cbf_mask && ctu_dec->read_qp_c) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
-        uint8_t length = ctu_dec->chroma_qp_offset_len;
+        uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
         derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
         if (cu_qp_delta) {
@@ -440,7 +441,7 @@ decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, C
     #endif
 
     /* FIXME intra if inter we only check for cbf_mask == 3*/
-    if (ctu_dec->jcbcr_enabled && (!(cu_flags & flg_ibc_flag) && ((cu_flags & flg_pred_mode_flag) && cbf_mask) || cbf_mask == 3)) {
+    if (tools->jcbcr_enabled && (!(cu_flags & flg_ibc_flag) && ((cu_flags & flg_pred_mode_flag) && cbf_mask) || cbf_mask == 3)) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx, (cbf_mask & 0x3) - 1);
         cbf_mask |= joint_cb_cr << 3;
     }
@@ -452,15 +453,16 @@ static uint8_t
 decode_cbf_c(OVCTUDec *const ctu_dec, CUFlags cu_flags)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
     uint8_t tu_cbf_cb = ovcabac_read_ae_tu_cbf_cb(cabac_ctx, intra_bdpcm_chroma_flag);
     uint8_t tu_cbf_cr = ovcabac_read_ae_tu_cbf_cr(cabac_ctx, tu_cbf_cb, intra_bdpcm_chroma_flag);
     uint8_t cbf_mask = (tu_cbf_cb << 1) | tu_cbf_cr;
 
-    if (ctu_dec->chroma_qp_offset_enabled && cbf_mask && ctu_dec->read_qp_c) {
+    if (tools->chroma_qp_offset_enabled && cbf_mask && ctu_dec->read_qp_c) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
-        uint8_t length = ctu_dec->chroma_qp_offset_len;
+        uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
         derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
         if (cu_qp_delta) {
@@ -478,7 +480,7 @@ decode_cbf_c(OVCTUDec *const ctu_dec, CUFlags cu_flags)
         ctu_dec->read_qp_c = 0;
     }
 
-    if (ctu_dec->jcbcr_enabled && cbf_mask) {
+    if (tools->jcbcr_enabled && cbf_mask) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx,
                 (cbf_mask & 0x3) - 1);
         cbf_mask |= joint_cb_cr << 3;
@@ -623,13 +625,14 @@ residual_coding_l(OVCTUDec *const ctu_dec,
                   CUFlags cu_flags, struct TUInfo *const tu_info)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     uint8_t tr_skip_flag = 0;
     int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
 
     struct TBInfo *tb_info = &tu_info->tb_info[2];
 
-    if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
-        && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !tu_info->is_sbt && !(cu_flags &flg_isp_flag)) {
+    if (tools->transform_skip_enabled && log2_tb_w <= tools->max_log2_transform_skip_size
+        && log2_tb_h <= tools->max_log2_transform_skip_size && !tu_info->is_sbt && !(cu_flags &flg_isp_flag)) {
         ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
         uint8_t intra_bdpcm_luma_flag = !!(cu_flags & flg_intra_bdpcm_luma_flag);
         tr_skip_flag = intra_bdpcm_luma_flag || ovcabac_read_ae_transform_skip_luma_flag(cabac_ctx);
@@ -637,7 +640,7 @@ residual_coding_l(OVCTUDec *const ctu_dec,
     }
 
 
-    if (!tr_skip_flag || ctu_dec->sh_ts_disabled) {
+    if (!tr_skip_flag || tools->sh_ts_disabled) {
         uint16_t last_pos;
         if (tu_info->is_sbt && tu_info->cu_mts_flag && log2_tb_w <= 5 && log2_tb_h <= 5) {
             last_pos = ovcabac_read_ae_last_sig_pos_red(cabac_ctx, log2_tb_w, log2_tb_h);
@@ -681,6 +684,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
 
     int16_t *const coeffs_cb = ctu_dec->residual_cb + tu_info->pos_offset;
     int16_t *const coeffs_cr = ctu_dec->residual_cr + tu_info->pos_offset;
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     uint16_t last_pos_cb = (1 << (log2_tb_h + log2_tb_w)) - 1;
     uint16_t last_pos_cr = (1 << (log2_tb_h + log2_tb_w)) - 1;
     uint64_t sig_sb_map_cb = 0x1;
@@ -697,15 +701,15 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
         /* TODO use max_tr_skip_s = 0 to avoid using enabled test */
-        if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
-            && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !tu_info->is_sbt) {
+        if (tools->transform_skip_enabled && log2_tb_w <= tools->max_log2_transform_skip_size
+            && log2_tb_h <= tools->max_log2_transform_skip_size && !tu_info->is_sbt) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
             uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
             ctu_dec->dequant_skip = &ctu_dec->dequant_cb_skip;
             transform_skip_flag |= (intra_bdpcm_chroma_flag || ovcabac_read_ae_transform_skip_flag_c(cabac_ctx)) << 1;
         }
 
-        if (!(transform_skip_flag & 0x2) || ctu_dec->sh_ts_disabled) {
+        if (!(transform_skip_flag & 0x2) || tools->sh_ts_disabled) {
 
             last_pos_cb = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
@@ -725,15 +729,15 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
         /* TODO use max_tr_skip_s = 0 to avoid using enabled test */
-        if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
-            && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !tu_info->is_sbt) {
+        if (tools->transform_skip_enabled && log2_tb_w <= tools->max_log2_transform_skip_size
+            && log2_tb_h <= tools->max_log2_transform_skip_size && !tu_info->is_sbt) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
             uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
             ctu_dec->dequant_skip = &ctu_dec->dequant_cr_skip;
             transform_skip_flag |= intra_bdpcm_chroma_flag || ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
         }
 
-        if (!(transform_skip_flag & 0x1) || ctu_dec->sh_ts_disabled) {
+        if (!(transform_skip_flag & 0x1) || tools->sh_ts_disabled) {
 
             last_pos_cr = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
@@ -763,6 +767,7 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
                       uint8_t cbf_mask, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    const struct ToolsInfo *tools = &ctu_dec->tools;
 
     uint16_t last_pos;
     int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
@@ -770,15 +775,15 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
     uint8_t transform_skip_flag = 0;
     struct TBInfo *const tb_info = &tu_info->tb_info[0];
 
-    if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
-        && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !tu_info->is_sbt) {
+    if (tools->transform_skip_enabled && log2_tb_w <= tools->max_log2_transform_skip_size
+        && log2_tb_h <= tools->max_log2_transform_skip_size && !tu_info->is_sbt) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
         transform_skip_flag |= intra_bdpcm_chroma_flag || ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
         tu_info->tr_skip_mask |= transform_skip_flag;
     }
 
-    if (!transform_skip_flag || ctu_dec->sh_ts_disabled) {
+    if (!transform_skip_flag || tools->sh_ts_disabled) {
         last_pos = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
         sig_sb_map = ctu_dec->residual_coding_c(ctu_dec, coeffs_jcbcr, log2_tb_w, log2_tb_h,
@@ -851,11 +856,12 @@ transform_unit_l(struct OVCTUDec *const ctu_dec,
                  struct TUInfo *const tu_info)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     uint8_t intra_bdpcm_luma_flag = !!(cu_flags & flg_intra_bdpcm_luma_flag);
     uint8_t cbf_mask = rqt_root_cbf || ovcabac_read_ae_tu_cbf_luma(cabac_ctx, intra_bdpcm_luma_flag);
 
     if (cbf_mask) {
-        if (ctu_dec->delta_qp_enabled && cbf_mask && ctu_dec->read_qp) {
+        if (tools->delta_qp_enabled && cbf_mask && ctu_dec->read_qp) {
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
             ctu_dec->read_qp = 0;
@@ -901,12 +907,13 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
           CUFlags cu_flags, struct TUInfo *const tu_info)
 {
     uint8_t cbf_mask = tu_info->cbf_mask;
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     if (ctu_dec->transform_unit == &transform_unit_st && cbf_mask) {
                 uint8_t is_mip = (cu_flags & flg_pred_mode_flag) && !!(cu_flags & flg_mip_flag);
                 uint8_t allow_mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
 
         if (!(tu_info->tr_skip_mask))
-        if ((cu_flags & flg_pred_mode_flag) && allow_mip_lfnst && ctu_dec->enable_lfnst && cu_flags & flg_pred_mode_flag && !(cu_flags & flg_ibc_flag)) {
+        if ((cu_flags & flg_pred_mode_flag) && allow_mip_lfnst && tools->enable_lfnst && cu_flags & flg_pred_mode_flag && !(cu_flags & flg_ibc_flag)) {
             uint8_t can_lfnst = lfnst_check_st(tu_info, log2_tb_w, log2_tb_h,
                                                cbf_mask, cu_flags);
 
@@ -923,8 +930,8 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
         }
 
         if (!(tu_info->tr_skip_mask & 0x10)) {
-        if (ctu_dec->mts_enabled && (((cu_flags & flg_pred_mode_flag) && ctu_dec->mts_explicit_intra)
-                                 || (!(cu_flags & flg_pred_mode_flag) && ctu_dec->mts_explicit_inter))) {
+        if (tools->mts_enabled && (((cu_flags & flg_pred_mode_flag) && tools->mts_explicit_intra)
+                                 || (!(cu_flags & flg_pred_mode_flag) && tools->mts_explicit_inter))) {
             const struct TBInfo *tb_info = &tu_info->tb_info[2];
             if (!tu_info->lfnst_flag && !!tb_info->last_pos && (log2_tb_w < 6) && (log2_tb_h < 6)
                 && !(tb_info->sig_sb_map & (~0x000000000F0F0F0F))) {
@@ -942,7 +949,7 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
         if (!(tu_info->tr_skip_mask & 0x10)) {
             const struct TBInfo *tb_info = &tu_info->tb_info[2];
             /* FIXME use sb_sig_map instead of last pos */
-            if (ctu_dec->enable_lfnst && cu_flags & flg_pred_mode_flag && tb_info->sig_sb_map <= flg_pred_mode_flag&& !(cu_flags & flg_ibc_flag)) {
+            if (tools->enable_lfnst && cu_flags & flg_pred_mode_flag && tb_info->sig_sb_map <= flg_pred_mode_flag&& !(cu_flags & flg_ibc_flag)) {
                 int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
                 int nb_coeffs = check_lfnst_nb_coeffs(tb_info->last_pos);
                 uint8_t is_mip = !!(cu_flags & flg_mip_flag);
@@ -960,8 +967,8 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
                 }
             }
 
-            if (!tu_info->lfnst_flag && !!tb_info->last_pos && (((cu_flags & flg_pred_mode_flag) && ctu_dec->mts_explicit_intra)
-                                 || (!(cu_flags & flg_pred_mode_flag) && ctu_dec->mts_explicit_inter))
+            if (!tu_info->lfnst_flag && !!tb_info->last_pos && (((cu_flags & flg_pred_mode_flag) && tools->mts_explicit_intra)
+                                 || (!(cu_flags & flg_pred_mode_flag) && tools->mts_explicit_inter))
                 && (log2_tb_w < 6) && (log2_tb_h < 6)
                 && !(tb_info->sig_sb_map & (~0x000000000F0F0F0F))) {
                 OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -976,7 +983,7 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
         }
     } else if (ctu_dec->transform_unit == &transform_unit_c && cbf_mask) {
         if (!(tu_info->tr_skip_mask))
-        if (ctu_dec->enable_lfnst) {
+        if (tools->enable_lfnst) {
             uint8_t jcbcr_flag = cbf_mask & 0x8;
             uint8_t cbf_mask_c = cbf_mask & 0x3;
             uint8_t can_lfnst = jcbcr_flag ? jcbcr_lfnst_check(tu_info, log2_tb_w, log2_tb_h)
@@ -1090,12 +1097,13 @@ sbt_half_ver(OVCTUDec *const ctu_dec,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
              uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
-        if (ctu_dec->mts_enabled && log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
+        if (tools->mts_enabled && log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x1;
         }
@@ -1114,7 +1122,7 @@ sbt_half_ver(OVCTUDec *const ctu_dec,
 
     } else {
         tu_info[0].is_sbt = 1;
-        if (ctu_dec->mts_enabled && log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
+        if (tools->mts_enabled && log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
@@ -1142,11 +1150,12 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
              uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
-        if (ctu_dec->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
+        if (tools->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x2;
         }
@@ -1168,7 +1177,7 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
         tu_info[0].is_sbt = 1;
         uint8_t y1 = y0 + (1 << (log2_tb_h - 1));
         uint8_t y3 = y0 + (1 << (log2_tb_h - 1));
-        if (ctu_dec->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
+        if (tools->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
@@ -1196,12 +1205,13 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
              uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
 
-        if (ctu_dec->mts_enabled && log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
+        if (tools->mts_enabled && log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x1;
         }
@@ -1224,7 +1234,7 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
         tu_info[0].is_sbt = 1;
         uint8_t x3 = x0 + (3 << (log2_tb_w - 2));
 
-        if (ctu_dec->mts_enabled && log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
+        if (tools->mts_enabled && log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
@@ -1251,13 +1261,14 @@ sbt_quad_hor(OVCTUDec *const ctu_dec,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
              uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
     fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
 
-        if (ctu_dec->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
+        if (tools->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x2;
         }
@@ -1279,7 +1290,7 @@ sbt_quad_hor(OVCTUDec *const ctu_dec,
         tu_info[0].is_sbt = 1;
         uint8_t y3 = y0 + (3 << (log2_tb_h - 2));
 
-        if (ctu_dec->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
+        if (tools->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
@@ -1348,6 +1359,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
               uint8_t intra_mode)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    const struct ToolsInfo *tools = &ctu_dec->tools;
 
     uint8_t cbf_flags = 0;
     int cbf = 0;
@@ -1374,7 +1386,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         cbf_flags |= cbf;
 
         if (cbf) {
-            if (ctu_dec->delta_qp_enabled && ctu_dec->read_qp) {
+            if (tools->delta_qp_enabled && ctu_dec->read_qp) {
                 OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
                 int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
                 derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
@@ -1404,7 +1416,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     cbf_flags <<= 1;
     cbf_flags |= cbf;
 
-    if (ctu_dec->delta_qp_enabled && cbf && ctu_dec->read_qp) {
+    if (tools->delta_qp_enabled && cbf && ctu_dec->read_qp) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
         derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
@@ -1412,10 +1424,10 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     }
 
     #if 1
-    if (ctu_dec->chroma_qp_offset_enabled && cbf_mask_c && ctu_dec->read_qp_c) {
+    if (tools->chroma_qp_offset_enabled && cbf_mask_c && ctu_dec->read_qp_c) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
-        uint8_t length = ctu_dec->chroma_qp_offset_len;
+        uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
         derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
         if (cu_qp_delta) {
@@ -1436,7 +1448,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     }
     #endif
 
-    if (ctu_dec->jcbcr_enabled && cbf_mask_c) {
+    if (tools->jcbcr_enabled && cbf_mask_c) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx,
                 (cbf_mask_c & 0x3) - 1);
         cbf_mask_c |= joint_cb_cr << 3;
@@ -1473,7 +1485,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         cbf_mask_c |= jcbcr_flag;
     }
 
-    if (ctu_dec->enable_lfnst && log2_pb_w > 1) {
+    if (tools->enable_lfnst && log2_pb_w > 1) {
         int max_lfnst_pos = (log2_cb_h == log2_pb_w) && (log2_pb_w <= 3) ? 7 : 15;
         uint8_t can_lfnst = (tu_info.tb_info[0].sig_sb_map | tu_info.tb_info[1].sig_sb_map | tu_info.tb_info[2].sig_sb_map | tu_info.tb_info[3].sig_sb_map) <= 1;
 
@@ -1567,6 +1579,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
               uint8_t intra_mode)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     int i;
     struct TUInfo tu_info_c = {0};
 
@@ -1592,7 +1605,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         cbf_flags <<= 1;
         cbf_flags |= cbf;
         if (cbf) {
-            if (ctu_dec->delta_qp_enabled && ctu_dec->read_qp) {
+            if (tools->delta_qp_enabled && ctu_dec->read_qp) {
                 OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
                 int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
                 derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
@@ -1621,7 +1634,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     cbf_flags <<= 1;
     cbf_flags |= cbf;
 
-    if (ctu_dec->delta_qp_enabled && cbf && ctu_dec->read_qp) {
+    if (tools->delta_qp_enabled && cbf && ctu_dec->read_qp) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
         derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
@@ -1629,9 +1642,9 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     }
 
     #if 1
-    if (ctu_dec->chroma_qp_offset_enabled && cbf_mask_c && ctu_dec->read_qp_c) {
+    if (tools->chroma_qp_offset_enabled && cbf_mask_c && ctu_dec->read_qp_c) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-        uint8_t length = ctu_dec->chroma_qp_offset_len;
+        uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
         derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
         if (cu_qp_delta) {
@@ -1652,7 +1665,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     }
     #endif
 
-    if (ctu_dec->jcbcr_enabled && cbf_mask_c) {
+    if (tools->jcbcr_enabled && cbf_mask_c) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx,
                 (cbf_mask_c & 0x3) - 1);
         cbf_mask_c |= joint_cb_cr << 3;
@@ -1689,7 +1702,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
 
     }
 
-    if (ctu_dec->enable_lfnst && log2_pb_h > 1) {
+    if (tools->enable_lfnst && log2_pb_h > 1) {
         uint8_t can_lfnst = (tu_info.tb_info[0].sig_sb_map | tu_info.tb_info[1].sig_sb_map | tu_info.tb_info[2].sig_sb_map | tu_info.tb_info[3].sig_sb_map) <= 1;
         int max_lfnst_pos = (log2_pb_h == log2_cb_w) && (log2_cb_w <= 3) ? 7 : 15;
 
@@ -1824,6 +1837,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
                     uint8_t log2_cb_w, uint8_t log2_cb_h,
                     VVCCU cu)
 {
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     uint8_t split_tu = ((log2_cb_w > part_ctx->log2_max_tb_s) | (log2_cb_h > part_ctx->log2_max_tb_s));
     if (cu.cu_flags & flg_pred_mode_flag && !(cu.cu_flags & flg_ibc_flag)) {
         /* INTRA */
@@ -1900,7 +1914,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
         if (rqt_root_cbf) {
             uint8_t sbt_flag = 0;
             if (!split_tu && !(cu.cu_flags & flg_ibc_flag)) {
-                if (ctu_dec->sbt_enabled && !ctu_dec->tmp_ciip && !(cu.cu_flags & flg_ibc_flag)) {
+                if (tools->sbt_enabled && !ctu_dec->tmp_ciip && !(cu.cu_flags & flg_ibc_flag)) {
                     uint8_t sbt_mask = sbt_allowed(log2_cb_w, log2_cb_h);
                     if (sbt_mask) {
                         sbt_flag = ovcabac_read_ae_sbt_flag(cabac_ctx, log2_cb_w, log2_cb_h);

@@ -242,12 +242,13 @@ derive_dequant(const OVCTUDec *const ctudec, uint8_t qp, uint8_t log2_tb_w, uint
 static void
 dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, CUFlags cu_flags, uint8_t is_intra, uint8_t comp_idx, uint8_t is_lfnst)
 {
+    const struct ToolsInfo *tools = &ctudec->tools;
     int nb_cols = derive_nb_cols(sig_sb_map);
     int nb_rows = derive_nb_rows(sig_sb_map);
 
     struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
 
-    if (!ctudec->scaling_list_enabled || (ctudec->scaling_list_enabled && is_lfnst && !ctudec->lfnst_scaling_list_enabled)) {
+    if (!tools->scaling_list_enabled || (tools->scaling_list_enabled && is_lfnst && !tools->lfnst_scaling_list_enabled)) {
         ctudec->rcn_funcs.tmp.dequant_tb_4x4(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     } else {
         const uint16_t *lut;
@@ -282,6 +283,7 @@ rcn_residual(OVCTUDec *const ctudec,
              uint8_t cu_mts_flag, uint8_t cu_mts_idx,
              uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx, uint64_t sig_sb_map)
 {
+    const struct ToolsInfo *tools = &ctudec->tools;
     struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
     fill_bs_map(&ctudec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
 
@@ -295,7 +297,7 @@ rcn_residual(OVCTUDec *const ctudec,
     dequant_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp, cu_flags, 1, 0, lfnst_flag);
 
 
-    if (!is_mip && !cu_mts_flag && ctudec->mts_implicit && (log2_tb_w <= 4 || log2_tb_h <= 4) && !lfnst_flag) {
+    if (!is_mip && !cu_mts_flag && tools->mts_implicit && (log2_tb_w <= 4 || log2_tb_h <= 4) && !lfnst_flag) {
 
         enum DCTType tr_h_idx = log2_tb_w <= 4 ? DST_VII : DCT_II;
         enum DCTType tr_v_idx = log2_tb_h <= 4 ? DST_VII : DCT_II;
@@ -375,12 +377,13 @@ dequant_non_4x4_sb(const OVCTUDec *const ctudec, int16_t *dst, int16_t *src, uin
     /* Note in case of small blocks TBs are supposed to be small so processing the
      * whole block should not be an issue regarding performance
      */
+    const struct ToolsInfo *tools = &ctudec->tools;
     uint8_t tb_w = 1 << log2_tb_w;
     uint8_t tb_h = 1 << log2_tb_h;
 
     struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
 
-    if (!ctudec->scaling_list_enabled) {
+    if (!tools->scaling_list_enabled) {
         dequant_tb(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
     } else {
         const uint16_t *lut;
@@ -524,11 +527,12 @@ static void
 rcn_bdpcm_tb(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src, const struct TBInfo *tb_info,
              uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t bdpcm_dir, uint8_t qp)
 {
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
     const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
     int16_t *bdpcm_src = src;
 
-    if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
+    if (tools->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
 
         reorder_tb_4x4(tmp, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
         bdpcm_src = tmp;
@@ -550,6 +554,7 @@ rcn_transform_skip_tb_c(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src,
                         const struct TBInfo *const tb_info,
                         uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, CUFlags cu_flags)
 {
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     if (cu_flags & flg_intra_bdpcm_chroma_flag) {
         uint8_t bdpcm_dir = !!(cu_flags & flg_intra_bdpcm_chroma_dir);
 
@@ -557,7 +562,7 @@ rcn_transform_skip_tb_c(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src,
                      bdpcm_dir, qp);
 
     } else {
-        if (ctu_dec->sh_ts_disabled) {
+        if (tools->sh_ts_disabled) {
             if (log2_tb_w > 1 && log2_tb_h > 1) {
                 dequant_4x4_ts(ctu_dec, dst, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
             } else {
@@ -954,6 +959,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                     uint8_t intra_mode,
                     const struct ISPTUInfo *const tu_info)
 {
+    const struct ToolsInfo *tools = &ctudec->tools;
     uint8_t cbf_flags = tu_info->cbf_mask;
     uint8_t lfnst_flag = tu_info->lfnst_flag;
 
@@ -970,8 +976,8 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
     pb_w =  1 << log2_pb_w;
     offset_x = 0;
 
-    uint8_t type_h = ctudec->mts_enabled && log2_pb_w <= 4 && log2_pb_w > 1 ? DST_VII : DCT_II;
-    uint8_t type_v = ctudec->mts_enabled && log2_cb_h <= 4 ? DST_VII : DCT_II;
+    uint8_t type_h = tools->mts_enabled && log2_pb_w <= 4 && log2_pb_w > 1 ? DST_VII : DCT_II;
+    uint8_t type_v = tools->mts_enabled && log2_cb_h <= 4 ? DST_VII : DCT_II;
     int8_t lfnst_intra_mode;
     const struct OVBuffInfo *const ctu_buff = &ctudec->rcn_ctx.ctu_buff;
     int i;
@@ -1019,6 +1025,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                     uint8_t intra_mode,
                     const struct ISPTUInfo *const tu_info)
 {
+    const struct ToolsInfo *tools = &ctudec->tools;
     const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
     const struct RCNFunctions *const rcn_func = &ctudec->rcn_funcs;
 
@@ -1041,8 +1048,8 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
     pb_h =  1 << log2_pb_h;
     offset_y = 0;
 
-    uint8_t type_h = ctudec->mts_enabled && log2_cb_w <= 4 ? DST_VII : DCT_II;
-    uint8_t type_v = ctudec->mts_enabled && log2_pb_h <= 4 && log2_pb_h > 1 ? DST_VII : DCT_II;
+    uint8_t type_h = tools->mts_enabled && log2_cb_w <= 4 ? DST_VII : DCT_II;
+    uint8_t type_v = tools->mts_enabled && log2_pb_h <= 4 && log2_pb_h > 1 ? DST_VII : DCT_II;
     const struct OVBuffInfo *const ctu_buff = &ctudec->rcn_ctx.ctu_buff;
     int i;
 
@@ -1073,6 +1080,7 @@ rcn_transform_skip_tb_l(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src,
                         const struct TBInfo *const tb_info,
                         uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, CUFlags cu_flags)
 {
+    const struct ToolsInfo *tools = &ctu_dec->tools;
     if (cu_flags & flg_intra_bdpcm_luma_flag) {
         uint8_t bdpcm_dir = !!(cu_flags & flg_intra_bdpcm_luma_dir);
 
@@ -1080,7 +1088,7 @@ rcn_transform_skip_tb_l(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src,
                      bdpcm_dir, qp);
 
     } else {
-        if (ctu_dec->sh_ts_disabled) {
+        if (tools->sh_ts_disabled) {
             dequant_4x4_ts(ctu_dec, dst, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
         } else {
             memcpy(dst, src, sizeof(int16_t) << (log2_tb_w + log2_tb_h));

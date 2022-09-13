@@ -2562,7 +2562,7 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         .sum_abs_lvl2 = &sum_abs_level2[VVC_TR_CTX_OFFSET],
         .sum_sig_nbs  = &nb_significant[VVC_TR_CTX_OFFSET],
         .nb_remaining_bins = max_nb_bins,
-        .enable_sdh = ctu_dec->enable_sdh
+        .enable_sdh = ctu_dec->tools.enable_sdh
     };
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
@@ -2741,7 +2741,7 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         .sum_abs_lvl2 = &sum_abs_level2[VVC_TR_CTX_OFFSET],
         .sum_sig_nbs  = &nb_significant[VVC_TR_CTX_OFFSET],
         .nb_remaining_bins = max_nb_bins,
-        .enable_sdh = ctu_dec->enable_sdh
+        .enable_sdh = ctu_dec->tools.enable_sdh
     };
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
@@ -2971,7 +2971,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         .sum_abs_lvl2 = &sum_abs_level2[VVC_TR_CTX_OFFSET],
         .sum_sig_nbs  = &nb_significant[VVC_TR_CTX_OFFSET],
         .nb_remaining_bins = max_nb_bins,
-        .enable_sdh = ctu_dec->enable_sdh
+        .enable_sdh = ctu_dec->tools.enable_sdh
     };
 
     uint64_t sig_sb_map = 0;
@@ -3103,7 +3103,7 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         .sum_abs_lvl2 = &sum_abs_level2[VVC_TR_CTX_OFFSET],
         .sum_sig_nbs  = &nb_significant[VVC_TR_CTX_OFFSET],
         .nb_remaining_bins = max_nb_bins,
-        .enable_sdh = ctu_dec->enable_sdh
+        .enable_sdh = ctu_dec->tools.enable_sdh
     };
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
@@ -3287,7 +3287,7 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         .sum_abs_lvl2 = &sum_abs_level2[VVC_TR_CTX_OFFSET],
         .sum_sig_nbs  = &nb_significant[VVC_TR_CTX_OFFSET],
         .nb_remaining_bins = max_nb_bins,
-        .enable_sdh = ctu_dec->enable_sdh,
+        .enable_sdh = ctu_dec->tools.enable_sdh,
         .dpq_state = 0
     };
 
@@ -3762,7 +3762,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         .sum_abs_lvl2 = &sum_abs_level2[VVC_TR_CTX_OFFSET],
         .sum_sig_nbs  = &nb_significant[VVC_TR_CTX_OFFSET],
         .nb_remaining_bins = max_nb_bins,
-        .enable_sdh = ctu_dec->enable_sdh,
+        .enable_sdh = ctu_dec->tools.enable_sdh,
         .dpq_state = 0
     };
 
@@ -4062,7 +4062,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     VVCCoeffCodingCtx c_coding_ctx;
 
     init_cc_ctx(&c_coding_ctx, buff, log2_tb_w, log2_tb_h);
-    c_coding_ctx.enable_sdh = ctu_dec->enable_sdh;
+    c_coding_ctx.enable_sdh = ctu_dec->tools.enable_sdh;
 
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
 
@@ -4197,7 +4197,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     init_cc_ctx(&c_coding_ctx, buff, log2_tb_w, log2_tb_h);
 
-    c_coding_ctx.enable_sdh = ctu_dec->enable_sdh;
+    c_coding_ctx.enable_sdh = ctu_dec->tools.enable_sdh;
 
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
 
@@ -4597,7 +4597,7 @@ decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     VVCCoeffCodingCtx c_coding_ctx;
 
     init_cc_ctx(&c_coding_ctx, buff, log2_tb_w, log2_tb_h);
-    c_coding_ctx.enable_sdh = ctu_dec->enable_sdh;
+    c_coding_ctx.enable_sdh = ctu_dec->tools.enable_sdh;
 
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
 
@@ -4725,7 +4725,7 @@ decode_dpq_small_w_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     VVCCoeffCodingCtx c_coding_ctx;
 
     init_cc_ctx(&c_coding_ctx, buff, log2_tb_w, log2_tb_h);
-    c_coding_ctx.enable_sdh = ctu_dec->enable_sdh;
+    c_coding_ctx.enable_sdh = ctu_dec->tools.enable_sdh;
 
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
 
@@ -4864,7 +4864,7 @@ read_tb_inv_diag_scan_sdh(const struct SBReader *const sb_rdr, const OVCTUDec *c
 
         init_cc_ctx(&c_coding_ctx, buff, log2_tb_w, log2_tb_h);
 
-        c_coding_ctx.enable_sdh = ctudec->enable_sdh;
+        c_coding_ctx.enable_sdh = ctudec->tools.enable_sdh;
 
         if (!sb_x && !sb_y) {
             reset_ctx_buffers(&c_coding_ctx, 2, 2);

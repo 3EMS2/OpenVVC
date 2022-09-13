@@ -3889,7 +3889,7 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                              0x1);
 #endif
             is_sbtmvp = 1;
-      } else if (!inter_ctx->tmvp_ctx.ctudec->affine_enabled) {
+      } else if (!inter_ctx->tmvp_ctx.ctudec->tools.affine_enabled) {
 
             set_zero_mvs_p(inter_ctx, &inter_ctx->tmvp_ctx,
                            x0, y0, log2_cu_w, log2_cu_h);
@@ -4027,7 +4027,7 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                              nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
                              0x3);
             is_sbtmvp = 1;
-        } else if (!inter_ctx->tmvp_ctx.ctudec->affine_enabled) {
+        } else if (!inter_ctx->tmvp_ctx.ctudec->tools.affine_enabled) {
 
             set_zero_mvs_b(inter_ctx, &inter_ctx->tmvp_ctx,
                            x0, y0, log2_cu_w, log2_cu_h);

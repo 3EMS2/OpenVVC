@@ -99,13 +99,14 @@ init_coding_coeff_coding_ctx(OVCTUDec *ctudec, const OVPS *prms)
 {
     const OVSPS *const sps = prms->sps;
     const OVSH *const sh = prms->sh;
+    struct ToolsInfo *tools = &ctudec->tools;
 
     /* FIXME replace this with a status on MTS */
     uint8_t mts_enabled = sps->sps_mts_enabled_flag;
-    ctudec->mts_enabled = mts_enabled;
-    ctudec->mts_explicit_intra = mts_enabled && sps->sps_explicit_mts_intra_enabled_flag;
-    ctudec->mts_explicit_inter = mts_enabled && sps->sps_explicit_mts_inter_enabled_flag;
-    ctudec->mts_implicit = sps->sps_mts_enabled_flag && !sps->sps_explicit_mts_intra_enabled_flag;
+    tools->mts_enabled = mts_enabled;
+    tools->mts_explicit_intra = mts_enabled && sps->sps_explicit_mts_intra_enabled_flag;
+    tools->mts_explicit_inter = mts_enabled && sps->sps_explicit_mts_inter_enabled_flag;
+    tools->mts_implicit = sps->sps_mts_enabled_flag && !sps->sps_explicit_mts_intra_enabled_flag;
 
     if (sh->sh_dep_quant_used_flag) {
         ctudec->residual_coding_l = residual_coding_dpq;
@@ -117,7 +118,7 @@ init_coding_coeff_coding_ctx(OVCTUDec *ctudec, const OVPS *prms)
         ctudec->residual_coding_isp_v = residual_coding_isp_v_sdh;
         ctudec->residual_coding_c = residual_coding_chroma_sdh;
         ctudec->residual_coding_l = residual_coding_sdh;
-        ctudec->enable_sdh = sh->sh_sign_data_hiding_used_flag;
+        tools->enable_sdh = sh->sh_sign_data_hiding_used_flag;
     }
 }
 
@@ -129,6 +130,7 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
     VVCQPCTX *const qp_ctx = &ctudec->qp_ctx;
+    struct ToolsInfo *tools = &ctudec->tools;
 
     /*FIXME check if not done in dec init */
     const int8_t qp_bd_offset = 6 * sps->sps_bitdepth_minus8;
@@ -140,13 +142,13 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     int8_t jcbcr_qp_offset = sh->sh_joint_cbcr_qp_offset + pps->pps_joint_cbcr_qp_offset_value;
     uint8_t cu_qp_delta_subdiv = sh->sh_slice_type == 2 ? ph->ph_cu_qp_delta_subdiv_intra_slice : ph->ph_cu_qp_delta_subdiv_inter_slice;
     uint8_t cu_qp_chroma_offset_subdiv = sh->sh_slice_type == 2 ? ph->ph_cu_chroma_qp_offset_subdiv_intra_slice : ph->ph_cu_chroma_qp_offset_subdiv_inter_slice;
-    ctudec->chroma_qp_offset_enabled = sh->sh_cu_chroma_qp_offset_enabled_flag;
-    ctudec->chroma_qp_offset_len = pps->pps_chroma_qp_offset_list_len_minus1 + 1;
+    tools->chroma_qp_offset_enabled = sh->sh_cu_chroma_qp_offset_enabled_flag;
+    tools->chroma_qp_offset_len = pps->pps_chroma_qp_offset_list_len_minus1 + 1;
 
     ctudec->slice_qp = pic_qp + sh->sh_qp_delta;
 
-    ctudec->cu_qp_delta_subdiv = cu_qp_delta_subdiv;
-    ctudec->cu_qp_chroma_offset_subdiv = cu_qp_chroma_offset_subdiv;
+    tools->cu_qp_delta_subdiv = cu_qp_delta_subdiv;
+    tools->cu_qp_chroma_offset_subdiv = cu_qp_chroma_offset_subdiv;
     /* FIXME
      * check tables are valid when same qp table for all
      */
@@ -447,6 +449,7 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int nb_ctu_w = einfo->nb_ctu_w;
     struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
+    const struct ToolsInfo *tools = &ctudec->tools;
     int ret;
 
     ctudec->drv_ctx.inter_ctx.tmvp_avail = 0;
@@ -479,7 +482,7 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     ctudec->rcn_funcs.lmcs_reshape_backward(out_pic, stride_out_pic, ctudec->lmcs_info.luts,
                                                     1 << log2_ctb_s, 1 << log2_ctb_s);
 
-    if (!ctudec->dbf_disable) {
+    if (!tools->dbf_disable) {
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
         uint8_t is_last_y = einfo->nb_ctu_h == (ctb_addr_rs / nb_ctu_w) + 1;
         #if 1
@@ -499,6 +502,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
     int nb_ctu_w = einfo->nb_ctu_w;
+    const struct ToolsInfo *tools = &ctudec->tools;
     int ret;
 
     ctudec->drv_ctx.inter_ctx.tmvp_avail = 0;
@@ -531,7 +535,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     ctudec->rcn_funcs.lmcs_reshape_backward(out_pic, stride_out_pic, ctudec->lmcs_info.luts,
                                                     ctu_w, ctu_h);
 
-    if (!ctudec->dbf_disable) {
+    if (!tools->dbf_disable) {
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
         uint8_t is_last_y = einfo->nb_ctu_h == (ctb_addr_rs / nb_ctu_w) + 1;
         ctudec->rcn_funcs.df.rcn_dbf_truncated_ctu(rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
@@ -553,6 +557,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
     uint16_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
     const uint8_t slice_type = sldec->slice_type;
+    const struct ToolsInfo *tools = &ctudec->tools;
     int ctb_x = 0;
     int ret;
     uint8_t backup_qp = ctudec->drv_ctx.qp_map_x[0];
@@ -596,11 +601,11 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         if (slice_type != SLICE_I) {
             store_inter_maps(drv_lines, ctudec, ctb_x, 0);
         }
-        if (ctudec->ibc_enabled) {
+        if (tools->ibc_enabled) {
             store_ibc_maps(drv_lines, ctudec, ctb_x, 0);
         }
 
-        if (!ctudec->dbf_disable) {
+        if (!tools->dbf_disable) {
             const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
             dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
@@ -638,7 +643,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
                                    ctu_w, ctu_h);
     }
 
-    if (!ctudec->dbf_disable) {
+    if (!tools->dbf_disable) {
         const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
         struct DBFInfo *const dbf_info = &ctudec->dbf_info;
         dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
@@ -648,7 +653,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         store_inter_maps(drv_lines, ctudec, ctb_x, 1);
     }
 
-    if (ctudec->ibc_enabled) {
+    if (tools->ibc_enabled) {
         store_ibc_maps(drv_lines, ctudec, ctb_x, 1);
     }
     
@@ -709,6 +714,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     uint16_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
     int nb_ctu_w = einfo->nb_ctu_w;
     uint8_t slice_type = sldec->slice_type;
+    const struct ToolsInfo *tools = &ctudec->tools;
     int ctb_x = 0;
 
     ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx, log2_ctb_s, 0);
@@ -732,7 +738,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
             store_inter_maps(drv_lines, ctudec, ctb_x, 0);
         }
 
-        if (ctudec->ibc_enabled) {
+        if (tools->ibc_enabled) {
             store_ibc_maps(drv_lines, ctudec, ctb_x, 0);
         }
 
@@ -745,7 +751,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         ctudec->rcn_funcs.rcn_update_frame_buff(rcn_ctx, log2_ctb_s);
 
-        if (!ctudec->dbf_disable) {
+        if (!tools->dbf_disable) {
             const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
             dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
@@ -771,7 +777,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         store_inter_maps(drv_lines, ctudec, ctb_x, 1);
     }
 
-    if (ctudec->ibc_enabled) {
+    if (tools->ibc_enabled) {
         store_ibc_maps(drv_lines, ctudec, ctb_x, 1);
     }
 
@@ -876,10 +882,11 @@ static void
 slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc)
 {
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    ctudec->smvd_enabled = 0;
+    struct ToolsInfo *tools = &ctudec->tools;
+    tools->smvd_enabled = 0;
 
     if (prms->sps->sps_smvd_enabled_flag && !inter_ctx->tmvp_ctx.ldc
-        && !ctudec->mvd1_zero_enabled) {
+        && !tools->mvd1_zero_enabled) {
         const int nb_active_ref0 = inter_ctx->nb_active_ref0;
         const int nb_active_ref1 = inter_ctx->nb_active_ref1;
         int ref = 0;
@@ -942,7 +949,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
         if (forw_poc < cur_poc && back_poc > cur_poc) {
             inter_ctx->ref_smvd_idx0 = ref_idx0;
             inter_ctx->ref_smvd_idx1 = ref_idx1;
-            ctudec->smvd_enabled = 1;
+            tools->smvd_enabled = 1;
         }
     }
 }
@@ -1226,10 +1233,11 @@ static void
 init_affine_status(OVCTUDec *const ctudec, const OVSPS *const sps,
                    const OVPH *const ph)
 {
-    ctudec->affine_nb_merge_cand = 5 - sps->sps_five_minus_max_num_subblock_merge_cand;
-    ctudec->affine_status  = sps->sps_affine_amvr_enabled_flag;
-    ctudec->affine_status |= sps->sps_6param_affine_enabled_flag << 1;
-    ctudec->affine_status |= sps->sps_affine_prof_enabled_flag << 2;
+    struct ToolsInfo *tools = &ctudec->tools;
+    tools->affine_nb_merge_cand = 5 - sps->sps_five_minus_max_num_subblock_merge_cand;
+    tools->affine_status  = sps->sps_affine_amvr_enabled_flag;
+    tools->affine_status |= sps->sps_6param_affine_enabled_flag << 1;
+    tools->affine_status |= sps->sps_affine_prof_enabled_flag << 2;
     ctudec->drv_ctx.inter_ctx.affine_6params_enabled = sps->sps_6param_affine_enabled_flag;
 }
 
@@ -1253,39 +1261,40 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     const OVPPS *const pps = prms->pps;
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
+    struct ToolsInfo *tools = &ctudec->tools;
 
-    ctudec->max_log2_transform_skip_size = sps->sps_log2_transform_skip_max_size_minus2 + 2;
+    tools->max_log2_transform_skip_size = sps->sps_log2_transform_skip_max_size_minus2 + 2;
 
     /* FIXME dissociate SPS and SH/PH specific overrides to avoid  always resetting*/
-    ctudec->enabled_mip   = sps->sps_mip_enabled_flag;
-    ctudec->jcbcr_enabled = sps->sps_joint_cbcr_enabled_flag;
-    ctudec->enable_lfnst  = sps->sps_lfnst_enabled_flag;
-    ctudec->isp_enabled   = sps->sps_isp_enabled_flag;
-    ctudec->enable_mrl    = sps->sps_mrl_enabled_flag;
+    tools->enabled_mip   = sps->sps_mip_enabled_flag;
+    tools->jcbcr_enabled = sps->sps_joint_cbcr_enabled_flag;
+    tools->enable_lfnst  = sps->sps_lfnst_enabled_flag;
+    tools->isp_enabled   = sps->sps_isp_enabled_flag;
+    tools->enable_mrl    = sps->sps_mrl_enabled_flag;
     ctudec->bitdepth_minus8  = sps->sps_bitdepth_minus8;
-    ctudec->bdpcm_enabled  = sps->sps_bdpcm_enabled_flag;
+    tools->bdpcm_enabled  = sps->sps_bdpcm_enabled_flag;
 
-    ctudec->transform_skip_enabled   = sps->sps_transform_skip_enabled_flag;
-    ctudec->sh_ts_disabled   = sh->sh_ts_residual_coding_disabled_flag;
-    ctudec->max_num_merge_candidates = 6 - sps->sps_six_minus_max_num_merge_cand;
+    tools->transform_skip_enabled   = sps->sps_transform_skip_enabled_flag;
+    tools->sh_ts_disabled   = sh->sh_ts_residual_coding_disabled_flag;
+    tools->max_num_merge_candidates = 6 - sps->sps_six_minus_max_num_merge_cand;
     ctudec->drv_ctx.inter_ctx.log2_parallel_merge_level = sps->sps_log2_parallel_merge_level_minus2 + 2;
 
-    ctudec->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
-    ctudec->sbt_enabled      = sps->sps_sbt_enabled_flag;
-    ctudec->affine_enabled   = sps->sps_affine_enabled_flag;
+    tools->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
+    tools->sbt_enabled      = sps->sps_sbt_enabled_flag;
+    tools->affine_enabled   = sps->sps_affine_enabled_flag;
     ctudec->drv_ctx.inter_ctx.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
-    ctudec->sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
-    ctudec->ibc_enabled = sps->sps_ibc_enabled_flag;
-    ctudec->nb_ibc_cand_min1 = 6 - sps->sps_six_minus_max_num_ibc_merge_cand;
+    tools->sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
+    tools->ibc_enabled = sps->sps_ibc_enabled_flag;
+    tools->nb_ibc_cand_min1 = 6 - sps->sps_six_minus_max_num_ibc_merge_cand;
     ctudec->drv_ctx.ibc_ctx.bs1_map = &ctudec->dbf_info.bs1_map;
     ctudec->dbf_info.ibc_ctx = &ctudec->drv_ctx.ibc_ctx;
 
-    if (ctudec->affine_enabled || sps->sps_sbtmvp_enabled_flag) {
+    if (tools->affine_enabled || sps->sps_sbtmvp_enabled_flag) {
         init_affine_status(ctudec, sps, ph);
     }
 
 #if 1
-    ctudec->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
+    tools->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
                           ph->ph_deblocking_filter_disabled_flag |
                           pps->pps_deblocking_filter_disabled_flag;
                           #else
@@ -1335,7 +1344,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
         }
     }
 
-    ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
+    tools->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
 
     ctudec->drv_ctx.inter_ctx.prof_enabled = sps->sps_affine_prof_enabled_flag  && !ph->ph_prof_disabled_flag;
     ctudec->drv_ctx.inter_ctx.bdof_enabled = sps->sps_bdof_enabled_flag && (!ph->ph_bdof_disabled_flag);
@@ -1355,41 +1364,41 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     ctudec->drv_ctx.inter_ctx.mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
     ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
-    ctudec->mvd1_zero_enabled = ph->ph_mvd_l1_zero_flag;
+    tools->mvd1_zero_enabled = ph->ph_mvd_l1_zero_flag;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag ||
                                                     sh->sh_collocated_from_l0_flag ||
                                                     sh->sh_slice_type == SLICE_P;
 
-    ctudec->ciip_enabled = sps->sps_ciip_enabled_flag;
-    ctudec->mmvd_enabled = sps->sps_mmvd_enabled_flag;
-    ctudec->gpm_enabled  = sps->sps_gpm_enabled_flag;
+    tools->ciip_enabled = sps->sps_ciip_enabled_flag;
+    tools->mmvd_enabled = sps->sps_mmvd_enabled_flag;
+    tools->gpm_enabled  = sps->sps_gpm_enabled_flag;
 
     if (sps->sps_gpm_enabled_flag) {
-        if (ctudec->max_num_merge_candidates >= 3) {
-            ctudec->max_gpm_cand = ctudec->max_num_merge_candidates
+        if (tools->max_num_merge_candidates >= 3) {
+            tools->max_gpm_cand = tools->max_num_merge_candidates
                 - sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
-        } else if (ctudec->max_num_merge_candidates == 2) {
-            ctudec->max_gpm_cand = 2;
+        } else if (tools->max_num_merge_candidates == 2) {
+            tools->max_gpm_cand = 2;
         } else {
-            ctudec->max_gpm_cand = 0;
+            tools->max_gpm_cand = 0;
         }
     }
 
-    ctudec->bcw_enabled = !sps->sps_weighted_pred_flag && sps->sps_bcw_enabled_flag;
-    ctudec->amvr_enabled = sps->sps_amvr_enabled_flag;
-    ctudec->affine_amvr_enabled = sps->sps_affine_amvr_enabled_flag;
+    tools->bcw_enabled = !sps->sps_weighted_pred_flag && sps->sps_bcw_enabled_flag;
+    tools->amvr_enabled = sps->sps_amvr_enabled_flag;
+    tools->affine_amvr_enabled = sps->sps_affine_amvr_enabled_flag;
 
-    rcn_init_functions(&ctudec->rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled,
+    rcn_init_functions(&ctudec->rcn_funcs, ict_type(ph), tools->lm_chroma_enabled,
                         sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag,
                         sps->sps_bitdepth_minus8 + 8, sh->sh_dep_quant_used_flag);
 
     //In loop filter information for CTU reconstruction
     ctudec_init_in_loop_filters(ctudec, prms);
     ctudec->tmp_slice_type = sh->sh_slice_type;
-    ctudec->scaling_list_enabled = ph->ph_explicit_scaling_list_enabled_flag || sh->sh_explicit_scaling_list_used_flag;
-    ctudec->lfnst_scaling_list_enabled = ctudec->scaling_list_enabled && !sps->sps_scaling_matrix_for_lfnst_disabled_flag;
+    tools->scaling_list_enabled = ph->ph_explicit_scaling_list_enabled_flag || sh->sh_explicit_scaling_list_used_flag;
+    tools->lfnst_scaling_list_enabled = tools->scaling_list_enabled && !sps->sps_scaling_matrix_for_lfnst_disabled_flag;
 
-    if (ctudec->scaling_list_enabled) {
+    if (tools->scaling_list_enabled) {
         uint8_t aps_id = ph->ph_scaling_list_aps_id;
 
         const OVAPS *aps = prms->aps_scaling_list;

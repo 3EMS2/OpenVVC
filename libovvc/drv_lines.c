@@ -403,7 +403,7 @@ store_inter_maps(const struct DRVLines *const l,
     memcpy(&mv0[1], &lns->mv0[(ctb_x + 1) * nb_units_ctb], sizeof(OVMV) * (nb_units_ctb + 1));
     memcpy(&mv1[1], &lns->mv1[(ctb_x + 1) * nb_units_ctb], sizeof(OVMV) * (nb_units_ctb + 1));
 
-    if (ctudec->affine_enabled) {
+    if (ctudec->tools.affine_enabled) {
         memcpy(&aff_info[1], &lns->aff_info[(ctb_x + 1) * nb_units_ctb], sizeof(struct AffineInfo) * (nb_units_ctb + 1));
         rotate_affine_cp(&aff_info[1 + nb_units_ctb * 34], &lns->aff_info[ctb_x * nb_units_ctb],
                          lst_row_aff >> 1, mv0, mv1, nb_units_ctb);
@@ -881,7 +881,7 @@ load_first_ctu_inter(const struct DRVLines *const l,
     /* Copy upper MVs from line buffer */
     memcpy(&mv_ctx0->mvs[1], &lns->mv0[0], sizeof(OVMV) * (nb_unit_ctb + 1));
     memcpy(&mv_ctx1->mvs[1], &lns->mv1[0], sizeof(OVMV) * (nb_unit_ctb + 1));
-    if (ctudec->affine_enabled)
+    if (ctudec->tools.affine_enabled)
     memcpy(&aff_info[1], &lns->aff_info[0], sizeof(struct AffineInfo) * (nb_unit_ctb + 1));
 
     /* Reset HMVP Look Up table */
@@ -954,7 +954,7 @@ drv_line_next_line(OVCTUDec *const ctudec, const struct DRVLines *const lns)
 
     load_first_ctu_inter(lns, ctudec, 0);
 
-    if (ctudec->ibc_enabled)
+    if (ctudec->tools.ibc_enabled)
         load_first_ctu_ibc(lns, ctudec, 0);
 
     memset(intra_info->luma_mode_y, 0, sizeof(*intra_info->luma_mode_y) * nb_pb_ctb_w);
