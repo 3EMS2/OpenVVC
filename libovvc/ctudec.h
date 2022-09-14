@@ -182,27 +182,12 @@ struct DBFInfo
 
 struct SAOInfo
 {
-    /* FIXME move flags to ctudec */
-    uint8_t sao_luma_flag;
-    uint8_t sao_chroma_flag;
-    /* FIXME remove */
-    uint8_t chroma_format_idc;
-
     /*array of SAO parameters structure for each ctu */ 
     SAOParamsCtu *sao_params;
 };
 
 struct ALFInfo
 {
-    /* FIXME move flags to ctu dec */
-    uint8_t alf_luma_enabled_flag;
-    uint8_t alf_cb_enabled_flag;
-    uint8_t alf_cr_enabled_flag;
-    uint8_t cc_alf_cb_enabled_flag;
-    uint8_t cc_alf_cr_enabled_flag;
-
-    uint8_t num_alf_aps_ids_luma;
-
     const struct OVALFData* aps_alf_data[8];
     const struct OVALFData* aps_alf_data_c;
     const struct OVALFData* aps_cc_alf_data_cb;
@@ -623,6 +608,18 @@ struct ToolsInfo
     uint8_t nb_ibc_cand_min1;
     uint8_t scaling_list_enabled;
     uint8_t lfnst_scaling_list_enabled;
+
+    uint8_t sao_luma_flag;
+    uint8_t sao_chroma_flag;
+
+    uint8_t alf_luma_enabled_flag;
+    uint8_t alf_cb_enabled_flag;
+    uint8_t alf_cr_enabled_flag;
+    uint8_t cc_alf_cb_enabled_flag;
+    uint8_t cc_alf_cr_enabled_flag;
+
+    uint8_t num_alf_aps_ids_luma;
+
 
     uint8_t dbf_disable;
 };

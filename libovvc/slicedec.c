@@ -1312,6 +1312,16 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     tools->affine_amvr_enabled = sps->sps_affine_amvr_enabled_flag;
     tools->scaling_list_enabled = ph->ph_explicit_scaling_list_enabled_flag || sh->sh_explicit_scaling_list_used_flag;
     tools->lfnst_scaling_list_enabled = tools->scaling_list_enabled && !sps->sps_scaling_matrix_for_lfnst_disabled_flag;
+    tools->sao_luma_flag   =  sh->sh_sao_luma_used_flag;
+    tools->sao_chroma_flag =  sh->sh_sao_chroma_used_flag;
+
+    tools->alf_luma_enabled_flag = sh->sh_alf_enabled_flag;
+    tools->alf_cb_enabled_flag = sh->sh_alf_cb_enabled_flag;
+    tools->alf_cr_enabled_flag = sh->sh_alf_cr_enabled_flag;
+    tools->cc_alf_cb_enabled_flag = sh->sh_alf_cc_cb_enabled_flag;
+    tools->cc_alf_cr_enabled_flag = sh->sh_alf_cc_cr_enabled_flag;
+
+    tools->num_alf_aps_ids_luma  = sh->sh_num_alf_aps_ids_luma;
 
 #if 1
     tools->dbf_disable = sh->sh_deblocking_filter_disabled_flag |

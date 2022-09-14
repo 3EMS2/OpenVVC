@@ -466,7 +466,7 @@ init_row_line(struct OVFilterBuffers* fb, const OVFrame *f, int32_t y, int32_t x
 static void
 rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
-    uint8_t sao_enabled = (!!ctudec->sao_info.sao_luma_flag) << 1 | (!!ctudec->sao_info.sao_chroma_flag);
+    uint8_t sao_enabled = (!!ctudec->tools.sao_luma_flag) << 1 | (!!ctudec->tools.sao_chroma_flag);
     if (!sao_enabled){
         return;
     }
@@ -544,8 +544,8 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 static void
 rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
-    uint8_t sao_enabled = (!!ctudec->sao_info.sao_luma_flag) << 1 | (!!ctudec->sao_info.sao_chroma_flag);
-    if (!sao_enabled){
+    uint8_t sao_enabled = (!!ctudec->tools.sao_luma_flag) << 1 | (!!ctudec->tools.sao_chroma_flag);
+    if (!sao_enabled) {
         return;
     }
 

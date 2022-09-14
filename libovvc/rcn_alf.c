@@ -266,7 +266,7 @@ rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_
 {
     if (luma_flag) {
         rcn_alf_init_fixed_filter_sets(alf);
-        for (int i = 0; i < ctudec->alf_info.num_alf_aps_ids_luma; i++) {
+        for (int i = 0; i < ctudec->tools.num_alf_aps_ids_luma; i++) {
             const struct OVALFData* alf_data = ctudec->alf_info.aps_alf_data[i];
 
             alf_init_filter_l(alf, alf_data, alf->filter_coeff_dec[NUM_FIXED_FILTER_SETS + i], 
@@ -1480,7 +1480,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 {
     struct ALFInfo* alf_info = &ctudec->alf_info;
     struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
-    if (!alf_info->alf_luma_enabled_flag && !alf_info->alf_cb_enabled_flag && !alf_info->alf_cr_enabled_flag) {
+    const struct ToolsInfo *tools = &ctudec->tools;
+    if (!tools->alf_luma_enabled_flag && !tools->alf_cb_enabled_flag && !tools->alf_cr_enabled_flag) {
         return;
     }
 

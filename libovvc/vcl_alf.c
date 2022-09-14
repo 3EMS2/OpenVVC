@@ -71,10 +71,12 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
 {
     uint8_t alf_flags = 0;
 
+    const struct ToolsInfo *tools = &ctudec->tools;
+
     struct ALFInfo* alf_info  = &ctudec->alf_info;
-    uint8_t alf_luma_enabled = alf_info->alf_luma_enabled_flag;
-    uint8_t alf_cb_enabled   = alf_info->alf_cb_enabled_flag;
-    uint8_t alf_cr_enabled   = alf_info->alf_cr_enabled_flag;
+    uint8_t alf_luma_enabled = tools->alf_luma_enabled_flag;
+    uint8_t alf_cb_enabled   = tools->alf_cb_enabled_flag;
+    uint8_t alf_cr_enabled   = tools->alf_cr_enabled_flag;
 
     if(!(alf_luma_enabled || alf_cb_enabled || alf_cr_enabled))
         return;
@@ -91,7 +93,7 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
     const uint8_t ctb_alf_abv = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_alf_flag_line[ctb_col] : 0;
     const uint8_t ctb_alf_lft = alf_info->left_ctb_alf_flag;
 
-    uint8_t tile_group_num_aps  = alf_info->num_alf_aps_ids_luma;
+    uint8_t tile_group_num_aps  = tools->num_alf_aps_ids_luma;
 
     if (alf_luma_enabled) {
         uint8_t ctx  = ctu_ngh_ctx & CTU_LFT_FLG && (ctb_alf_lft & 4);
@@ -166,8 +168,9 @@ void
 ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu_w)
 {
     struct ALFInfo* alf_info = &ctudec->alf_info;
-    uint8_t ccalf_enabled_cb = alf_info->cc_alf_cb_enabled_flag;
-    uint8_t ccalf_enabled_cr = alf_info->cc_alf_cr_enabled_flag;
+    const struct ToolsInfo *tools = &ctudec->tools;
+    uint8_t ccalf_enabled_cb = tools->cc_alf_cb_enabled_flag;
+    uint8_t ccalf_enabled_cr = tools->cc_alf_cr_enabled_flag;
 
     OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;

@@ -155,8 +155,8 @@ void
 ovcabac_read_ae_sao_ctu(OVCTUDec *const ctudec, int ctb_rs, uint16_t nb_ctu_w)
 {   
     SAOParamsCtu* sao_ctu = &ctudec->sao_info.sao_params[ctb_rs];
-    uint8_t sao_enabled_l = ctudec->sao_info.sao_luma_flag;
-    uint8_t sao_enabled_c = ctudec->sao_info.sao_chroma_flag;
+    uint8_t sao_enabled_l = ctudec->tools.sao_luma_flag;
+    uint8_t sao_enabled_c = ctudec->tools.sao_chroma_flag;
 
     if (sao_enabled_l | sao_enabled_c) {
         OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
