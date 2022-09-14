@@ -127,7 +127,7 @@ static const int8_t fixed_filter_coeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_CO
     { 1,  -1,  12, -15,  -7,  -2,   3,   6,   6,  -1,   7,  30,  0 },
 };
 
-static const int16_t class_to_filter_mapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES] =
+static const uint8_t class_to_filter_mapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES] =
 {
     {  8,   2,   2,   2,   3,   4,  53,   9,   9,  52,   4,   4,   5,   9,   2,   8,  10,   9,   1,   3,  39,  39,  10,   9,  52 },
     { 11,  12,  13,  14,  15,  30,  11,  17,  18,  19,  16,  20,  20,   4,  53,  21,  22,  23,  14,  25,  26,  26,  27,  28,  10 },
@@ -179,11 +179,11 @@ rcn_alf_init_fixed_filter_sets(RCNALF* alf)
             for (int t = 0; t < ALF_CTB_MAX_NUM_TRANSPOSE; t++) {
                 int tmp_offset = t * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF + j * MAX_NUM_ALF_LUMA_COEFF;
                 for (int k = 0; k < MAX_NUM_ALF_LUMA_COEFF - 1; k++) {
-                    alf->filter_coeff_dec[i][tmp_offset + k] = fixed_filter_coeff[class_to_filter_mapping[i][j]][shuffle_lut[t][k]];
-                    alf->filter_clip_dec[i][tmp_offset+ k] = 1 << BITDEPTH;
+                    alf->coeff_l[i][tmp_offset + k] = fixed_filter_coeff[class_to_filter_mapping[i][j]][shuffle_lut[t][k]];
+                    alf->clip_l [i][tmp_offset + k] = 1 << BITDEPTH;
                 }
-                alf->filter_coeff_dec[i][tmp_offset + MAX_NUM_ALF_LUMA_COEFF - 1] = (1 << (NUM_BITS - 1));
-                alf->filter_clip_dec[i][tmp_offset + MAX_NUM_ALF_LUMA_COEFF - 1] = 1 << BITDEPTH;
+                alf->coeff_l[i][tmp_offset + MAX_NUM_ALF_LUMA_COEFF - 1] = (1 << (NUM_BITS - 1));
+                alf->clip_l [i][tmp_offset + MAX_NUM_ALF_LUMA_COEFF - 1] = 1 << BITDEPTH;
             }
         }
     }
@@ -198,8 +198,8 @@ alf_init_filter_l(const struct OVALFData* alf_data, int16_t *dst_coeff, int16_t 
     int nb_coeff_min1 = 13 - 1;
 
     int nb_filters = alf_data->alf_luma_num_filters_signalled_minus1 + 1;
-    int16_t* coeff = (int16_t*) alf_data->alf_luma_coeff;
-    int16_t* clip = (int16_t*) alf_data->alf_luma_clip_idx;
+    const int8_t* coeff = alf_data->alf_luma_coeff;
+    const uint8_t* clip = alf_data->alf_luma_clip_idx;
 
     for (int class_idx = 0; class_idx < MAX_NUM_ALF_CLASSES; class_idx++) {
         int filter_idx = alf_data->alf_luma_coeff_delta_idx[class_idx];
@@ -233,15 +233,15 @@ alf_init_filter_c(RCNALF* alf, const struct OVALFData* alf_data)
     const int nb_alternatives = alf_data->alf_chroma_num_alt_filters_minus1 + 1;
 
     for (int alt_idx = 0; alt_idx < nb_alternatives; ++alt_idx) {
-        int16_t *coeff = (int16_t*) alf_data->alf_chroma_coeff[alt_idx];
-        int16_t *clip  = (int16_t*) alf_data->alf_chroma_clip_idx[alt_idx];
+        const int8_t *coeff = alf_data->alf_chroma_coeff[alt_idx];
+        const uint8_t *clip  = alf_data->alf_chroma_clip_idx[alt_idx];
         for (int coeff_idx = 0; coeff_idx < nb_coeffs_min1; ++coeff_idx) {
             int clip_idx = alf_data->alf_chroma_clip_flag ? clip[coeff_idx] : 0;
-            alf->chroma_coeff_final[alt_idx][coeff_idx] = coeff[coeff_idx];
-            alf->chroma_clip_final[alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
+            alf->coeff_c[alt_idx][coeff_idx] = coeff[coeff_idx];
+            alf->clip_c [alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
         }
-        alf->chroma_coeff_final[alt_idx][nb_coeffs_min1] = 1 << (NUM_BITS - 1);
-        alf->chroma_clip_final[alt_idx][nb_coeffs_min1] = 1 << BITDEPTH;
+        alf->coeff_c[alt_idx][nb_coeffs_min1] = 1 << (NUM_BITS - 1);
+        alf->clip_c [alt_idx][nb_coeffs_min1] = 1 << BITDEPTH;
     }
 }
 
@@ -253,8 +253,8 @@ rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_
         for (int i = 0; i < ctudec->tools.num_alf_aps_ids_luma; i++) {
             const struct OVALFData* alf_data = ctudec->alf_info.aps_alf_data[i];
 
-            alf_init_filter_l(alf_data, alf->filter_coeff_dec[NUM_FIXED_FILTER_SETS + i],
-                              alf->filter_clip_dec[NUM_FIXED_FILTER_SETS + i]);
+            alf_init_filter_l(alf_data, alf->coeff_l[NUM_FIXED_FILTER_SETS + i],
+                              alf->clip_l[NUM_FIXED_FILTER_SETS + i]);
         }
     }
 
@@ -1529,8 +1529,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                                           class_idx, transpose_idx);
 
             int16_t filter_idx = alf_params_ctu->ctb_alf_idx;
-            int16_t *coeff = alf->filter_coeff_dec[filter_idx];
-            int16_t *clip  = alf->filter_clip_dec [filter_idx];
+            int16_t *coeff = alf->coeff_l[filter_idx];
+            int16_t *clip  = alf->clip_l [filter_idx];
 
             int virbnd_pos = (y_pos_pic + ctu_s > pic_h) ? pic_h
                                                          : ctu_h - ALF_VB_POS_ABOVE_CTUROW_LUMA;
@@ -1571,8 +1571,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
                 ctudec->rcn_funcs.alf.chroma[req_vb](dst_chroma, src_chroma,
                                                      stride_dst, stride_src, blk_dst,
-                                                     alf->chroma_coeff_final[alt_num],
-                                                     alf->chroma_clip_final[alt_num],
+                                                     alf->coeff_c[alt_num],
+                                                     alf->clip_c[alt_num],
                                                      ctu_s >> 1,
                                                      virbnd_pos >> 1);
             }
@@ -1604,8 +1604,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
                 ctudec->rcn_funcs.alf.chroma[req_vb](dst_chroma, src_chroma,
                                                      stride_dst, stride_src, blk_dst,
-                                                     alf->chroma_coeff_final[alt_num],
-                                                     alf->chroma_clip_final[alt_num],
+                                                     alf->coeff_c[alt_num],
+                                                     alf->clip_c[alt_num],
                                                      ctu_s >> 1,
                                                      virbnd_pos >> 1);
             }
