@@ -1271,35 +1271,57 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     tools->enable_lfnst  = sps->sps_lfnst_enabled_flag;
     tools->isp_enabled   = sps->sps_isp_enabled_flag;
     tools->enable_mrl    = sps->sps_mrl_enabled_flag;
-    ctudec->bitdepth_minus8  = sps->sps_bitdepth_minus8;
     tools->bdpcm_enabled  = sps->sps_bdpcm_enabled_flag;
 
     tools->transform_skip_enabled   = sps->sps_transform_skip_enabled_flag;
     tools->sh_ts_disabled   = sh->sh_ts_residual_coding_disabled_flag;
     tools->max_num_merge_candidates = 6 - sps->sps_six_minus_max_num_merge_cand;
-    ctudec->drv_ctx.inter_ctx.log2_parallel_merge_level = sps->sps_log2_parallel_merge_level_minus2 + 2;
 
     tools->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
     tools->sbt_enabled      = sps->sps_sbt_enabled_flag;
     tools->affine_enabled   = sps->sps_affine_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
     tools->sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
     tools->ibc_enabled = sps->sps_ibc_enabled_flag;
     tools->nb_ibc_cand_min1 = 6 - sps->sps_six_minus_max_num_ibc_merge_cand;
-    ctudec->drv_ctx.ibc_ctx.bs1_map = &ctudec->dbf_info.bs1_map;
-    ctudec->dbf_info.ibc_ctx = &ctudec->drv_ctx.ibc_ctx;
+    tools->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
+
+    ctudec->bitdepth_minus8  = sps->sps_bitdepth_minus8;
 
     if (tools->affine_enabled || sps->sps_sbtmvp_enabled_flag) {
         init_affine_status(ctudec, sps, ph);
     }
 
+    tools->mvd1_zero_enabled = ph->ph_mvd_l1_zero_flag;
+    tools->ciip_enabled = sps->sps_ciip_enabled_flag;
+    tools->mmvd_enabled = sps->sps_mmvd_enabled_flag;
+    tools->gpm_enabled  = sps->sps_gpm_enabled_flag;
+
+    if (sps->sps_gpm_enabled_flag) {
+        if (tools->max_num_merge_candidates >= 3) {
+            tools->max_gpm_cand = tools->max_num_merge_candidates
+                - sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
+        } else if (tools->max_num_merge_candidates == 2) {
+            tools->max_gpm_cand = 2;
+        } else {
+            tools->max_gpm_cand = 0;
+        }
+    }
+
+    tools->bcw_enabled = !sps->sps_weighted_pred_flag && sps->sps_bcw_enabled_flag;
+    tools->amvr_enabled = sps->sps_amvr_enabled_flag;
+    tools->affine_amvr_enabled = sps->sps_affine_amvr_enabled_flag;
+    tools->scaling_list_enabled = ph->ph_explicit_scaling_list_enabled_flag || sh->sh_explicit_scaling_list_used_flag;
+    tools->lfnst_scaling_list_enabled = tools->scaling_list_enabled && !sps->sps_scaling_matrix_for_lfnst_disabled_flag;
+
 #if 1
     tools->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
                           ph->ph_deblocking_filter_disabled_flag |
                           pps->pps_deblocking_filter_disabled_flag;
-                          #else
+#else
                           ctudec->dbf_disable = 1;
 #endif
+    ctudec->dbf_info.ibc_ctx = &ctudec->drv_ctx.ibc_ctx;
+
     ctudec->dbf_info.beta_offset = pps->pps_luma_beta_offset_div2 * 2;
     ctudec->dbf_info.tc_offset   = pps->pps_luma_tc_offset_div2 * 2;
     if (pps->pps_chroma_tool_offsets_present_flag) {
@@ -1344,13 +1366,20 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
         }
     }
 
-    tools->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
-
     ctudec->drv_ctx.inter_ctx.prof_enabled = sps->sps_affine_prof_enabled_flag  && !ph->ph_prof_disabled_flag;
     ctudec->drv_ctx.inter_ctx.bdof_enabled = sps->sps_bdof_enabled_flag && (!ph->ph_bdof_disabled_flag);
     ctudec->drv_ctx.inter_ctx.bdof_enabled &= sh->sh_slice_type == SLICE_B;
     ctudec->drv_ctx.inter_ctx.dmvr_enabled = sps->sps_dmvr_enabled_flag && (!ph->ph_dmvr_disabled_flag);
     ctudec->drv_ctx.inter_ctx.dmvr_enabled &= sh->sh_slice_type == SLICE_B;
+    ctudec->drv_ctx.inter_ctx.log2_parallel_merge_level = sps->sps_log2_parallel_merge_level_minus2 + 2;
+    ctudec->drv_ctx.inter_ctx.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
+    ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag ||
+                                                    sh->sh_collocated_from_l0_flag ||
+                                                    sh->sh_slice_type == SLICE_P;
+
+    ctudec->drv_ctx.ibc_ctx.bs1_map = &ctudec->dbf_info.bs1_map;
 
     slice_init_qp_ctx(ctudec, prms);
 
@@ -1362,32 +1391,6 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     init_slice_tree_ctx(ctudec, prms);
 
-    ctudec->drv_ctx.inter_ctx.mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
-    ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
-    tools->mvd1_zero_enabled = ph->ph_mvd_l1_zero_flag;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag ||
-                                                    sh->sh_collocated_from_l0_flag ||
-                                                    sh->sh_slice_type == SLICE_P;
-
-    tools->ciip_enabled = sps->sps_ciip_enabled_flag;
-    tools->mmvd_enabled = sps->sps_mmvd_enabled_flag;
-    tools->gpm_enabled  = sps->sps_gpm_enabled_flag;
-
-    if (sps->sps_gpm_enabled_flag) {
-        if (tools->max_num_merge_candidates >= 3) {
-            tools->max_gpm_cand = tools->max_num_merge_candidates
-                - sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
-        } else if (tools->max_num_merge_candidates == 2) {
-            tools->max_gpm_cand = 2;
-        } else {
-            tools->max_gpm_cand = 0;
-        }
-    }
-
-    tools->bcw_enabled = !sps->sps_weighted_pred_flag && sps->sps_bcw_enabled_flag;
-    tools->amvr_enabled = sps->sps_amvr_enabled_flag;
-    tools->affine_amvr_enabled = sps->sps_affine_amvr_enabled_flag;
-
     rcn_init_functions(&ctudec->rcn_funcs, ict_type(ph), tools->lm_chroma_enabled,
                         sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag,
                         sps->sps_bitdepth_minus8 + 8, sh->sh_dep_quant_used_flag);
@@ -1395,9 +1398,6 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     //In loop filter information for CTU reconstruction
     ctudec_init_in_loop_filters(ctudec, prms);
     ctudec->tmp_slice_type = sh->sh_slice_type;
-    tools->scaling_list_enabled = ph->ph_explicit_scaling_list_enabled_flag || sh->sh_explicit_scaling_list_used_flag;
-    tools->lfnst_scaling_list_enabled = tools->scaling_list_enabled && !sps->sps_scaling_matrix_for_lfnst_disabled_flag;
-
     if (tools->scaling_list_enabled) {
         uint8_t aps_id = ph->ph_scaling_list_aps_id;
 
