@@ -709,7 +709,7 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
 
 
 static void
-rcn_alf_derive_classification(RCNALF *alf, OVSample *const rcn_img, const int stride,
+rcn_alf_derive_classification(OVSample *const rcn_img, const int stride,
                               Area blk, int ctu_s, int pic_h,
                               ALFClassifBlkFunc classif_func, uint8_t *class_idx, uint8_t *transpose_idx)
 {
@@ -1523,7 +1523,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                 .height = ctu_h,
             };
 
-            rcn_alf_derive_classification(alf, src_luma, stride_src, blk_dst,
+            rcn_alf_derive_classification(src_luma, stride_src, blk_dst,
                                           ctu_s, pic_h,
                                           ctudec->rcn_funcs.alf.classif,
                                           class_idx, transpose_idx);
