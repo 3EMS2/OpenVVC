@@ -206,23 +206,26 @@ ovcabac_read_ae_gpm_merge_idx(OVCABACCtx *const cabac_ctx, struct VVCGPM* gpm_ct
     gpm_ctx->split_dir = vvc_get_cabac_truncated(cabac_ctx, GEO_NUM_PARTITION_MODE);
 
     int num_cand_min2 = max_num_geo_cand  - 2;
+
     gpm_ctx->merge_idx0    = 0;
     gpm_ctx->merge_idx1    = 0;
-    if (ovcabac_ae_read(cabac_ctx, &cabac_state[MERGE_IDX_CTX_OFFSET])){
+
+    if (ovcabac_ae_read(cabac_ctx, &cabac_state[MERGE_IDX_CTX_OFFSET])) {
         int max_symbol = num_cand_min2;
-        for(int k = 0; k < max_symbol; k++ ){
-            if(!ovcabac_bypass_read(cabac_ctx)){
+        for (int k = 0; k < max_symbol; ++k) {
+            if (!ovcabac_bypass_read(cabac_ctx)) {
                 max_symbol = k;
                 break;
             }
         }
         gpm_ctx->merge_idx0 += max_symbol + 1;
     }
-    if (num_cand_min2 > 0){
-        if (ovcabac_ae_read(cabac_ctx, &cabac_state[MERGE_IDX_CTX_OFFSET])){
+
+    if (num_cand_min2 > 0) {
+        if (ovcabac_ae_read(cabac_ctx, &cabac_state[MERGE_IDX_CTX_OFFSET])) {
             int max_symbol = num_cand_min2 - 1;
-            for(int k = 0; k < max_symbol; k++ ){
-                if(!ovcabac_bypass_read(cabac_ctx)){
+            for (int k = 0; k < max_symbol; ++k) {
+                if (!ovcabac_bypass_read(cabac_ctx)) {
                     max_symbol = k;
                     break;
                 }
@@ -230,7 +233,7 @@ ovcabac_read_ae_gpm_merge_idx(OVCABACCtx *const cabac_ctx, struct VVCGPM* gpm_ct
             gpm_ctx->merge_idx1 += max_symbol + 1;
         }
     }
-    gpm_ctx->merge_idx1 += (gpm_ctx->merge_idx1 >= gpm_ctx->merge_idx0) ? 1 : 0;
+    gpm_ctx->merge_idx1 += gpm_ctx->merge_idx1 >= gpm_ctx->merge_idx0;
 }
 
 static uint8_t
@@ -2134,13 +2137,13 @@ inter_merge_data_b(OVCTUDec *const ctu_dec,
     uint8_t ciip_flag;
 
     uint8_t ciip_enabled = tools->ciip_enabled && log2_cb_w < 7 && log2_cb_h < 7
-                                                 && (log2_cb_w + log2_cb_h) >= 6;
+                                               && (log2_cb_w + log2_cb_h) >= 6;
 
     uint8_t gpm_enabled  = tools->gpm_enabled && tools->max_gpm_cand > 1
-                                                && log2_cb_w > 2 && log2_cb_h > 2
-                                                && log2_cb_w < 7 && log2_cb_h < 7
-                                                && log2_cb_w < 3 + log2_cb_h
-                                                && log2_cb_h < 3 + log2_cb_w;
+                                              && log2_cb_w > 2 && log2_cb_h > 2
+                                              && log2_cb_w < 7 && log2_cb_h < 7
+                                              && log2_cb_w < 3 + log2_cb_h
+                                              && log2_cb_h < 3 + log2_cb_w;
 
     uint8_t sb_merge_flag = 0;
     uint8_t mmvd_flag = 0;

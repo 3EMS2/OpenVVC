@@ -127,8 +127,8 @@ clip_mv_rpr(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV
 }
 
 static void
-gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* step_x, int* step_y,
-                      int16_t** weight, int cr_scale);
+gpm_weights_and_steps(uint8_t split_dir, uint8_t log2_pb_w, uint8_t log2_pb_h, int* step_x, int* step_y,
+                      uint8_t** weight, uint8_t cr_scale);
 
 static void
 rcn_inter_synchronization(const OVPicture *ref_pic, int ref_pos_x, int ref_pos_y, int pu_w, int pu_h, int log2_ctu_s)
@@ -2645,7 +2645,7 @@ mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     if (!use_bcw) {
         if (gpm_ctx) {
-            int16_t* weight;
+            uint8_t* weight;
             int step_x, step_y;
             uint8_t chroma_flag = 0;
             gpm_weights_and_steps(gpm_ctx->split_dir, log2_pb_w, log2_pb_h, &step_x, &step_y, &weight, chroma_flag);
@@ -2778,7 +2778,7 @@ mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     if (!use_bcw) {
         if (gpm_ctx) {
-            int16_t* weight;
+            uint8_t* weight;
             int step_x, step_y;
             uint8_t chroma_flag = 1;
             gpm_weights_and_steps(gpm_ctx->split_dir, log2_pb_w, log2_pb_h, &step_x, &step_y, &weight, chroma_flag);
@@ -3146,40 +3146,52 @@ static const int8_t g_angle2mask[GEO_NUM_ANGLES] =
 
 
 static void
-gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* step_x, int* step_y,
-                      int16_t** weight, int cr_scale)
+gpm_weights_and_steps(uint8_t split_dir, uint8_t log2_pb_w, uint8_t log2_pb_h, int* step_x, int* step_y,
+                      uint8_t** weight, uint8_t cr_scale)
 {
-static const int8_t g_angle2mirror[GEO_NUM_ANGLES] =
+    /* Note 3 is for invalid angle */
+    static const int8_t g_angle2mirror[GEO_NUM_ANGLES] =
     {
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 1, 1, 1, 2, 2, 2,
+        0, 3, 0, 0, 0, 0, 3, 3,
+        0, 3, 3, 1, 1, 2, 2, 3,
 
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 1, 1, 2, 2, 2, 2
+        0, 3, 0, 0, 0, 0, 3, 3,
+        0, 3, 3, 1, 2, 2, 2, 3
     };
-    int16_t angle = g_GeoParams[split_dir][0];
-    int16_t wIdx = log2_pb_w_l - GEO_MIN_CU_LOG2;
-    int16_t hIdx = log2_pb_h_l - GEO_MIN_CU_LOG2;
-    *step_x = 1 << cr_scale;
-    *step_y = 0;
 
-    if (g_angle2mirror[angle] == 2) {
-        int weight_offset = (GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][1])
-            * GEO_WEIGHT_MASK_SIZE
-            + g_weightOffset[split_dir][hIdx][wIdx][0];
+    uint8_t angle = g_GeoParams[split_dir][0];
+    uint8_t type = g_angle2mirror[angle];
 
-        *step_y = -(int)((GEO_WEIGHT_MASK_SIZE << cr_scale) + (1 << log2_pb_w_l));
-        *weight = &g_globalGeoWeights[g_angle2mask[angle]][weight_offset];
-    } else if (g_angle2mirror[angle] == 1) {
-        int weight_offset = g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + (GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][0]);
-        *step_x = -1u << cr_scale;
-        *step_y = (GEO_WEIGHT_MASK_SIZE << cr_scale) + (1 << log2_pb_w_l);
-        *weight = &g_globalGeoWeights[g_angle2mask[angle]][weight_offset];
+    uint8_t idx_w = log2_pb_w - GEO_MIN_CU_LOG2;
+    uint8_t idx_h = log2_pb_h - GEO_MIN_CU_LOG2;
+
+    int16_t stride = GEO_WEIGHT_MASK_SIZE;
+    int16_t stride_min1 = GEO_WEIGHT_MASK_SIZE - 1;
+
+    int8_t offset_x = g_weightOffset_x[split_dir][idx_h][idx_w];
+    int8_t offset_y = g_weightOffset_y[split_dir][idx_h][idx_w];
+
+    int weight_offset;
+
+    if (type == 2) {
+        weight_offset = (stride_min1 - offset_y) * stride + offset_x;
+
+        *step_x = 1 << cr_scale;
+        *step_y = -((stride << cr_scale) + (1 << log2_pb_w));
+
+    } else if (type == 1) {
+        weight_offset = offset_y * stride + (stride_min1 - offset_x);
+
+        *step_x = -(1 << cr_scale);
+        *step_y = (stride << cr_scale) + (1 << log2_pb_w);
+
     } else {
-        int weight_offset = g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0];
-        *step_y = (GEO_WEIGHT_MASK_SIZE << cr_scale) - (1 << log2_pb_w_l);
-        *weight = &g_globalGeoWeights[g_angle2mask[angle]][weight_offset];
+        weight_offset = offset_y * stride + offset_x;
+        *step_x = 1 << cr_scale;
+        *step_y = (stride << cr_scale) - (1 << log2_pb_w);
     }
+
+    *weight = &g_globalGeoWeights[g_angle2mask[angle]][weight_offset];
 }
 
 

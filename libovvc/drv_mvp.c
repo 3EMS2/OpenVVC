@@ -1512,24 +1512,18 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
 
     uint8_t inter_dir = inter_dir0 | inter_dir1;
 
-    /* FIXME can probably be simplified
-     * check usage from loop
-     */
-    if (inter_dir == 0x1) {
-        mv_info.mv0 = mv_info1.mv0;
-    } else if (inter_dir == 0x2) {
-        mv_info.mv1 = mv_info1.mv1;
+    if (inter_dir0 == 1 && inter_dir1 == 2) {
+        mv_info.mv0     = mv_info0.mv0;
+        mv_info.mv1     = mv_info1.mv1;
+    } else if (inter_dir0 == 2 && inter_dir1 == 1) {
+        mv_info.mv0     = mv_info1.mv0;
+        mv_info.mv1     = mv_info0.mv1;
     } else {
-        if (inter_dir0 == 1 && inter_dir1 == 2) {
-            mv_info.mv0     = mv_info0.mv0;
-            mv_info.mv1     = mv_info1.mv1;
-        } else if (inter_dir0 == 2 && inter_dir1 == 1) {
-            mv_info.mv0     = mv_info1.mv0;
-            mv_info.mv1     = mv_info0.mv1;
-        }
+        mv_info = mv_info1;
     }
 
     mv_info.inter_dir = inter_dir;
+
     mv_info0.inter_dir = inter_dir0;
     mv_info1.inter_dir = inter_dir1;
 
@@ -1537,7 +1531,6 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
 
     int16_t angle = g_GeoParams[split_dir][0];
 
-    int d_idx = g_GeoParams[split_dir][1];
 
     int x_dis = g_Dis[angle];
     int y_dis = g_Dis[(angle + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES];
@@ -1545,15 +1538,17 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
     uint8_t flip = angle >= 13 && angle <= 27;
 
     /* FIXME use absolute coordinates instead */
-    int offset_x = (-(int)nb_pb_w * 4) >> 1;
-    int offset_y = (-(int)nb_pb_h * 4) >> 1;
+    int offset_x = -nb_pb_w * 2;
+    int offset_y = -nb_pb_h * 2;
 
-    if (d_idx > 0) {
-        if ((angle & 0xF) == 8 || ((angle & 0xF) && nb_pb_h >= nb_pb_w)) {
-            offset_y += angle < 16 ? ((d_idx * nb_pb_h) >> 1) : -(int)((d_idx * nb_pb_h) >> 1);
-        } else {
-            offset_x += angle < 16 ? ((d_idx * nb_pb_w) >> 1) : -(int)((d_idx * nb_pb_w) >> 1);
-        }
+    int d_idx = g_GeoParams[split_dir][1];
+    uint8_t neg_angle = angle < 16;
+    if ((angle & 0xF) == 8 || ((angle & 0xF) && nb_pb_h >= nb_pb_w)) {
+        int offset_abs = (d_idx * nb_pb_h) >> 1;
+        offset_y += neg_angle ? offset_abs : -offset_abs;
+    } else {
+        int offset_abs = (d_idx * nb_pb_w) >> 1;
+        offset_x += neg_angle ? offset_abs : -offset_abs;
     }
 
     for (int y = 0; y < nb_pb_h; y++) {
@@ -1968,13 +1963,9 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                                      nb_pb_w, nb_pb_h, gpm_ctx->merge_idx0,
                                      max_nb_cand, is_small);
 
-    if (gpm_ctx->merge_idx0 != gpm_ctx->merge_idx1) { 
-        mv_info1 = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
-                                         nb_pb_w, nb_pb_h, gpm_ctx->merge_idx1,
-                                         max_nb_cand, is_small);
-    } else{
-        mv_info1 = mv_info0;
-    }
+    mv_info1 = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
+                                      nb_pb_w, nb_pb_h, gpm_ctx->merge_idx1,
+                                      max_nb_cand, is_small);
 
     mv_info0.mv0.bcw_idx_plus1 = 0;
     mv_info0.mv1.bcw_idx_plus1 = 0;
@@ -2007,7 +1998,7 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     }  
 
     update_gpm_mv_ctx(inter_ctx, gpm_ctx->mv0, gpm_ctx->mv1, mv_info0, mv_info1, pb_x, pb_y,
-                    nb_pb_w, nb_pb_h, gpm_ctx->inter_dir0, gpm_ctx->inter_dir1);
+                      nb_pb_w, nb_pb_h, gpm_ctx->inter_dir0, gpm_ctx->inter_dir1);
 }
 
 VVCMergeInfo

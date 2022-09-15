@@ -271,7 +271,7 @@ struct MCFunctions{
 
     void (*gpm_weighted)(OVSample* _dst, int _dststride, const int16_t* _src0,
                   int srcstride0, const int16_t* _src1, int srcstride1, int height,
-                  int width, int step_x, int step_y, int16_t* weight);
+                  int width, int step_x, int step_y, uint8_t* weight);
 };
 
 struct CCLMFunctions

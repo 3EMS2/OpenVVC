@@ -1846,8 +1846,8 @@ put_weighted_ciip_pixels(OVSample* dst, int dststride,
 
 static void
 put_weighted_gpm_bi_pixels(OVSample* _dst, int _dststride, const int16_t* _src0,
-                  int srcstride0, const int16_t* _src1, int srcstride1, int height,
-                  int width, int step_x, int step_y, int16_t* weight)
+                           int srcstride0, const int16_t* _src1, int srcstride1, int height,
+                           int width, int step_x, int step_y, uint8_t* weight)
 {
     int x, y;
     const int16_t* src0 = _src0;
@@ -1858,9 +1858,8 @@ put_weighted_gpm_bi_pixels(OVSample* _dst, int _dststride, const int16_t* _src0,
     int offset = (1 << (shift - 1)) ;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
-            int w0 = weight[0];
-            // int w0 = 0;
-            int w1 = 8 - w0;
+            uint8_t  w0 = weight[0];
+            uint8_t  w1 = 8 - w0;
             dst[x] = ov_bdclip(((src1[x] * w1 + src0[x] * w0 + offset) >> shift));
             weight += step_x;
         }
