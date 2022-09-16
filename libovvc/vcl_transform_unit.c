@@ -463,7 +463,6 @@ decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, C
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
-        derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, &ctu_dec->qp_ctx2, 0);
         if (cu_qp_delta) {
             apply_qp_offset(ctu_dec, cu_qp_delta);
         }
@@ -494,7 +493,6 @@ decode_cbf_c(OVCTUDec *const ctu_dec, CUFlags cu_flags)
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
-        derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, &ctu_dec->qp_ctx2, 0);
         if (cu_qp_delta) {
             apply_qp_offset(ctu_dec, cu_qp_delta);
         }
@@ -1401,7 +1399,6 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
         uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
-        derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, &ctu_dec->qp_ctx2, 0);
         if (cu_qp_delta) {
             apply_qp_offset(ctu_dec, cu_qp_delta);
         }
@@ -1602,7 +1599,6 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
-        derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, &ctu_dec->qp_ctx2, 0);
         if (cu_qp_delta) {
             apply_qp_offset(ctu_dec, cu_qp_delta);
         }
