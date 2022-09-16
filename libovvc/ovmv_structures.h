@@ -29,7 +29,6 @@ struct MVPInfoP
     uint8_t affine_type;
 };
 
-
 struct IBCMVPData
 {
     IBCMV mvd;

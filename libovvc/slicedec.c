@@ -1346,6 +1346,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
         ctudec->dbf_info.beta_offset_cr = ctudec->dbf_info.beta_offset;
         ctudec->dbf_info.tc_offset_cr   = ctudec->dbf_info.tc_offset;
     }
+
     if (ph->ph_deblocking_params_present_flag) {
         ctudec->dbf_info.beta_offset = ph->ph_luma_beta_offset_div2 * 2;
         ctudec->dbf_info.tc_offset   = ph->ph_luma_tc_offset_div2 * 2;
@@ -1361,6 +1362,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
             ctudec->dbf_info.tc_offset_cr   = ctudec->dbf_info.tc_offset;
         }
     }
+
     if (sh->sh_deblocking_params_present_flag) {
         ctudec->dbf_info.beta_offset = sh->sh_luma_beta_offset_div2 * 2;
         ctudec->dbf_info.tc_offset   = sh->sh_luma_tc_offset_div2 * 2;
@@ -1382,6 +1384,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->drv_ctx.inter_ctx.bdof_enabled &= sh->sh_slice_type == SLICE_B;
     ctudec->drv_ctx.inter_ctx.dmvr_enabled = sps->sps_dmvr_enabled_flag && (!ph->ph_dmvr_disabled_flag);
     ctudec->drv_ctx.inter_ctx.dmvr_enabled &= sh->sh_slice_type == SLICE_B;
+
     ctudec->drv_ctx.inter_ctx.log2_parallel_merge_level = sps->sps_log2_parallel_merge_level_minus2 + 2;
     ctudec->drv_ctx.inter_ctx.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
     ctudec->drv_ctx.inter_ctx.mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
@@ -1409,6 +1412,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     //In loop filter information for CTU reconstruction
     ctudec_init_in_loop_filters(ctudec, prms);
     ctudec->tmp_slice_type = sh->sh_slice_type;
+
     if (tools->scaling_list_enabled) {
         uint8_t aps_id = ph->ph_scaling_list_aps_id;
 
