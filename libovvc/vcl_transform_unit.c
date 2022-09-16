@@ -460,7 +460,6 @@ decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, C
         ctu_dec->read_qp = 0;
     }
 
-    #if 1
     if (tools->chroma_qp_offset_enabled && cbf_mask && ctu_dec->read_qp_c) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint8_t length = tools->chroma_qp_offset_len;
@@ -470,7 +469,6 @@ decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, C
         }
         ctu_dec->read_qp_c = 0;
     }
-    #endif
 
     /* FIXME intra if inter we only check for cbf_mask == 3*/
     if (tools->jcbcr_enabled && (!(cu_flags & flg_ibc_flag) && ((cu_flags & flg_pred_mode_flag) && cbf_mask) || cbf_mask == 3)) {
@@ -1395,7 +1393,6 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         ctu_dec->read_qp = 0;
     }
 
-    #if 1
     if (tools->chroma_qp_offset_enabled && cbf_mask_c && ctu_dec->read_qp_c) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
@@ -1404,11 +1401,8 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         if (cu_qp_delta) {
             apply_qp_offset(ctu_dec, &ctu_dec->qp_ctx, --cu_qp_delta);
         }
-        //derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
-        //TODO update_chroma_qp
         ctu_dec->read_qp_c = 0;
     }
-    #endif
 
     if (tools->jcbcr_enabled && cbf_mask_c) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx,
@@ -1505,9 +1499,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
 
     tu_info.cbf_mask = cbf_flags;
 
-#if 1
     ctu_dec->rcn_funcs.tmp.recon_isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, cu_flags, intra_mode, &tu_info);
-#endif
 
     if (ctu_dec->transform_unit == &transform_unit_st) {
 
@@ -1596,7 +1588,6 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         ctu_dec->read_qp = 0;
     }
 
-    #if 1
     if (tools->chroma_qp_offset_enabled && cbf_mask_c && ctu_dec->read_qp_c) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint8_t length = tools->chroma_qp_offset_len;
@@ -1606,7 +1597,6 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         }
         ctu_dec->read_qp_c = 0;
     }
-    #endif
 
     if (tools->jcbcr_enabled && cbf_mask_c) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx,
@@ -1700,9 +1690,8 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
 
     tu_info.cbf_mask = cbf_flags;
 
-#if 1
     ctu_dec->rcn_funcs.tmp.recon_isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, cu_flags, intra_mode, &tu_info);
-#endif
+
     if (ctu_dec->transform_unit == &transform_unit_st) {
 
         fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
