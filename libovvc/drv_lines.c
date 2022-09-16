@@ -947,7 +947,7 @@ drv_line_next_line(OVCTUDec *const ctudec, const struct DRVLines *const lns)
      */
     /* Reset to 0 == PLANAR */
     struct OVDrvCtx *const drv_ctx = &ctudec->drv_ctx;
-    int8_t qp_val = ctudec->qp_ctx.current_qp;
+    int8_t qp_val = ctudec->qp_ctx2.current_qp;
 
     /* FIXME remove if unused */
     intra_info->luma_mode_x = lns->intra_luma_x;

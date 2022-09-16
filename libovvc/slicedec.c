@@ -131,6 +131,7 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     const OVPH *const ph = prms->ph;
     VVCQPCTX *const qp_ctx = &ctudec->qp_ctx;
     struct ToolsInfo *tools = &ctudec->tools;
+    struct QPContext *qp_ctx2 = &ctudec->qp_ctx2;
 
     /*FIXME check if not done in dec init */
     const int8_t qp_bd_offset = 6 * sps->sps_bitdepth_minus8;
@@ -159,18 +160,18 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     memcpy(qp_ctx->cb_qp_offset_list, pps->pps_cb_qp_offset_list, sizeof(int8_t)*16);
     memcpy(qp_ctx->cr_qp_offset_list, pps->pps_cr_qp_offset_list, sizeof(int8_t)*16);
     memcpy(qp_ctx->joint_cbcr_qp_offset_list, pps->pps_joint_cbcr_qp_offset_list, sizeof(int8_t)*16);
-    qp_ctx->current_qp = slice_qp;
+    qp_ctx2->current_qp = slice_qp;
     qp_ctx->cb_offset = cb_qp_offset;
     qp_ctx->cr_offset = cr_qp_offset;
     qp_ctx->jcbcr_offset = jcbcr_qp_offset;
     qp_ctx->qp_bd_offset = qp_bd_offset;
     qp_ctx->min_qp_prime_ts = 4 + 6 * sps->sps_min_qp_prime_ts;
 
-    ctudec->dequant_luma.qp = slice_qp + qp_bd_offset;
-    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[ov_clip(slice_qp, 0, 63)] + cb_qp_offset + qp_bd_offset;
-    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[ov_clip(slice_qp, 0, 63)] + cr_qp_offset + qp_bd_offset;
-    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[ov_clip(slice_qp, 0, 63)] + qp_bd_offset + jcbcr_qp_offset;
-    derive_dequant_ctx(ctudec, qp_ctx, 0);
+    ctudec->dequant_luma = slice_qp + qp_bd_offset;
+    ctudec->dequant_cb = qp_ctx->chroma_qp_map_cb[ov_clip(slice_qp, 0, 63)] + cb_qp_offset + qp_bd_offset;
+    ctudec->dequant_cr = qp_ctx->chroma_qp_map_cr[ov_clip(slice_qp, 0, 63)] + cr_qp_offset + qp_bd_offset;
+    ctudec->dequant_joint_cb_cr = qp_ctx->chroma_qp_map_jcbcr[ov_clip(slice_qp, 0, 63)] + qp_bd_offset + jcbcr_qp_offset;
+    derive_dequant_ctx(ctudec, qp_ctx, qp_ctx2, 0);
 }
 
 static void
@@ -687,7 +688,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     /* Next line will use the qp of the first pu as a start value
      * for qp_prediction
      */
-    ctudec->qp_ctx.current_qp = backup_qp;
+    ctudec->qp_ctx2.current_qp = backup_qp;
 
     ret = 0;
 
@@ -1085,9 +1086,9 @@ copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVP
     uint8_t nb_active_refs0 = sldec->nb_active_refs0;
     uint8_t nb_active_refs1 = sldec->nb_active_refs1;
 
-    ctudec->qp_ctx.current_qp = ctudec->slice_qp;
+    ctudec->qp_ctx2.current_qp = ctudec->slice_qp;
 
-    derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);
+    derive_dequant_ctx(ctudec, &ctudec->qp_ctx, &ctudec->qp_ctx2, 0);
 
     tmvp_entry_init(ctudec, sldec, prms);
 
@@ -1393,7 +1394,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     slice_init_qp_ctx(ctudec, prms);
 
-    derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);
+    derive_dequant_ctx(ctudec, &ctudec->qp_ctx, &ctudec->qp_ctx2, 0);
 
     init_coding_coeff_coding_ctx(ctudec, prms);
 

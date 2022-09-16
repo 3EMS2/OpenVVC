@@ -48,23 +48,24 @@ static const int inverse_quant_scale_lut[12] =
 #if BITDEPTH == 10
 void
 derive_dequant_ctx(OVCTUDec *const ctudec, const struct VVCQPCTX *const qp_ctx,
-                  int cu_qp_delta)
+                   const struct QPContext *const qp_ctx2, int cu_qp_delta)
 {
     int qp_bd_offset = qp_ctx->qp_bd_offset;
     int min_qp_prime_ts = qp_ctx->min_qp_prime_ts;
-    int base_qp = ((qp_ctx->current_qp + cu_qp_delta + 64 + 2 * qp_bd_offset) % (64 + qp_bd_offset)) - qp_bd_offset;
+    int base_qp = ((qp_ctx2->current_qp + cu_qp_delta + 64 + 2 * qp_bd_offset) % (64 + qp_bd_offset)) - qp_bd_offset;
     int base_qp_c = ov_clip(base_qp, -qp_bd_offset, 63);
-    ctudec->dequant_luma.qp = base_qp + qp_bd_offset;
 
-    ctudec->dequant_cb.qp = ov_clip(qp_ctx->chroma_qp_map_cb[base_qp_c] + qp_ctx->cb_offset + qp_ctx->dqp_cb, -qp_bd_offset, 63) + qp_bd_offset;
-    ctudec->dequant_cr.qp = ov_clip(qp_ctx->chroma_qp_map_cr[base_qp_c] + qp_ctx->cr_offset + qp_ctx->dqp_cr, -qp_bd_offset, 63) + qp_bd_offset;
-    ctudec->dequant_joint_cb_cr.qp = ov_clip(qp_ctx->chroma_qp_map_jcbcr[base_qp_c] + qp_ctx->jcbcr_offset + qp_ctx->dqp_jcbcr, -qp_bd_offset, 63) + qp_bd_offset;
-    ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, min_qp_prime_ts);
-    ctudec->dequant_cb_skip.qp   = OVMAX(ctudec->dequant_cb.qp, min_qp_prime_ts);
-    ctudec->dequant_cr_skip.qp   = OVMAX(ctudec->dequant_cr.qp, min_qp_prime_ts);
-    ctudec->dequant_jcbcr_skip.qp = OVMAX(ctudec->dequant_joint_cb_cr.qp, min_qp_prime_ts);
+    ctudec->dequant_luma = base_qp + qp_bd_offset;
 
-    ctudec->qp_ctx.current_qp = base_qp;
+    ctudec->dequant_cb = ov_clip(qp_ctx->chroma_qp_map_cb[base_qp_c] + qp_ctx->cb_offset + qp_ctx2->dqp_cb, -qp_bd_offset, 63) + qp_bd_offset;
+    ctudec->dequant_cr = ov_clip(qp_ctx->chroma_qp_map_cr[base_qp_c] + qp_ctx->cr_offset + qp_ctx2->dqp_cr, -qp_bd_offset, 63) + qp_bd_offset;
+    ctudec->dequant_joint_cb_cr = ov_clip(qp_ctx->chroma_qp_map_jcbcr[base_qp_c] + qp_ctx->jcbcr_offset + qp_ctx2->dqp_jcbcr, -qp_bd_offset, 63) + qp_bd_offset;
+    ctudec->dequant_luma_skip = OVMAX(ctudec->dequant_luma, min_qp_prime_ts);
+    ctudec->dequant_cb_skip = OVMAX(ctudec->dequant_cb, min_qp_prime_ts);
+    ctudec->dequant_cr_skip = OVMAX(ctudec->dequant_cr, min_qp_prime_ts);
+    ctudec->dequant_jcbcr_skip = OVMAX(ctudec->dequant_joint_cb_cr, min_qp_prime_ts);
+
+    ctudec->qp_ctx2.current_qp = base_qp;
 }
 #endif
 

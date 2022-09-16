@@ -3585,7 +3585,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
     int16_t sb_coeffs[16] = {0};
 
     /* FIXME if called from chroma ? */
-    int qp = ctu_dec->dequant_skip->qp;
+    int qp = *ctu_dec->dequant_skip;
 
     const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
 

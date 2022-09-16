@@ -206,18 +206,11 @@ struct ALFInfo
 };
 
 
-typedef struct VVCDeQuantCtx{
-    uint8_t qp;
-}VVCDeQuantCtx;
+typedef uint8_t OVQP;
 
 typedef struct VVCQPCTX
 {
-    /* FIXME move current qp outside */
-    int8_t current_qp;
-    int8_t min_qp_prime_ts; /* FIXME usefull ?*/
-    int8_t cb_offset;
-    int8_t cr_offset;
-    int8_t jcbcr_offset;
+    int8_t min_qp_prime_ts;
     uint8_t qp_bd_offset;
     const int8_t *chroma_qp_map_cb;
     const int8_t *chroma_qp_map_cr;
@@ -225,10 +218,18 @@ typedef struct VVCQPCTX
     int8_t cb_qp_offset_list[16];
     int8_t cr_qp_offset_list[16];
     int8_t joint_cbcr_qp_offset_list[16];
+    int8_t cb_offset;
+    int8_t cr_offset;
+    int8_t jcbcr_offset;
+} VVCQPCTX;
+
+struct QPContext
+{
+    int8_t current_qp;
     int8_t dqp_cb;
     int8_t dqp_cr;
     int8_t dqp_jcbcr;
-} VVCQPCTX;
+};
 
 struct VVCCU
 {
@@ -856,17 +857,21 @@ struct OVCTUDec
      * harmonize qp info and dequant structures
      */
     VVCQPCTX qp_ctx;
-    VVCDeQuantCtx dequant_luma;
-    VVCDeQuantCtx dequant_luma_skip;
-    VVCDeQuantCtx dequant_cb;
-    VVCDeQuantCtx dequant_cr;
-    VVCDeQuantCtx dequant_joint_cb_cr;
-    VVCDeQuantCtx dequant_cb_skip;
-    VVCDeQuantCtx dequant_cr_skip;
-    VVCDeQuantCtx dequant_jcbcr_skip;
+    struct QPContext qp_ctx2;
 
-    const VVCDeQuantCtx *dequant_chroma;
-    const VVCDeQuantCtx *dequant_skip;
+    OVQP dequant_luma;
+    OVQP dequant_cb;
+    OVQP dequant_cr;
+    OVQP dequant_joint_cb_cr;
+
+    OVQP dequant_luma_skip;
+    OVQP dequant_cb_skip;
+    OVQP dequant_cr_skip;
+    OVQP dequant_jcbcr_skip;
+
+    const  OVQP *dequant_chroma;
+    const  OVQP *dequant_skip;
+
     uint16_t ctb_x;
     uint16_t ctb_y;
     uint16_t nb_ctb_pic_w;

@@ -293,7 +293,7 @@ rcn_residual(OVCTUDec *const ctudec,
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
 
-    int qp = ctudec->dequant_luma.qp;
+    int qp = ctudec->dequant_luma;
     dequant_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp, cu_flags, 1, 0, lfnst_flag);
 
 
@@ -595,14 +595,14 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
 
         if (!(tu_info->tr_skip_mask & 0x2)) {
             const struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
-            uint8_t qp = ctu_dec->dequant_cb.qp;
+            uint8_t qp = ctu_dec->dequant_cb;
 
             rcn_residual_c(ctu_dec, tr_buff, coeffs_cb,
                            x0, y0, log2_tb_w, log2_tb_h, cu_flags,
                            tb_info_cb->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cb->sig_sb_map, qp, 1);
         } else {
             const struct TBInfo *const tb_info = &tu_info->tb_info[0];
-            int qp = ctu_dec->dequant_cb_skip.qp;
+            int qp = ctu_dec->dequant_cb_skip;
 
             rcn_transform_skip_tb_c(ctu_dec, tr_buff, coeffs_cb, tb_info,
                                     log2_tb_w, log2_tb_h, qp, cu_flags);
@@ -629,13 +629,13 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
 
         if (!(tu_info->tr_skip_mask & 0x1)) {
             const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
-            uint8_t qp = ctu_dec->dequant_cr.qp;
+            uint8_t qp = ctu_dec->dequant_cr;
             rcn_residual_c(ctu_dec, tr_buff, coeffs_cr,
                            x0, y0, log2_tb_w, log2_tb_h, cu_flags,
                            tb_info_cr->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cr->sig_sb_map, qp, 2);
         } else {
             const struct TBInfo *const tb_info = &tu_info->tb_info[1];
-            int qp = ctu_dec->dequant_cr_skip.qp;
+            int qp = ctu_dec->dequant_cr_skip;
 
             rcn_transform_skip_tb_c(ctu_dec, ctu_dec->transform_buff, coeffs_cr, tb_info,
                                     log2_tb_w, log2_tb_h, qp, cu_flags);
@@ -673,13 +673,13 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
         uint8_t comp_id;
 
         if ((cbf_mask&0x3) == 3) {
-            qp = ctu_dec->dequant_joint_cb_cr.qp;
+            qp = ctu_dec->dequant_joint_cb_cr;
             comp_id = 1;
         } else if (cbf_mask == 1) {
-            qp = ctu_dec->dequant_cr.qp;
+            qp = ctu_dec->dequant_cr;
             comp_id = 2;
         } else {
-            qp = ctu_dec->dequant_cb.qp;
+            qp = ctu_dec->dequant_cb;
             comp_id = 1;
         }
 
@@ -688,9 +688,9 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
                        tb_info->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info->sig_sb_map, qp, comp_id);
     } else {
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
-        int qp = (cbf_mask == 3) ? ctu_dec->dequant_jcbcr_skip.qp
-                                 : (cbf_mask == 2) ? ctu_dec->dequant_cb_skip.qp
-                                                   : ctu_dec->dequant_cr_skip.qp;
+        int qp = (cbf_mask == 3) ? ctu_dec->dequant_jcbcr_skip
+                                 : (cbf_mask == 2) ? ctu_dec->dequant_cb_skip
+                                                   : ctu_dec->dequant_cr_skip;
 
         const struct TBInfo *const tb_info = &tu_info->tb_info[0];
 
@@ -707,7 +707,7 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     if ((cbf_mask & 0x3) == 0x3) {
         int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
-        uint8_t    qp = ctu_dec->dequant_joint_cb_cr.qp - qp_bd_offset;
+        uint8_t    qp = ctu_dec->dequant_joint_cb_cr - qp_bd_offset;
 
         dbf_fill_qp_map(&ctu_dec->dbf_info.qp_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1, qp);
         dbf_fill_qp_map(&ctu_dec->dbf_info.qp_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1, qp);
@@ -750,7 +750,7 @@ rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
     int tb_h = 1 << log2_tb_h;
     int tb_w = 1 << log2_tb_w;
 
-    int qp = ctudec->dequant_luma.qp;
+    int qp = ctudec->dequant_luma;
 
     dequant_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, cu_flags, 1, 0, tu_info->lfnst_flag);
 
@@ -803,7 +803,7 @@ rcn_2xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
     int tb_h = 1 << log2_tb_h;
     int tb_w = 1 << log2_tb_w;
 
-    int qp = ctudec->dequant_luma.qp;
+    int qp = ctudec->dequant_luma;
 
     dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, 0x2, 0);
 
@@ -823,7 +823,7 @@ rcn_1xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
     int tb_h = 1 << log2_tb_h;
     int tb_w = 1 << log2_tb_w;
 
-    int qp = ctudec->dequant_luma.qp;
+    int qp = ctudec->dequant_luma;
 
     dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, 0x2, 0);
 
@@ -886,7 +886,7 @@ rcn_Xx2_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
     int tb_h = 1 << log2_tb_h;
     int tb_w = 1 << log2_tb_w;
 
-    int qp = ctudec->dequant_luma.qp;
+    int qp = ctudec->dequant_luma;
 
     dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, 0x2, 0);
 
@@ -908,7 +908,7 @@ rcn_Xx1_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
     int tb_h = 1 << log2_tb_h;
     int tb_w = 1 << log2_tb_w;
 
-    int qp = ctudec->dequant_luma.qp;
+    int qp = ctudec->dequant_luma;
 
     dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, 0x2, 0);
 
@@ -1125,7 +1125,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
 
         } else {
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
-            int qp = ctu_dec->dequant_luma_skip.qp;
+            int qp = ctu_dec->dequant_luma_skip;
             rcn_transform_skip_tb_l(ctu_dec, tr_buff, coeffs_y, tb_info,
                                     log2_tb_w, log2_tb_h, qp, cu_flags);
         }
@@ -1198,7 +1198,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
 
         } else {
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
-            int qp = ctu_dec->dequant_luma_skip.qp;
+            int qp = ctu_dec->dequant_luma_skip;
             rcn_transform_skip_tb_l(ctu_dec, ctu_dec->transform_buff, coeffs_y, tb_info,
                                     log2_tb_w, log2_tb_h, qp, cu_flags);
         }

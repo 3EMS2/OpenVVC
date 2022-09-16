@@ -244,9 +244,9 @@ coding_quadtree(OVCTUDec *const ctu_dec,
     uint8_t split_cu_flag = 0;
 
     if (ctu_dec->coding_unit != coding_unit_intra && ((log2_cb_s > 6) || (log2_cb_s * 2 + 2 * (ctu_dec->coding_unit == coding_unit_intra_c)) >= (2 * part_ctx->log2_ctu_s - (tools->cu_qp_chroma_offset_subdiv)))) {
-        ctu_dec->qp_ctx.dqp_cb = 0;
-        ctu_dec->qp_ctx.dqp_cr = 0;
-        ctu_dec->qp_ctx.dqp_jcbcr = 0;
+        ctu_dec->qp_ctx2.dqp_cb = 0;
+        ctu_dec->qp_ctx2.dqp_cr = 0;
+        ctu_dec->qp_ctx2.dqp_jcbcr = 0;
         ctu_dec->read_qp_c = 1;
     }
 
@@ -858,9 +858,9 @@ multi_type_tree(OVCTUDec *const ctu_dec,
     uint8_t allow_tt_v = 0, allow_tt_h = 0, allow_bt_h = 0, allow_bt_v = 0;
 
     if (ctu_dec->coding_unit != coding_unit_intra && (log2_cb_h > 6 || log2_cb_w > 6 || (log2_cb_h + log2_cb_w + 2 * (ctu_dec->coding_unit == coding_unit_intra_c)) >= (2 * part_ctx->log2_ctu_s - (tools->cu_qp_chroma_offset_subdiv)))) {
-        ctu_dec->qp_ctx.dqp_cb = 0;
-        ctu_dec->qp_ctx.dqp_cr = 0;
-        ctu_dec->qp_ctx.dqp_jcbcr = 0;
+        ctu_dec->qp_ctx2.dqp_cb = 0;
+        ctu_dec->qp_ctx2.dqp_cr = 0;
+        ctu_dec->qp_ctx2.dqp_jcbcr = 0;
         ctu_dec->read_qp_c = 1;
     }
 
