@@ -419,19 +419,21 @@ fill_dbf_qp_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0, uint8_t log2_c
 }
 
 static void
-apply_qp_offset(OVCTUDec *const ctu_dec, uint8_t cu_qp_delta)
+apply_qp_offset(OVCTUDec *const ctu_dec, const VVCQPCTX *const qp_info, uint8_t cu_qp_offset)
 {
-    int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
-    --cu_qp_delta;
-    ctu_dec->qp_ctx2.dqp_cb = ctu_dec->qp_ctx.cb_qp_offset_list[cu_qp_delta];
-    ctu_dec->qp_ctx2.dqp_cr = ctu_dec->qp_ctx.cr_qp_offset_list[cu_qp_delta];
-    ctu_dec->qp_ctx2.dqp_jcbcr = ctu_dec->qp_ctx.joint_cbcr_qp_offset_list[cu_qp_delta];
-    ctu_dec->dequant_cb = ov_clip(ctu_dec->dequant_cb - qp_bd_offset + ctu_dec->qp_ctx.cb_qp_offset_list[cu_qp_delta], -qp_bd_offset, 63) + qp_bd_offset;
-    ctu_dec->dequant_cr = ov_clip(ctu_dec->dequant_cr - qp_bd_offset + ctu_dec->qp_ctx.cr_qp_offset_list[cu_qp_delta], -qp_bd_offset, 63) + qp_bd_offset;
-    ctu_dec->dequant_joint_cb_cr = ov_clip(ctu_dec->dequant_joint_cb_cr - qp_bd_offset + ctu_dec->qp_ctx.joint_cbcr_qp_offset_list[cu_qp_delta], -qp_bd_offset, 63) + qp_bd_offset;
-    ctu_dec->dequant_cb_skip   = OVMAX(ctu_dec->dequant_cb, ctu_dec->qp_ctx.min_qp_prime_ts);
-    ctu_dec->dequant_cr_skip   = OVMAX(ctu_dec->dequant_cr, ctu_dec->qp_ctx.min_qp_prime_ts);
-    ctu_dec->dequant_jcbcr_skip = OVMAX(ctu_dec->dequant_joint_cb_cr, ctu_dec->qp_ctx.min_qp_prime_ts);
+    int qp_bd_offset = qp_info->qp_bd_offset;
+    struct QPContext *const qp_ctx = &ctu_dec->qp_ctx2;
+
+    qp_ctx->dqp_cb = qp_info->cb_qp_offset_list[cu_qp_offset];
+    qp_ctx->dqp_cr = qp_info->cr_qp_offset_list[cu_qp_offset];
+    qp_ctx->dqp_jcbcr = qp_info->joint_cbcr_qp_offset_list[cu_qp_offset];
+
+    ctu_dec->dequant_cb = ov_clip(ctu_dec->dequant_cb - qp_bd_offset + qp_ctx->dqp_cb, -qp_bd_offset, 63) + qp_bd_offset;
+    ctu_dec->dequant_cr = ov_clip(ctu_dec->dequant_cr - qp_bd_offset + qp_ctx->dqp_cr, -qp_bd_offset, 63) + qp_bd_offset;
+    ctu_dec->dequant_joint_cb_cr = ov_clip(ctu_dec->dequant_joint_cb_cr - qp_bd_offset + qp_ctx->dqp_jcbcr, -qp_bd_offset, 63) + qp_bd_offset;
+    ctu_dec->dequant_cb_skip    = OVMAX(ctu_dec->dequant_cb, qp_info->min_qp_prime_ts);
+    ctu_dec->dequant_cr_skip    = OVMAX(ctu_dec->dequant_cr, qp_info->min_qp_prime_ts);
+    ctu_dec->dequant_jcbcr_skip = OVMAX(ctu_dec->dequant_joint_cb_cr, qp_info->min_qp_prime_ts);
 }
 
 static uint8_t
@@ -464,7 +466,7 @@ decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, C
         uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
         if (cu_qp_delta) {
-            apply_qp_offset(ctu_dec, cu_qp_delta);
+            apply_qp_offset(ctu_dec, &ctu_dec->qp_ctx, --cu_qp_delta);
         }
         ctu_dec->read_qp_c = 0;
     }
@@ -494,7 +496,7 @@ decode_cbf_c(OVCTUDec *const ctu_dec, CUFlags cu_flags)
         uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
         if (cu_qp_delta) {
-            apply_qp_offset(ctu_dec, cu_qp_delta);
+            apply_qp_offset(ctu_dec, &ctu_dec->qp_ctx, --cu_qp_delta);
         }
         ctu_dec->read_qp_c = 0;
     }
@@ -1400,7 +1402,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
         if (cu_qp_delta) {
-            apply_qp_offset(ctu_dec, cu_qp_delta);
+            apply_qp_offset(ctu_dec, &ctu_dec->qp_ctx, --cu_qp_delta);
         }
         //derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
         //TODO update_chroma_qp
@@ -1600,7 +1602,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
         if (cu_qp_delta) {
-            apply_qp_offset(ctu_dec, cu_qp_delta);
+            apply_qp_offset(ctu_dec, &ctu_dec->qp_ctx, --cu_qp_delta);
         }
         ctu_dec->read_qp_c = 0;
     }
