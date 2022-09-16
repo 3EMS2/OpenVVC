@@ -45,10 +45,20 @@ enum MergeTypeP
     DEFAULT_MERGE
 };
 
+struct GPMInfo
+{
+    uint8_t gpm_part_idx;
+    uint8_t merge_idx0;
+    uint8_t merge_idx1;
+};
+
 struct MergeData
 {
     enum MergeTypeP merge_type;
-    uint8_t merge_idx;
+    union {
+        uint8_t merge_idx;
+        struct GPMInfo gpm_info;
+    } data;
 };
 
 struct SMVDData

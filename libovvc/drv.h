@@ -162,10 +162,12 @@ void drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                             uint8_t log2_cu_w, uint8_t log2_cu_h,
                             uint8_t merge_idx);
 
-void drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
-                         uint8_t x0, uint8_t y0,
-                         uint8_t log2_cu_w, uint8_t log2_cu_h,
-                         uint8_t max_nb_cand, uint8_t is_small);
+struct GPMInfo;
+
+struct VVCGPM drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
+                                  uint8_t x0, uint8_t y0,
+                                  uint8_t log2_cu_w, uint8_t log2_cu_h,
+                                  uint8_t max_nb_cand, uint8_t is_small, struct GPMInfo *gpm_ctx);
 
 OVMV drv_change_precision_mv(OVMV mv, int src, int dst);
 

@@ -3150,7 +3150,7 @@ gpm_weights_and_steps(uint8_t split_dir, uint8_t log2_pb_w, uint8_t log2_pb_h, i
                       uint8_t** weight, uint8_t cr_scale)
 {
     /* Note 3 is for invalid angle */
-    static const int8_t g_angle2mirror[GEO_NUM_ANGLES] =
+    static const uint8_t g_angle2mirror[GEO_NUM_ANGLES] =
     {
         0, 3, 0, 0, 0, 0, 3, 3,
         0, 3, 3, 1, 1, 2, 2, 3,
@@ -3165,11 +3165,11 @@ gpm_weights_and_steps(uint8_t split_dir, uint8_t log2_pb_w, uint8_t log2_pb_h, i
     uint8_t idx_w = log2_pb_w - GEO_MIN_CU_LOG2;
     uint8_t idx_h = log2_pb_h - GEO_MIN_CU_LOG2;
 
-    int16_t stride = GEO_WEIGHT_MASK_SIZE;
-    int16_t stride_min1 = GEO_WEIGHT_MASK_SIZE - 1;
-
     int8_t offset_x = g_weightOffset_x[split_dir][idx_h][idx_w];
     int8_t offset_y = g_weightOffset_y[split_dir][idx_h][idx_w];
+
+    int16_t stride = GEO_WEIGHT_MASK_SIZE;
+    int16_t stride_min1 = GEO_WEIGHT_MASK_SIZE - 1;
 
     int weight_offset;
 
@@ -3197,12 +3197,15 @@ gpm_weights_and_steps(uint8_t split_dir, uint8_t log2_pb_w, uint8_t log2_pb_h, i
 
 static void
 rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
-          int x0, int y0, int log2_pb_w, int log2_pb_h)
+          int x0, int y0, int log2_pb_w, int log2_pb_h,
+          uint8_t gpm_part_idx)
 {
     struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+
     OVMV mv0 = gpm_ctx->mv0;
     OVMV mv1 = gpm_ctx->mv1;
+    gpm_ctx->split_dir = gpm_part_idx;
 
     const uint16_t* scale_fact_rpl ;
     scale_fact_rpl = gpm_ctx->inter_dir0 == 1 ? inter_ctx->scale_fact_rpl0[mv0.ref_idx]

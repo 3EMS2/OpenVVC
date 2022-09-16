@@ -697,7 +697,8 @@ struct RCNFunctions
                      OVMV mv, uint8_t ref_idx);
 
     void (*rcn_gpm_b)(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
-                      int x0, int y0, int log2_pb_w, int log2_pb_h);
+                      int x0, int y0, int log2_pb_w, int log2_pb_h,
+                      uint8_t gpm_part_idx);
 
     void (*rcn_ibc_l)(OVCTUDec *const ctu_dec,
                       int16_t x0, int16_t y0,

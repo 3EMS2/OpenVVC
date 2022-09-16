@@ -43,6 +43,7 @@
 #include "drv_utils.h"
 #include "dec_structures.h"
 #include "ovdpb.h"
+#include "ovmv_structures.h"
 
 #define POS_MASK(x, w) ((uint64_t) 1 << ((((x + 1)) + ((w)))))
 
@@ -1505,10 +1506,9 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
                 VVCMergeInfo mv_info0, VVCMergeInfo mv_info1,
                 uint8_t pb_x, uint8_t  pb_y,
                 uint8_t nb_pb_w, uint8_t nb_pb_h,
-                uint8_t inter_dir0, uint8_t inter_dir1)
+                uint8_t inter_dir0, uint8_t inter_dir1, uint8_t gpm_part_idx)
 {   
     VVCMergeInfo mv_info;
-    const struct VVCGPM *const gpm_info = &inter_ctx->gpm_ctx;
 
     uint8_t inter_dir = inter_dir0 | inter_dir1;
 
@@ -1527,10 +1527,7 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
     mv_info0.inter_dir = inter_dir0;
     mv_info1.inter_dir = inter_dir1;
 
-    int split_dir = gpm_info->split_dir;
-
-    int16_t angle = g_GeoParams[split_dir][0];
-
+    int16_t angle = g_GeoParams[gpm_part_idx][0];
 
     int x_dis = g_Dis[angle];
     int y_dis = g_Dis[(angle + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES];
@@ -1541,7 +1538,7 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
     int offset_x = -nb_pb_w * 2;
     int offset_y = -nb_pb_h * 2;
 
-    int d_idx = g_GeoParams[split_dir][1];
+    int d_idx = g_GeoParams[gpm_part_idx][1];
     uint8_t neg_angle = angle < 16;
     if ((angle & 0xF) == 8 || ((angle & 0xF) && nb_pb_h >= nb_pb_w)) {
         int offset_abs = (d_idx * nb_pb_h) >> 1;
@@ -1946,13 +1943,14 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     return mv_info;
 }
 
-void 
+struct VVCGPM
 drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                     uint8_t x0, uint8_t y0,
                     uint8_t log2_pu_w, uint8_t log2_pu_h,
-                    uint8_t max_nb_cand, uint8_t is_small)
+                    uint8_t max_nb_cand, uint8_t is_small, const struct GPMInfo *gpm_info)
 {
-    struct VVCGPM* gpm_ctx = &inter_ctx->gpm_ctx;
+    struct VVCGPM gpm_mv;
+
     VVCMergeInfo mv_info0, mv_info1;
     uint8_t pb_x = x0 >> LOG2_MIN_CU_S;
     uint8_t pb_y = y0 >> LOG2_MIN_CU_S;
@@ -1960,11 +1958,11 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_pb_h = (1 << log2_pu_h) >> LOG2_MIN_CU_S;
 
     mv_info0 = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
-                                     nb_pb_w, nb_pb_h, gpm_ctx->merge_idx0,
+                                     nb_pb_w, nb_pb_h, gpm_info->merge_idx0,
                                      max_nb_cand, is_small);
 
     mv_info1 = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
-                                      nb_pb_w, nb_pb_h, gpm_ctx->merge_idx1,
+                                      nb_pb_w, nb_pb_h, gpm_info->merge_idx1,
                                       max_nb_cand, is_small);
 
     mv_info0.mv0.bcw_idx_plus1 = 0;
@@ -1977,28 +1975,30 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     mv_info1.mv0.prec_amvr = 0;
     mv_info1.mv1.prec_amvr = 0;
 
-    uint8_t parity = gpm_ctx->merge_idx0 & 1;
+    uint8_t parity = gpm_info->merge_idx0 & 1;
 
     if (mv_info0.inter_dir & (0x01 + parity)) {
-        gpm_ctx->inter_dir0 = 1 + parity;
-        gpm_ctx->mv0 = parity ? mv_info0.mv1 : mv_info0.mv0; 
+        gpm_mv.inter_dir0 = 1 + parity;
+        gpm_mv.mv0 = parity ? mv_info0.mv1 : mv_info0.mv0;
     } else if (mv_info0.inter_dir & (0x02 - parity)) {
-        gpm_ctx->inter_dir0 = 2 - parity;
-        gpm_ctx->mv0 = parity ? mv_info0.mv0 : mv_info0.mv1; 
+        gpm_mv.inter_dir0 = 2 - parity;
+        gpm_mv.mv0 = parity ? mv_info0.mv0 : mv_info0.mv1;
     }   
 
-    parity = gpm_ctx->merge_idx1 & 1;
+    parity = gpm_info->merge_idx1 & 1;
 
     if(mv_info1.inter_dir & (0x01 + parity)) {
-        gpm_ctx->inter_dir1 = 1 + parity;
-        gpm_ctx->mv1 = parity ? mv_info1.mv1 : mv_info1.mv0; 
+        gpm_mv.inter_dir1 = 1 + parity;
+        gpm_mv.mv1 = parity ? mv_info1.mv1 : mv_info1.mv0;
     } else if (mv_info1.inter_dir & (0x02 - parity)) {
-        gpm_ctx->inter_dir1 = 2 - parity;
-        gpm_ctx->mv1 = parity ? mv_info1.mv0 : mv_info1.mv1; 
+        gpm_mv.inter_dir1 = 2 - parity;
+        gpm_mv.mv1 = parity ? mv_info1.mv0 : mv_info1.mv1;
     }  
 
-    update_gpm_mv_ctx(inter_ctx, gpm_ctx->mv0, gpm_ctx->mv1, mv_info0, mv_info1, pb_x, pb_y,
-                      nb_pb_w, nb_pb_h, gpm_ctx->inter_dir0, gpm_ctx->inter_dir1);
+    update_gpm_mv_ctx(inter_ctx, gpm_mv.mv0, gpm_mv.mv1, mv_info0, mv_info1, pb_x, pb_y,
+                      nb_pb_w, nb_pb_h, gpm_mv.inter_dir0, gpm_mv.inter_dir1, gpm_info->gpm_part_idx);
+
+    return gpm_mv;
 }
 
 VVCMergeInfo

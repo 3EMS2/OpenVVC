@@ -291,6 +291,17 @@ struct OVMV
     uint8_t prec_amvr;
 };
 
+struct VVCGPM
+{
+    uint8_t split_dir;
+
+    uint8_t inter_dir0;
+    uint8_t inter_dir1;
+    OVMV mv0;
+    OVMV mv1;
+};
+
+
 typedef struct VVCMergeInfo
 {
     OVMV mv0;
@@ -406,17 +417,7 @@ struct InterDRVCtx
 
     uint8_t affine_6params_enabled;
 
-    struct VVCGPM
-    {
-        int split_dir;
 
-        int merge_idx0;
-        int merge_idx1;
-        int inter_dir0;
-        int inter_dir1;
-        OVMV mv0;
-        OVMV mv1;
-    } gpm_ctx;
 
     uint8_t tmvp_enabled;
     uint8_t sbtmvp_enabled;

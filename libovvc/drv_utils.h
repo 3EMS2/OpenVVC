@@ -71,19 +71,14 @@ ctu_field_set_rect_bitfield(struct CTUBitField *const ctu_map,
     }
 }
 
-#define GEO_MAX_NUM_UNI_CANDS   6
-#define GEO_MAX_NUM_CANDS       (GEO_MAX_NUM_UNI_CANDS * (GEO_MAX_NUM_UNI_CANDS - 1))
 #define GEO_MIN_CU_LOG2         3
 #define GEO_MAX_CU_LOG2         6
-#define GEO_MIN_CU_SIZE         (1 << GEO_MIN_CU_LOG2)
 #define GEO_MAX_CU_SIZE         (1 << GEO_MAX_CU_LOG2)
-#define GEO_NUM_CU_SIZE         (( GEO_MAX_CU_LOG2 - GEO_MIN_CU_LOG2 ) + 1)
+#define GEO_NUM_CU_SIZE         ((GEO_MAX_CU_LOG2 - GEO_MIN_CU_LOG2) + 1)
 #define GEO_NUM_PARTITION_MODE  64
 #define GEO_NUM_ANGLES          32
-#define GEO_NUM_DISTANCES       4
 #define GEO_NUM_PRESTORED_MASK  6
 #define GEO_WEIGHT_MASK_SIZE    (3 * (GEO_MAX_CU_SIZE >> 3) * 2 + GEO_MAX_CU_SIZE)
-#define GEO_MV_MASK_SIZE        (GEO_WEIGHT_MASK_SIZE >> 2)
 
 extern const int16_t   g_GeoParams[GEO_NUM_PARTITION_MODE][2];
 extern const int8_t    g_Dis[GEO_NUM_ANGLES];

@@ -542,7 +542,7 @@ void
 rcn_init_gpm_params()
 {
     uint8_t angle_idx;
-    for (angle_idx = 0; angle_idx < (GEO_NUM_ANGLES >> 2) + 1; angle_idx++){
+    for (angle_idx = 0; angle_idx < (GEO_NUM_ANGLES >> 2) + 1; angle_idx++) {
         int x, y;
 
         if (g_angle2mask[angle_idx] == -1){
@@ -552,7 +552,7 @@ rcn_init_gpm_params()
         int dist_x = g_Dis[angle_idx];
         int dist_y = g_Dis[(angle_idx + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES];
 
-        int16_t rho = (int32_t)((uint32_t)dist_x << (GEO_MAX_CU_LOG2 + 1)) + (int32_t)((uint32_t)dist_y << (GEO_MAX_CU_LOG2 + 1));
+        int16_t rho = (int32_t)((uint32_t)(dist_x + dist_y) << (GEO_MAX_CU_LOG2 + 1));
 
         static const int16_t offset_msk = (2 * GEO_MAX_CU_SIZE - GEO_WEIGHT_MASK_SIZE) >> 1;
         int idx = 0;

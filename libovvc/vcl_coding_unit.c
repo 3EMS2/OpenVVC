@@ -199,16 +199,16 @@ ovcabac_read_ae_mmvd_merge_idx(OVCABACCtx *const cabac_ctx,
 }
 
 static void
-ovcabac_read_ae_gpm_merge_idx(OVCABACCtx *const cabac_ctx, struct VVCGPM* gpm_ctx,
+ovcabac_read_ae_gpm_merge_idx(OVCABACCtx *const cabac_ctx, struct GPMInfo *const gpm_info,
                               uint8_t max_num_geo_cand)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    gpm_ctx->split_dir = vvc_get_cabac_truncated(cabac_ctx, GEO_NUM_PARTITION_MODE);
+    gpm_info->gpm_part_idx = vvc_get_cabac_truncated(cabac_ctx, GEO_NUM_PARTITION_MODE);
 
     int num_cand_min2 = max_num_geo_cand  - 2;
 
-    gpm_ctx->merge_idx0    = 0;
-    gpm_ctx->merge_idx1    = 0;
+    gpm_info->merge_idx0    = 0;
+    gpm_info->merge_idx1    = 0;
 
     if (ovcabac_ae_read(cabac_ctx, &cabac_state[MERGE_IDX_CTX_OFFSET])) {
         int max_symbol = num_cand_min2;
@@ -218,7 +218,7 @@ ovcabac_read_ae_gpm_merge_idx(OVCABACCtx *const cabac_ctx, struct VVCGPM* gpm_ct
                 break;
             }
         }
-        gpm_ctx->merge_idx0 += max_symbol + 1;
+        gpm_info->merge_idx0 += max_symbol + 1;
     }
 
     if (num_cand_min2 > 0) {
@@ -230,10 +230,10 @@ ovcabac_read_ae_gpm_merge_idx(OVCABACCtx *const cabac_ctx, struct VVCGPM* gpm_ct
                     break;
                 }
             }
-            gpm_ctx->merge_idx1 += max_symbol + 1;
+            gpm_info->merge_idx1 += max_symbol + 1;
         }
     }
-    gpm_ctx->merge_idx1 += gpm_ctx->merge_idx1 >= gpm_ctx->merge_idx0;
+    gpm_info->merge_idx1 += gpm_info->merge_idx1 >= gpm_info->merge_idx0;
 }
 
 static uint8_t
@@ -1483,7 +1483,7 @@ drv_merge_motion_info_p(const struct MergeData *const mrg_data,
 {
     OVMV mv;
     enum MergeTypeP merge_type   = mrg_data->merge_type;
-    uint8_t merge_idx = mrg_data->merge_idx;
+    uint8_t merge_idx = mrg_data->data.merge_idx;
     struct OVMVCtx *const mv_ctx = &inter_ctx->mv_ctx0;
 
     switch (merge_type) {
@@ -1552,7 +1552,7 @@ inter_skip_data_p(OVCTUDec *const ctu_dec,
     }
 
     mrg_data.merge_type = mrg_type;
-    mrg_data.merge_idx  = merge_idx;
+    mrg_data.data.merge_idx  = merge_idx;
 
     return mrg_data;
 }
@@ -1622,7 +1622,7 @@ inter_merge_data_p(OVCTUDec *const ctu_dec,
     }
 
     mrg_data.merge_type = mrg_type;
-    mrg_data.merge_idx  = merge_idx;
+    mrg_data.data.merge_idx  = merge_idx;
 
     return mrg_data;
 }
@@ -1923,7 +1923,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
         /* Note reconstruction is done in drv_function */
         drv_affine_merge_mvp_p(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                               mrg_data.merge_idx);
+                               mrg_data.data.merge_idx);
 
         cu_type = OV_AFFINE;
 
@@ -2099,13 +2099,14 @@ idx:
         }
         mrg_type = SB_MERGE;
     } else if (!reg_merge_flag) {
-        int max_num_gpm_cand = tools->max_gpm_cand;
-        struct VVCGPM *gpm_info = &ctu_dec->drv_ctx.inter_ctx.gpm_ctx;
-        /* FIXME gpm idx type */
-        ovcabac_read_ae_gpm_merge_idx(cabac_ctx, gpm_info, max_num_gpm_cand);
-        mrg_type = GPM_MERGE;
-        /* set to what was read in gpm merge idx to discard uninitialized value */
-        merge_idx = gpm_info->merge_idx0;
+        int max_nb_gpm_cand = tools->max_gpm_cand;
+        struct GPMInfo gpm_info;
+        ovcabac_read_ae_gpm_merge_idx(cabac_ctx, &gpm_info, max_nb_gpm_cand);
+
+        mrg_data.merge_type = GPM_MERGE;
+        mrg_data.data.gpm_info = gpm_info;
+
+        return mrg_data;
     } else if (mmvd_flag){
         uint8_t max_nb_cand = tools->max_num_merge_candidates;
         merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
@@ -2116,7 +2117,7 @@ idx:
     }
 
     mrg_data.merge_type = mrg_type;
-    mrg_data.merge_idx  = merge_idx;
+    mrg_data.data.merge_idx = merge_idx;
 
     return mrg_data;
 }
@@ -2189,11 +2190,13 @@ idx:
         }
         mrg_type = SB_MERGE;
     } else if (!reg_merge_flag && !ciip_flag) {
-        int max_num_gpm_cand = tools->max_gpm_cand;
-        struct VVCGPM *gpm_info = &ctu_dec->drv_ctx.inter_ctx.gpm_ctx;
-        /* FIXME gpm idx type */
-        ovcabac_read_ae_gpm_merge_idx(cabac_ctx, gpm_info, max_num_gpm_cand);
-        mrg_type = GPM_MERGE;
+        int max_nb_gpm_cand = tools->max_gpm_cand;
+        struct GPMInfo gpm_info;
+        ovcabac_read_ae_gpm_merge_idx(cabac_ctx, &gpm_info, max_nb_gpm_cand);
+
+        mrg_data.merge_type = GPM_MERGE;
+        mrg_data.data.gpm_info = gpm_info;
+        return mrg_data;
     } else if (!reg_merge_flag && ciip_flag) {
         uint8_t max_nb_cand = tools->max_num_merge_candidates;
         merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
@@ -2208,7 +2211,7 @@ idx:
     }
 
     mrg_data.merge_type = mrg_type;
-    mrg_data.merge_idx  = merge_idx;
+    mrg_data.data.merge_idx  = merge_idx;
 
     return mrg_data;
 }
@@ -2442,7 +2445,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
             /* Note reconstruction is done in drv_function */
             drv_affine_merge_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                                   mrg_data.merge_idx);
+                                   mrg_data.data.merge_idx);
 
             cu_type = OV_AFFINE;
 
@@ -2450,11 +2453,14 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
         } else if (mrg_data.merge_type == GPM_MERGE) {
             uint8_t max_nb_cand = tools->max_num_merge_candidates;
+            uint8_t gpm_part_idx = mrg_data.data.gpm_info.gpm_part_idx;
 
-            drv_gpm_merge_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h, max_nb_cand,
-                                log2_cb_w + log2_cb_h <= 5);
+            struct VVCGPM gpm_mv = drv_gpm_merge_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
+                                                       max_nb_cand,
+                                                       log2_cb_w + log2_cb_h <= 5,
+                                                       &mrg_data.data.gpm_info);
 
-            ctu_dec->rcn_funcs.rcn_gpm_b(ctu_dec, &inter_ctx->gpm_ctx, x0, y0, log2_cb_w, log2_cb_h);
+            ctu_dec->rcn_funcs.rcn_gpm_b(ctu_dec, &gpm_mv, x0, y0, log2_cb_w, log2_cb_h, gpm_part_idx);
 
             goto end;
 
@@ -2462,7 +2468,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             uint8_t max_nb_cand = tools->max_num_merge_candidates;
 
             mv_info = drv_merge_mvp_b(inter_ctx, x0, y0,
-                                      log2_cb_w, log2_cb_h, mrg_data.merge_idx,
+                                      log2_cb_w, log2_cb_h, mrg_data.data.merge_idx,
                                       max_nb_cand, log2_cb_w + log2_cb_h <= 5);
 
             fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
@@ -2485,13 +2491,13 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             uint8_t max_nb_cand = tools->max_num_merge_candidates;
 
             mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x0, y0,
-                                           log2_cb_w, log2_cb_h, mrg_data.merge_idx,
+                                           log2_cb_w, log2_cb_h, mrg_data.data.merge_idx,
                                            max_nb_cand, log2_cb_w + log2_cb_h <= 5);
 
         } else {
             uint8_t max_nb_cand = tools->max_num_merge_candidates;
             mv_info = drv_merge_mvp_b(inter_ctx, x0, y0,
-                                      log2_cb_w, log2_cb_h, mrg_data.merge_idx,
+                                      log2_cb_w, log2_cb_h, mrg_data.data.merge_idx,
                                       max_nb_cand, log2_cb_w + log2_cb_h <= 5);
         }
 
