@@ -281,13 +281,12 @@ struct TMVPMV
     int8_t z;
 };
 
-/* FIXME move inter struct definitions somewhere else */
 struct OVMV
 {
-    /*FIXME move ref_idx, bcw_idx and prec_amvr outside of struct */
     int32_t x;
     int32_t y;
     int8_t ref_idx;
+    /*FIXME move ref_idx, bcw_idx and prec_amvr outside of struct */
     uint8_t bcw_idx_plus1;
     uint8_t prec_amvr;
 };
@@ -393,9 +392,27 @@ struct InterDRVCtx
     uint8_t nb_active_ref0;
     uint8_t nb_active_ref1;
 
-
     int16_t dist_ref_0[16];
     int16_t dist_ref_1[16];
+
+    /* Symmetric MVD (SMVD) Related
+     * information
+     */
+    int ref_smvd_idx0;
+    int ref_smvd_idx1;
+
+    uint8_t mmvd_shift;
+
+    uint8_t affine_6params_enabled;
+
+    uint8_t tmvp_enabled;
+    uint8_t sbtmvp_enabled;
+
+    uint8_t prof_enabled;
+    uint8_t bdof_enabled;
+    uint8_t dmvr_enabled;
+    uint8_t log2_parallel_merge_level;
+
 
     /* CTU Local Map Motion Vectors */
     struct OVMVCtx mv_ctx0;
@@ -408,27 +425,8 @@ struct InterDRVCtx
      */
     struct HMVPLUT hmvp_lut;
 
-    /* Symmetric MVD (SMVD) Related
-     * information
-     */
-    int ref_smvd_idx0;
-    int ref_smvd_idx1;
-
-    uint8_t mmvd_shift;
-
-    uint8_t affine_6params_enabled;
-
-
-
-    uint8_t tmvp_enabled;
-    uint8_t sbtmvp_enabled;
-
-    uint8_t prof_enabled;
-    uint8_t bdof_enabled;
-    uint8_t dmvr_enabled;
-    uint8_t log2_parallel_merge_level;
-
     uint8_t tmvp_avail;
+
     struct VVCTMVP
     {
         /* FIXME tmp info */
@@ -725,21 +723,6 @@ struct OVCTUDec
      */
     uint8_t ctu_ngh_flags;
 
-    /* FIXME COMPAT old passed this line
-     * Old structures to be removed
-     * Those structures were imported as is from previous version
-     * because they were mandatory for a quickly operational decoder
-     * and are still used by the decoder however they will be removed
-     * in the future
-     */
-    /* FIXME
-     * Check usage of those sort between flags and status
-     * and move them to tools_status structure
-     * (as an example transform_skip_flag can be replaced
-     * by a max_log2_trskip_s to zere, mts_implicit and
-     * mts_enabled could be replace by a mts status etc.)
-     */
-
     struct TBScalingLUTs {
         int16_t intra_luts[9024];
         int16_t inter_luts[9024];
@@ -759,7 +742,6 @@ struct OVCTUDec
      * Depths of left and up neighbours during in the decision tree
      * needed to derive cabac contexts for split decision
      * and mode context derivation
-     * TODO rename as CABAC Maps
      */
     /* FIXME no need for cu_mode in chroma part */
     struct PartMap{
@@ -876,19 +858,17 @@ struct OVCTUDec
     uint16_t ctb_y;
     uint16_t nb_ctb_pic_w;
     uint16_t prev_nb_ctu_w_rect_entry;
-    
     /* FIXME to be removed */
+    uint8_t tmp_slice_type;
     uint8_t bitdepth_minus8;
     uint8_t intra_mode_c;
     uint8_t intra_mode;
     uint8_t cu_opaque;
     uint8_t tmp_ciip;
     uint8_t tmp_red;
-    uint8_t tmp_slice_type;
 
     uint8_t read_qp;
     uint8_t read_qp_c;
-
 };
 
 int ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms);
