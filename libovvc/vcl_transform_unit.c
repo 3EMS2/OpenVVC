@@ -1110,11 +1110,8 @@ sbt_half_ver(OVCTUDec *const ctu_dec,
              uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     const struct ToolsInfo *tools = &ctu_dec->tools;
-    fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
-    fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
-    int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
+
     if (!sbt_pos) {
-        tu_info[0].is_sbt = 1;
         if (tools->mts_enabled && log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x1;
@@ -1127,7 +1124,6 @@ sbt_half_ver(OVCTUDec *const ctu_dec,
         ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h, cu_flags, cbf_mask, tu_info);
 
     } else {
-        tu_info[0].is_sbt = 1;
         if (tools->mts_enabled && log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
@@ -1150,12 +1146,9 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
              uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
-    int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
     const struct ToolsInfo *tools = &ctu_dec->tools;
-    fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
-    fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
+
     if (!sbt_pos) {
-        tu_info[0].is_sbt = 1;
         if (tools->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x2;
@@ -1169,7 +1162,6 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
         ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1, cu_flags, cbf_mask, tu_info);
 
     } else {
-        tu_info[0].is_sbt = 1;
         uint8_t y1 = y0 + (1 << (log2_tb_h - 1));
         uint8_t y3 = y0 + (1 << (log2_tb_h - 1));
         if (tools->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
@@ -1192,12 +1184,9 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
              uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
-    int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
     const struct ToolsInfo *tools = &ctu_dec->tools;
-    fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
-    fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
+
     if (!sbt_pos) {
-        tu_info[0].is_sbt = 1;
 
         if (tools->mts_enabled && log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
@@ -1212,7 +1201,6 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
         ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h, cu_flags, cbf_mask, tu_info);
 
     } else {
-        tu_info[0].is_sbt = 1;
         uint8_t x3 = x0 + (3 << (log2_tb_w - 2));
 
         if (tools->mts_enabled && log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
@@ -1237,11 +1225,8 @@ sbt_quad_hor(OVCTUDec *const ctu_dec,
              uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     const struct ToolsInfo *tools = &ctu_dec->tools;
-    int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
-    fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
-    fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
+
     if (!sbt_pos) {
-        tu_info[0].is_sbt = 1;
 
         if (tools->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
             tu_info->cu_mts_flag = 1;
@@ -1256,7 +1241,6 @@ sbt_quad_hor(OVCTUDec *const ctu_dec,
         ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2, cu_flags, cbf_mask, tu_info);
 
     } else {
-        tu_info[0].is_sbt = 1;
         uint8_t y3 = y0 + (3 << (log2_tb_h - 2));
 
         if (tools->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
@@ -1284,6 +1268,11 @@ sbt_tree(OVCTUDec *const ctu_dec,
          uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     /* FIXME remove this if zeroing is done by transform */
+    tu_info[0].is_sbt = 1;
+
+    fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
+    fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
+
     switch (sbt_mode) {
     case 0x1:
          /*sbt_ver*/
