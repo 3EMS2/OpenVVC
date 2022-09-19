@@ -1421,7 +1421,10 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
 
     if (tools->enable_lfnst && log2_pb_w > 1) {
         int max_lfnst_pos = (log2_cb_h == log2_pb_w) && (log2_pb_w <= 3) ? 7 : 15;
-        uint8_t can_lfnst = (tu_info.tb_info[0].sig_sb_map | tu_info.tb_info[1].sig_sb_map | tu_info.tb_info[2].sig_sb_map | tu_info.tb_info[3].sig_sb_map) <= 1;
+        uint8_t can_lfnst = (tu_info.tb_info[0].sig_sb_map |
+                             tu_info.tb_info[1].sig_sb_map |
+                             tu_info.tb_info[2].sig_sb_map |
+                             tu_info.tb_info[3].sig_sb_map) <= 1;
 
         can_lfnst &= check_lfnst_nb_coeffs(tu_info.tb_info[0].last_pos) <= max_lfnst_pos;
         can_lfnst &= check_lfnst_nb_coeffs(tu_info.tb_info[1].last_pos) <= max_lfnst_pos;
