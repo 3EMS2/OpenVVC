@@ -1295,10 +1295,6 @@ sbt_tree(OVCTUDec *const ctu_dec,
                       sbt_pos, cu_flags, tu_info);
          break;
     }
-    struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
-    uint8_t qp_l  = ctu_dec->qp_ctx2.current_qp;
-    int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
-    dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_tb_w, log2_tb_h, qp_l);
 
     return 0;
 }
