@@ -3574,7 +3574,7 @@ init_sb_map_ts(uint8_t *nb_sig, uint8_t *sign_map, uint16_t *abs_val, uint8_t lo
 
 uint64_t
 residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
-                   uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t bdpcm_flag)
+                   uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t bdpcm_flag, int8_t qp)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     /* FIXME smaller reset tables */
@@ -3584,9 +3584,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
 
     int16_t sb_coeffs[16] = {0};
 
-    /* FIXME if called from chroma ? */
-    int qp = *ctu_dec->dequant_skip;
-
+    /* FIXME to remove alongside QP*/
     const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
 
     TSCoeffCodingCtx cctx = {

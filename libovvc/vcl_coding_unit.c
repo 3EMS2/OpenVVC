@@ -767,13 +767,9 @@ coding_unit(OVCTUDec *const ctu_dec,
         ctu_dec->dequant_jcbcr_skip = OVMAX(ctu_dec->dequant_joint_cb_cr, ctu_dec->qp_ctx.min_qp_prime_ts);
     }
 
-    int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
-
     ctu_dec->tmp_ciip = 0;
 
     cu = ctu_dec->coding_unit(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h);
-
-    ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
 
     /* FIXME move after TU is read so we can reconstruct with or without
      * transform trees

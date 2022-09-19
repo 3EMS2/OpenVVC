@@ -652,7 +652,6 @@ residual_coding_l(OVCTUDec *const ctu_dec,
 
     if (tools->transform_skip_enabled && log2_tb_w <= tools->max_log2_transform_skip_size
         && log2_tb_h <= tools->max_log2_transform_skip_size && !tu_info->is_sbt && !(cu_flags &flg_isp_flag)) {
-        ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
         uint8_t intra_bdpcm_luma_flag = !!(cu_flags & flg_intra_bdpcm_luma_flag);
         tr_skip_flag = intra_bdpcm_luma_flag || ovcabac_read_ae_transform_skip_luma_flag(cabac_ctx);
         tu_info->tr_skip_mask |= tr_skip_flag << 4;
@@ -685,9 +684,8 @@ residual_coding_l(OVCTUDec *const ctu_dec,
 
     } else {
         uint8_t intra_bdpcm_luma_flag = !!(cu_flags & flg_intra_bdpcm_luma_flag);
-        ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
         residual_coding_ts(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
-                           intra_bdpcm_luma_flag);
+                           intra_bdpcm_luma_flag, ctu_dec->dequant_luma_skip);
     }
 
 
@@ -724,7 +722,6 @@ residual_coding_c(OVCTUDec *const ctu_dec,
             && log2_tb_h <= tools->max_log2_transform_skip_size && !tu_info->is_sbt) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
             uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
-            ctu_dec->dequant_skip = &ctu_dec->dequant_cb_skip;
             transform_skip_flag |= (intra_bdpcm_chroma_flag || ovcabac_read_ae_transform_skip_flag_c(cabac_ctx)) << 1;
         }
 
@@ -739,8 +736,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         }  else {
             /* FIXME Chroma TS */
             uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
-            ctu_dec->dequant_skip = &ctu_dec->dequant_cb_skip;
-            residual_coding_ts(ctu_dec, coeffs_cb, log2_tb_w, log2_tb_h, intra_bdpcm_chroma_flag);
+            residual_coding_ts(ctu_dec, coeffs_cb, log2_tb_w, log2_tb_h, intra_bdpcm_chroma_flag, ctu_dec->dequant_cb_skip);
         }
     }
 
@@ -752,7 +748,6 @@ residual_coding_c(OVCTUDec *const ctu_dec,
             && log2_tb_h <= tools->max_log2_transform_skip_size && !tu_info->is_sbt) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
             uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
-            ctu_dec->dequant_skip = &ctu_dec->dequant_cr_skip;
             transform_skip_flag |= intra_bdpcm_chroma_flag || ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
         }
 
@@ -765,8 +760,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
                                                        last_pos_cr);
         } else {
             uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
-            ctu_dec->dequant_skip = &ctu_dec->dequant_cr_skip;
-            residual_coding_ts(ctu_dec, coeffs_cr, log2_tb_w, log2_tb_h, intra_bdpcm_chroma_flag);
+            residual_coding_ts(ctu_dec, coeffs_cr, log2_tb_w, log2_tb_h, intra_bdpcm_chroma_flag, ctu_dec->dequant_cr_skip);
         }
     }
 
@@ -810,19 +804,18 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
         tb_info->last_pos   = last_pos;
     } else {
         uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
+        int8_t qp;
 
-        /* FIXME this is hackish joint cb cr involves a different delta qp from
-           previous ones */
         if (cbf_mask == 3) {
-            ctu_dec->dequant_skip = &ctu_dec->dequant_jcbcr_skip;
+            qp = ctu_dec->dequant_jcbcr_skip;
         } else if (cbf_mask == 1) {
-            ctu_dec->dequant_skip   = &ctu_dec->dequant_cr_skip;
+            qp = ctu_dec->dequant_cr_skip;
         } else {
-            ctu_dec->dequant_skip   = &ctu_dec->dequant_cb_skip;
+            qp = ctu_dec->dequant_cb_skip;
         }
 
         residual_coding_ts(ctu_dec, ctu_dec->residual_cb + tu_info->pos_offset, log2_tb_w, log2_tb_h,
-                           intra_bdpcm_chroma_flag);
+                           intra_bdpcm_chroma_flag, qp);
     }
 
     tb_info->sig_sb_map = sig_sb_map;

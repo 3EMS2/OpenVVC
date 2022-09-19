@@ -810,7 +810,7 @@ struct OVCTUDec
 
     uint64_t (*residual_coding_ts)(struct OVCTUDec *const lc_ctx,
                               uint8_t log2_tb_w,
-                              uint8_t log2_tb_h);
+                              uint8_t log2_tb_h, int8_t qp);
 
     uint64_t (*residual_coding_l)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
                                   uint8_t log2_tb_w, uint8_t log2_tb_h,
@@ -850,9 +850,6 @@ struct OVCTUDec
     OVQP dequant_cb_skip;
     OVQP dequant_cr_skip;
     OVQP dequant_jcbcr_skip;
-
-    const  OVQP *dequant_chroma;
-    const  OVQP *dequant_skip;
 
     uint16_t ctb_x;
     uint16_t ctb_y;
