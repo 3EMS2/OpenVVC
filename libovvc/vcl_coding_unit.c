@@ -1894,8 +1894,6 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
     uint8_t ref_idx = 0;
 
-    ctu_dec->tmp_ciip = 0;
-
     OVMV mv0;
     if (merge_flag) {
         uint8_t max_nb_cand = tools->max_num_merge_candidates;
@@ -2414,9 +2412,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
     uint8_t smvd_flag = 0;
     uint8_t mmvd_flag = 0;
-
-    /* FIXME Move AMVR precision outside of inter_ctx */
-    ctu_dec->tmp_ciip = 0;
 
     if (merge_flag) {
         struct MergeData mrg_data;
