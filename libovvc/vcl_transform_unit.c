@@ -421,8 +421,9 @@ fill_dbf_qp_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0, uint8_t log2_c
 static void
 apply_qp_offset(OVCTUDec *const ctu_dec, const VVCQPCTX *const qp_info, uint8_t cu_qp_offset)
 {
-    int qp_bd_offset = qp_info->qp_bd_offset;
     struct QPContext *const qp_ctx = &ctu_dec->qp_ctx2;
+    uint8_t min_qp_prime_ts = qp_info->min_qp_prime_ts;
+    int8_t qp_bd_offset = qp_info->qp_bd_offset;
 
     qp_ctx->dqp_cb = qp_info->cb_qp_offset_list[cu_qp_offset];
     qp_ctx->dqp_cr = qp_info->cr_qp_offset_list[cu_qp_offset];
@@ -431,9 +432,9 @@ apply_qp_offset(OVCTUDec *const ctu_dec, const VVCQPCTX *const qp_info, uint8_t 
     ctu_dec->dequant_cb = ov_clip(ctu_dec->dequant_cb - qp_bd_offset + qp_ctx->dqp_cb, -qp_bd_offset, 63) + qp_bd_offset;
     ctu_dec->dequant_cr = ov_clip(ctu_dec->dequant_cr - qp_bd_offset + qp_ctx->dqp_cr, -qp_bd_offset, 63) + qp_bd_offset;
     ctu_dec->dequant_joint_cb_cr = ov_clip(ctu_dec->dequant_joint_cb_cr - qp_bd_offset + qp_ctx->dqp_jcbcr, -qp_bd_offset, 63) + qp_bd_offset;
-    ctu_dec->dequant_cb_skip    = OVMAX(ctu_dec->dequant_cb, qp_info->min_qp_prime_ts);
-    ctu_dec->dequant_cr_skip    = OVMAX(ctu_dec->dequant_cr, qp_info->min_qp_prime_ts);
-    ctu_dec->dequant_jcbcr_skip = OVMAX(ctu_dec->dequant_joint_cb_cr, qp_info->min_qp_prime_ts);
+    ctu_dec->dequant_cb_skip    = OVMAX(ctu_dec->dequant_cb, min_qp_prime_ts);
+    ctu_dec->dequant_cr_skip    = OVMAX(ctu_dec->dequant_cr, min_qp_prime_ts);
+    ctu_dec->dequant_jcbcr_skip = OVMAX(ctu_dec->dequant_joint_cb_cr, min_qp_prime_ts);
 }
 
 static uint8_t
@@ -500,8 +501,7 @@ decode_cbf_c(OVCTUDec *const ctu_dec, CUFlags cu_flags)
     }
 
     if (tools->jcbcr_enabled && cbf_mask) {
-        uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx,
-                (cbf_mask & 0x3) - 1);
+        uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx, (cbf_mask & 0x3) - 1);
         cbf_mask |= joint_cb_cr << 3;
     }
 
