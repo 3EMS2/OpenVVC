@@ -804,18 +804,11 @@ coding_unit(OVCTUDec *const ctu_dec,
     /*TODO rename */
     transform_unit_wrap(ctu_dec, part_ctx,  x0, y0, log2_cb_w, log2_cb_h, cu);
 
-    /* FIXME memset instead
-     */
     /* update delta qp context */
     if (ctu_dec->coding_unit != &coding_unit_intra_c) {
-
-        for (int i = 0; i < nb_cb_w; i++) {
-            ctu_dec->drv_ctx.qp_map_x[x_cb + i] = ctu_dec->qp_ctx2.current_qp;
-        }
-
-        for (int i = 0; i < nb_cb_h; i++) {
-            ctu_dec->drv_ctx.qp_map_y[y_cb + i] = ctu_dec->qp_ctx2.current_qp;
-        }
+        int8_t qp = ctu_dec->qp_ctx2.current_qp;
+        memset(&ctu_dec->drv_ctx.qp_map_x[x_cb], qp, sizeof(uint8_t) * nb_cb_w);
+        memset(&ctu_dec->drv_ctx.qp_map_y[y_cb], qp, sizeof(uint8_t) * nb_cb_h);
     }
 
     // Update depth_maps to selected depths
