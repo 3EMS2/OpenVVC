@@ -135,21 +135,29 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
 
     /*FIXME check if not done in dec init */
     const int8_t qp_bd_offset = 6 * sps->sps_bitdepth_minus8;
+
     int8_t pic_base_qp = pps->pps_init_qp_minus26 + 26;
     int8_t pic_qp = pic_base_qp + ph->ph_qp_delta;
     int8_t slice_qp = pic_qp + sh->sh_qp_delta;
+
     int8_t cb_qp_offset = sh->sh_cb_qp_offset + pps->pps_cb_qp_offset;
     int8_t cr_qp_offset = sh->sh_cr_qp_offset + pps->pps_cr_qp_offset;
     int8_t jcbcr_qp_offset = sh->sh_joint_cbcr_qp_offset + pps->pps_joint_cbcr_qp_offset_value;
-    uint8_t cu_qp_delta_subdiv = sh->sh_slice_type == 2 ? ph->ph_cu_qp_delta_subdiv_intra_slice : ph->ph_cu_qp_delta_subdiv_inter_slice;
-    uint8_t cu_qp_chroma_offset_subdiv = sh->sh_slice_type == 2 ? ph->ph_cu_chroma_qp_offset_subdiv_intra_slice : ph->ph_cu_chroma_qp_offset_subdiv_inter_slice;
-    tools->chroma_qp_offset_enabled = sh->sh_cu_chroma_qp_offset_enabled_flag;
-    tools->chroma_qp_offset_len = pps->pps_chroma_qp_offset_list_len_minus1 + 1;
 
-    ctudec->slice_qp = pic_qp + sh->sh_qp_delta;
+    uint8_t cu_qp_delta_subdiv = sh->sh_slice_type == 2 ? ph->ph_cu_qp_delta_subdiv_intra_slice
+                                                        : ph->ph_cu_qp_delta_subdiv_inter_slice;
+
+    uint8_t cu_qp_chroma_offset_subdiv = sh->sh_slice_type == 2 ? ph->ph_cu_chroma_qp_offset_subdiv_intra_slice
+                                                                : ph->ph_cu_chroma_qp_offset_subdiv_inter_slice;
+
+    ctudec->slice_qp = slice_qp;
 
     tools->cu_qp_delta_subdiv = cu_qp_delta_subdiv;
     tools->cu_qp_chroma_offset_subdiv = cu_qp_chroma_offset_subdiv;
+    tools->chroma_qp_offset_enabled = sh->sh_cu_chroma_qp_offset_enabled_flag;
+    tools->chroma_qp_offset_len = pps->pps_chroma_qp_offset_list_len_minus1 + 1;
+
+
     /* FIXME
      * check tables are valid when same qp table for all
      */
@@ -160,7 +168,9 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     memcpy(qp_ctx->cb_qp_offset_list, pps->pps_cb_qp_offset_list, sizeof(int8_t)*16);
     memcpy(qp_ctx->cr_qp_offset_list, pps->pps_cr_qp_offset_list, sizeof(int8_t)*16);
     memcpy(qp_ctx->joint_cbcr_qp_offset_list, pps->pps_joint_cbcr_qp_offset_list, sizeof(int8_t)*16);
+
     qp_ctx2->current_qp = slice_qp;
+
     qp_ctx->cb_offset = cb_qp_offset;
     qp_ctx->cr_offset = cr_qp_offset;
     qp_ctx->jcbcr_offset = jcbcr_qp_offset;
@@ -168,9 +178,11 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     qp_ctx->min_qp_prime_ts = 4 + 6 * sps->sps_min_qp_prime_ts;
 
     ctudec->dequant_luma = slice_qp + qp_bd_offset;
+
     ctudec->dequant_cb = qp_ctx->chroma_qp_map_cb[ov_clip(slice_qp, 0, 63)] + cb_qp_offset + qp_bd_offset;
     ctudec->dequant_cr = qp_ctx->chroma_qp_map_cr[ov_clip(slice_qp, 0, 63)] + cr_qp_offset + qp_bd_offset;
     ctudec->dequant_joint_cb_cr = qp_ctx->chroma_qp_map_jcbcr[ov_clip(slice_qp, 0, 63)] + qp_bd_offset + jcbcr_qp_offset;
+
     derive_dequant_ctx(ctudec, qp_ctx, qp_ctx2, 0);
 }
 
