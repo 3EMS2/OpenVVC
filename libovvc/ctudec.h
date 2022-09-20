@@ -538,25 +538,25 @@ struct CTURCNData
     DECLARE_ALIGNED(32, uint16_t, cb_buff)[RCN_CTB_SIZE + 256];
     DECLARE_ALIGNED(32, uint16_t, cr_buff)[RCN_CTB_SIZE + 256];
 
-    DECLARE_ALIGNED(32, uint16_t, tmp_bi_mrg0)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, tmp_bi_mrg1)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, tmp_bi_mrg2)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, tmp_bi_mrg3)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, ciip_0)[RCN_CTB_SIZE2];
+    DECLARE_ALIGNED(32, uint16_t, ciip_1)[RCN_CTB_SIZE2];
+    DECLARE_ALIGNED(32, uint16_t, ciip_2)[RCN_CTB_SIZE2];
 
-    DECLARE_ALIGNED(32, uint16_t, tmp_inter_l)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, tmp_inter_cb)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, tmp_inter_cr)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_bi_mrg0)[RCN_CTB_SIZE2];
+    DECLARE_ALIGNED(32, uint16_t, tmp_bi_mrg1)[RCN_CTB_SIZE2];
+    DECLARE_ALIGNED(32, uint16_t, tmp_bi_mrg2)[RCN_CTB_SIZE2];
     /* To be used for temporary storage when we needed
      */
-    DECLARE_ALIGNED(32, uint16_t, edge_buff0)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, edge_buff1)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, edge_buff0_1)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, edge_buff1_1)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, tmp_buff0)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, tmp_buff1)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, edge_buff0)[RCN_CTB_SIZE2];
+    DECLARE_ALIGNED(32, uint16_t, edge_buff1)[RCN_CTB_SIZE2];
+    DECLARE_ALIGNED(32, uint16_t, edge_buff0_1)[RCN_CTB_SIZE2];
+    DECLARE_ALIGNED(32, uint16_t, edge_buff1_1)[RCN_CTB_SIZE2];
+
+    DECLARE_ALIGNED(32, uint16_t, tmp_buff0)[RCN_CTB_SIZE2];
+    DECLARE_ALIGNED(32, uint16_t, tmp_buff1)[RCN_CTB_SIZE2];
     
-    DECLARE_ALIGNED(32, uint16_t, tmp_buff)[4*RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, tmp_rpr)[4*RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_buff)[4*RCN_CTB_SIZE2];
+    DECLARE_ALIGNED(32, uint16_t, tmp_rpr)[4*RCN_CTB_SIZE2];
 
 };
 

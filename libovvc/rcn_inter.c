@@ -3086,12 +3086,13 @@ rcn_ciip_b(OVCTUDec*const ctudec,
     //Inter merge mode
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     const OVPartInfo *const part_ctx = ctudec->part_ctx;
-    struct OVBuffInfo tmp_inter;
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
+    struct OVBuffInfo tmp_inter;
 
-    tmp_inter.y  = (OVSample *)&rcn_ctx->data.tmp_inter_l[RCN_CTB_PADDING];
-    tmp_inter.cb = (OVSample *)&rcn_ctx->data.tmp_inter_cb[RCN_CTB_PADDING];
-    tmp_inter.cr = (OVSample *)&rcn_ctx->data.tmp_inter_cr[RCN_CTB_PADDING];
+    tmp_inter.y  = (OVSample *)&rcn_ctx->data.ciip_0[RCN_CTB_PADDING];
+    tmp_inter.cb = (OVSample *)&rcn_ctx->data.ciip_1[RCN_CTB_PADDING];
+    tmp_inter.cr = (OVSample *)&rcn_ctx->data.ciip_2[RCN_CTB_PADDING];
+
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
 
@@ -3112,15 +3113,13 @@ rcn_ciip(OVCTUDec *const ctudec,
          OVMV mv, uint8_t ref_idx)
 {
     //Inter merge mode
-    struct OVBuffInfo tmp_inter;
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
-    OVSample * tmp_inter_l = (OVSample *)rcn_ctx->data.tmp_inter_l;
-    OVSample *tmp_inter_cb = (OVSample *)rcn_ctx->data.tmp_inter_cb;
-    OVSample *tmp_inter_cr = (OVSample *)rcn_ctx->data.tmp_inter_cr;
+    struct OVBuffInfo tmp_inter;
 
-    tmp_inter.y  = &tmp_inter_l [RCN_CTB_PADDING];
-    tmp_inter.cb = &tmp_inter_cb[RCN_CTB_PADDING];
-    tmp_inter.cr = &tmp_inter_cr[RCN_CTB_PADDING];
+    tmp_inter.y  = (OVSample *)&rcn_ctx->data.ciip_0[RCN_CTB_PADDING];
+    tmp_inter.cb = (OVSample *)&rcn_ctx->data.ciip_1[RCN_CTB_PADDING];
+    tmp_inter.cr = (OVSample *)&rcn_ctx->data.ciip_2[RCN_CTB_PADDING];
+
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
 

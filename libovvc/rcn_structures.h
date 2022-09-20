@@ -67,16 +67,17 @@ enum RCNSizes
     *     +  4 samples for intra Multi Ref Lines
     *     + 12 samples for memory alignement purposes
     */
-   RCN_CTB_STRIDE  = (128 + 16 + 64),
+   RCN_CTB_STRIDE = (128 + 8),
 
-   /* A padding of 4 upper lines and 16 left
+   /* A padding of 4 upper lines and 4 left
     * columns from buffer start to be used for
     * border copy for intra prediction
     */
-   RCN_CTB_PADDING = (RCN_CTB_STRIDE * 4 + 16),
+   RCN_CTB_PADDING = (RCN_CTB_STRIDE * 4 + 4),
 
    /* Size of CTB Buffer in samples */
-   RCN_CTB_SIZE    = (RCN_CTB_STRIDE * RCN_CTB_STRIDE),
+   RCN_CTB_SIZE  =  (256 + 4 + 64) * (128 + 1),
+   RCN_CTB_SIZE2  = (RCN_CTB_STRIDE * (128 + 8)),
 };
 
 struct CTUBitField
