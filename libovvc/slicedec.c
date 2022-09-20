@@ -1178,7 +1178,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
     ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
 
-    copy_init_stuff(sldec, ctudec, prms);
 
     ctudec->cabac_ctx = &cabac_ctx;
 
@@ -1446,7 +1445,10 @@ int
 slicedec_update_entry_decoder(OVSliceDec *sldec, OVCTUDec *ctudec)
 {
     const OVPS *const prms = &sldec->active_params;
+
     slicedec_init_slice_tools(ctudec, prms);
+
+    copy_init_stuff(sldec, ctudec, prms);
 
     return 0;
 }
