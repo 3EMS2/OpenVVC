@@ -215,11 +215,10 @@ decode_last_sig_prefix(OVCABACCtx *const cabac_ctx,
     /* FIXME this tab could be adapted by adding some unused ctx to last sig ctx */
     static const int prefix_ctx[8]  = { 0, 0, 0, 3, 6, 10, 15, 21 };
     int pos = 0;
-    int ctx_offset, ctx_shift;
     int max_symbol = OVMIN(log2_tb_d, 5) << 1;
 
-    ctx_offset = prefix_ctx[log2_tb_d];
-    ctx_shift  = (log2_tb_d + 1) >> 2 ;
+    int ctx_offset = prefix_ctx[log2_tb_d];
+    int ctx_shift  = (log2_tb_d + 1) >> 2 ;
 
     while(--max_symbol > 0 && ovcabac_ae_read(cabac_ctx, &cabac_state[offset_ctx + ctx_offset + (pos >> ctx_shift)])){
         ++pos;
@@ -236,11 +235,10 @@ decode_last_sig_prefix_sbt_mts(OVCABACCtx *const cabac_ctx,
     /* FIXME this tab could be adapted by adding some unused ctx to last sig ctx */
     static const int prefix_ctx[8]  = { 0, 0, 0, 3, 6, 10, 15, 21 };
     int pos = 0;
-    int ctx_offset, ctx_shift;
-    int max_symbol = OVMIN(log2_tb_red, 5) << 1;
+    int max_symbol = log2_tb_red << 1;
 
-    ctx_offset = prefix_ctx[log2_tb_d];
-    ctx_shift  = (log2_tb_red + 1) >> 2 ;
+    int ctx_offset = prefix_ctx[log2_tb_d];
+    int ctx_shift  = (log2_tb_red + 1) >> 2 ;
 
     while(--max_symbol > 0 && ovcabac_ae_read(cabac_ctx, &cabac_state[offset_ctx + ctx_offset + (pos >> ctx_shift)])){
         ++pos;
@@ -661,9 +659,9 @@ residual_coding_l(OVCTUDec *const ctu_dec,
     if (!tr_skip_flag || tools->sh_ts_disabled) {
         uint16_t last_pos;
         if (tu_info->is_sbt && tu_info->cu_mts_flag && log2_tb_w <= 5 && log2_tb_h <= 5) {
-            last_pos = ovcabac_read_ae_last_sig_pos_red(cabac_ctx, log2_tb_w, log2_tb_h);
             uint8_t log2_red_w = log2_tb_w == 5 ? 4 : log2_tb_w;
             uint8_t log2_red_h = log2_tb_h == 5 ? 4 : log2_tb_h;
+            last_pos = ovcabac_read_ae_last_sig_pos_red(cabac_ctx, log2_tb_w, log2_tb_h);
 
             /* FIXME recheck this */
             ctu_dec->tmp_red  =  log2_tb_w - log2_red_w;
