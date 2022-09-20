@@ -1262,10 +1262,13 @@ static int
 sbt_tree(OVCTUDec *const ctu_dec,
          unsigned int x0, unsigned int y0,
          unsigned int log2_tb_w, unsigned int log2_tb_h,
-         uint8_t sbt_mode,
-         uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
+         uint8_t sbt_type, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     /* FIXME remove this if zeroing is done by transform */
+    uint8_t sbt_pos = !!(sbt_type & 0x80);
+
+    uint8_t sbt_mode = sbt_type & 0x7F;
+
     tu_info[0].is_sbt = 1;
 
     fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
@@ -1273,22 +1276,18 @@ sbt_tree(OVCTUDec *const ctu_dec,
 
     switch (sbt_mode) {
     case 0x1:
-         /*sbt_ver*/
          sbt_half_hor(ctu_dec, x0, y0, log2_tb_w, log2_tb_h,
                       sbt_pos, cu_flags, tu_info);
          break;
     case 0x2:
-         /*sbt_hor*/
          sbt_half_ver(ctu_dec, x0, y0, log2_tb_w, log2_tb_h,
                       sbt_pos, cu_flags, tu_info);
          break;
     case 0x4:
-         /*sbt_ver/quad*/
          sbt_quad_hor(ctu_dec, x0, y0, log2_tb_w, log2_tb_h,
                       sbt_pos, cu_flags, tu_info);
          break;
     case 0x8:
-         /*sbt_hor/quad*/
          sbt_quad_ver(ctu_dec, x0, y0, log2_tb_w, log2_tb_h,
                       sbt_pos, cu_flags, tu_info);
          break;
@@ -1815,12 +1814,9 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
                         sbt_flag = ovcabac_read_ae_sbt_flag(cabac_ctx, log2_cb_w, log2_cb_h);
                         if (sbt_flag) {
                             uint8_t sbt_type = sbt_mode(cabac_ctx, log2_cb_w, log2_cb_h, sbt_mask);
-                            uint8_t sbt_pos = !!(sbt_type & 0x80);
-
-                            sbt_type &= 0x7F;
 
                             sbt_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h,
-                                     sbt_type, !!sbt_pos, cu.cu_flags, tu_info);
+                                     sbt_type, cu.cu_flags, tu_info);
                         }
                     }
                 }
