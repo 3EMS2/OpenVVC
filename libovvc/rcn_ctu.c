@@ -208,11 +208,8 @@ free_filter_buffers(struct OVRCNCtx *const rcn_ctx)
 {
     OVSample** saved_rows_sao    = rcn_ctx->filter_buffers.saved_rows_sao;
     OVSample** saved_rows_alf    = rcn_ctx->filter_buffers.saved_rows_alf;
-    OVSample** filter_region     = rcn_ctx->filter_buffers.filter_region;
 
-    for(int comp = 0; comp < 3; comp++)
-    {
-        if(filter_region[comp])     ov_freep(&filter_region[comp]);
+    for (int comp = 0; comp < 3; comp++) {
         if(saved_rows_sao[comp])    ov_freep(&saved_rows_sao[comp]);
         if(saved_rows_alf[comp])    ov_freep(&saved_rows_alf[comp]);
     }
@@ -512,8 +509,13 @@ rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t l
     OVSample** saved_rows_sao = fb->saved_rows_sao;
     OVSample** saved_rows_alf = fb->saved_rows_alf;
     OVSample** filter_region = fb->filter_region;
+    struct CTURCNData *data = &rcn_ctx->data;
     int margin = 3;
     fb->margin = margin;
+
+    filter_region[0] = (OVSample *)data->tmp_bi_mrg0;
+    filter_region[1] = (OVSample *)data->tmp_bi_mrg1;
+    filter_region[2] = (OVSample *)data->tmp_bi_mrg2;
 
     for(int comp = 0; comp < 3; comp++) {
         int ratio_luma_chroma = 2;
@@ -526,7 +528,6 @@ rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t l
 
         if (!filter_region[comp]) {
             int ext_size = fb->filter_region_stride[comp] * (fb->filter_region_h[comp] + 2 * margin + 1);
-            filter_region[comp] = ov_malloc(ext_size * sizeof(OVSample));
         }
 
         fb->saved_rows_stride[comp] = nb_ctu_w * ctu_s / ratio; ;
