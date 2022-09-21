@@ -372,13 +372,18 @@ struct WPInfo
 struct InterDRVCtx
 {
     /* References Pictures Lists */
+    uint8_t nb_active_ref0;
+    uint8_t nb_active_ref1;
+    uint8_t low_delay;
+
     struct OVPicture *rpl0[16];
     struct OVPicture *rpl1[16];
-    uint16_t scale_fact_rpl0[16][2];
-    uint16_t scale_fact_rpl1[16][2];
-    uint16_t rpr_scale_msk0;
-    uint16_t rpr_scale_msk1;
-    int32_t poc;
+
+    uint8_t rpl0_opp[16];
+    uint8_t rpl1_opp[16];
+
+    int16_t dist_ref_0[16];
+    int16_t dist_ref_1[16];
 
     struct WPInfo wp_info0[16];
     struct WPInfo wp_info1[16];
@@ -386,20 +391,18 @@ struct InterDRVCtx
     uint8_t weighted_denom_c;
     uint8_t weighted_pred_status;
 
-    uint8_t rpl0_opp[16];
-    uint8_t rpl1_opp[16];
+    uint16_t scale_fact_rpl0[16][2];
+    uint16_t scale_fact_rpl1[16][2];
+    uint16_t rpr_scale_msk0;
+    uint16_t rpr_scale_msk1;
 
-    uint8_t nb_active_ref0;
-    uint8_t nb_active_ref1;
-
-    int16_t dist_ref_0[16];
-    int16_t dist_ref_1[16];
+    int32_t poc;
 
     /* Symmetric MVD (SMVD) Related
      * information
      */
-    int ref_smvd_idx0;
-    int ref_smvd_idx1;
+    int8_t ref_smvd_idx0;
+    int8_t ref_smvd_idx1;
 
     uint8_t mmvd_shift;
 
@@ -412,7 +415,6 @@ struct InterDRVCtx
     uint8_t bdof_enabled;
     uint8_t dmvr_enabled;
     uint8_t log2_parallel_merge_level;
-
 
     /* CTU Local Map Motion Vectors */
     struct OVMVCtx mv_ctx0;
@@ -436,40 +438,22 @@ struct InterDRVCtx
         const struct MVPlane *plane0;
         const struct MVPlane *plane1;
 
-        struct ColInfo {
-            int8_t ref_idx_rpl0;
-            int8_t ref_idx_rpl1;
-        }col_info;
-
         const struct OVPicture *col_ref;
 
         /* MV plane storage for collocated reference picture */
         const struct MVPlane *col_plane0;
         const struct MVPlane *col_plane1;
+
         uint16_t pln0_stride;
         uint16_t pln1_stride;
-        const struct TMVPMV *ctb_mv0;
-        const struct TMVPMV *ctb_mv1;
 
         uint8_t col_ref_l0;
-        uint8_t ldc;
-
-        /* Scale info computed at slice start
-         * based on the distance between collocated
-         * and current picture in POC
-         */
-        int16_t scale00;
-        int16_t scale01;
-        int16_t scale10;
-        int16_t scale11;
-
-        /* FIXME do not start from 1 */
         /* Vertical bit map of motions available in collocated MV CTU */
         uint64_t dir_map_v0[34];
         uint64_t dir_map_v1[34];
 
-        struct TMVPMV mvs0[16*17];
-        struct TMVPMV mvs1[16*17];
+        const struct TMVPMV *ctb_mv0;
+        const struct TMVPMV *ctb_mv1;
 
         uint8_t ctu_w;
         uint8_t ctu_h;
@@ -694,7 +678,6 @@ struct OVCTUDec
          * current CTU, and its borders those are used for example
          * in order to derive references samples for intra prediction
          */
-         /* FIXME move to drv */
         struct CTUBitField progress_field;
 
         struct CTUBitField progress_field_c;

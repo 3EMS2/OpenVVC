@@ -413,20 +413,10 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     const struct MVPlane *plane0 = tmvp_ctx->col_plane0;
     const struct MVPlane *plane1 = tmvp_ctx->col_plane1;
 
-    #if 0
-    if (is_border_pic) {
-        memset(&tmvp_ctx->dir_map_v0[nb_pb_ctb_w], 0, sizeof(uint64_t));
-        memset(&tmvp_ctx->dir_map_v1[nb_pb_ctb_w], 0, sizeof(uint64_t));
-    }
-    #endif
     if (is_border_pic) {
         memset(tmvp_ctx->dir_map_v0, 0, sizeof(uint64_t) * 34);
         memset(tmvp_ctx->dir_map_v1, 0, sizeof(uint64_t) * 34);
     }
-    #if 0
-    memset(tmvp_ctx->mvs0, 0, sizeof(tmvp_ctx->mvs0));
-    memset(tmvp_ctx->mvs1, 0, sizeof(tmvp_ctx->mvs1));
-    #endif
 
     const OVPicture* ref_pic = tmvp_ctx->col_ref;
     if (ref_pic)
@@ -439,23 +429,14 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         int32_t pln_stride = nb_tmvp_unit * nb_ctb_w;
         int32_t ctb_offset = ctb_x * nb_tmvp_unit + (ctb_y * nb_tmvp_unit * pln_stride);
         struct TMVPMV *src_mv = plane0->mvs + ctb_offset;
-        struct TMVPMV *mvs = tmvp_ctx->mvs0;
-        int i;
-            tmvp_ctx->ctb_mv0 = src_mv;
-            tmvp_ctx->pln0_stride = pln_stride;
 
-        memcpy(&tmvp_ctx->dir_map_v0[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
-        #if 0
-        for (i = 0; i < nb_pb_ctb_w; i += 2) {
-            memcpy(mvs, src_mv, sizeof(*mvs) * (nb_tmvp_unit + !is_border_pic));
-            mvs += TMVP_BUFF_STRIDE;
-            src_mv += pln_stride;
-        }
-        #endif
+        tmvp_ctx->ctb_mv0 = src_mv;
+        tmvp_ctx->pln0_stride = pln_stride;
+
+        memcpy(&tmvp_ctx->dir_map_v0[0], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
     }
 
     if (plane1 && plane1->dirs) {
-        struct TMVPMV *mvs = tmvp_ctx->mvs1;
         uint64_t *src_dirs = plane1->dirs + ctb_addr_rs * nb_pb_ctb_w;
         int i;
 
@@ -464,18 +445,12 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         int32_t ctb_offset = ctb_x * nb_tmvp_unit + (ctb_y * nb_tmvp_unit * pln_stride);
         struct TMVPMV *src_mv = plane1->mvs + ctb_offset;
 
-            tmvp_ctx->ctb_mv1 = src_mv;
-            tmvp_ctx->pln1_stride = pln_stride;
-            tmvp_ctx->pln0_stride = pln_stride;
+        tmvp_ctx->ctb_mv1 = src_mv;
+        tmvp_ctx->pln1_stride = pln_stride;
+        tmvp_ctx->pln0_stride = pln_stride;
+
         /*FIXME memory could be spared with smaller map size when possible */
-        memcpy(&tmvp_ctx->dir_map_v1[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
-        #if 0
-        for (i = 0; i < nb_pb_ctb_w; i += 2) {
-            memcpy(mvs, src_mv, sizeof(*mvs) * (nb_tmvp_unit + !is_border_pic));
-            mvs += TMVP_BUFF_STRIDE;
-            src_mv += pln_stride;
-        }
-        #endif
+        memcpy(&tmvp_ctx->dir_map_v1[0], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
     }
 
     inter_ctx->tmvp_avail |= 1;
@@ -527,11 +502,11 @@ check_tmvp_cand(const uint64_t *v_map0, const uint64_t *v_map1,
                 struct TMVPPos pos)
 {
     /* Derive availability based on CTB inter fields */
-    uint64_t c0_col  = v_map0[pos.c0_x + 1];
-    uint64_t c0_col1 = v_map1[pos.c0_x + 1];
+    uint64_t c0_col  = v_map0[pos.c0_x];
+    uint64_t c0_col1 = v_map1[pos.c0_x];
 
-    uint64_t c1_col  = v_map0[pos.c1_x + 1];
-    uint64_t c1_col1 = v_map1[pos.c1_x + 1];
+    uint64_t c1_col  = v_map0[pos.c1_x];
+    uint64_t c1_col1 = v_map1[pos.c1_x];
 
     uint8_t cand_c0  = !!(c0_col  & TMVP_POS_MASK(pos.c0_y));
     uint8_t cand_c01 = !!(c0_col1 & TMVP_POS_MASK(pos.c0_y));
@@ -583,7 +558,7 @@ tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
         int16_t c0_pos = TMVP_POS_IN_BUF2(pos.c0_x, pos.c0_y);
 
         const struct TMVPMV *mvs    = cand_c0 ? tmvp->ctb_mv0
-                                     : tmvp->ctb_mv1;
+                                              : tmvp->ctb_mv1;
 
         mv       = mvs[c0_pos];
         dist_col = mv.z;
@@ -641,7 +616,7 @@ tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
         int16_t c0_pos = TMVP_POS_IN_BUF2(pos.c0_x, pos.c0_y);
 
         const struct TMVPMV *mvs    = cand_c01 ? tmvp->ctb_mv1
-                                      : tmvp->ctb_mv0;
+                                               : tmvp->ctb_mv0;
 
         mv       = mvs[c0_pos];
         dist_col = mv.z;
@@ -652,7 +627,7 @@ tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
         int16_t c1_pos = TMVP_POS_IN_BUF2(pos.c1_x, pos.c1_y);
 
         const struct TMVPMV *mvs    = cand_c11 ? tmvp->ctb_mv1
-                                      : tmvp->ctb_mv0;
+                                               : tmvp->ctb_mv0;
 
         mv       = mvs[c1_pos];
         dist_col = mv.z;
@@ -1418,7 +1393,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
             uint8_t rpl_idx  = inter_dir - 1;
             uint8_t col_ref_l0 = tmvp->col_ref_l0;
             OVMV dst;
-            if ((!col_ref_l0 && !tmvp->ldc) || (tmvp->ldc && rpl_idx == RPL_0)) {
+            if ((!col_ref_l0 && !inter_ctx->low_delay) || (inter_ctx->low_delay && rpl_idx == RPL_0)) {
                 avail = tmvp_from_l0(inter_ctx, tmvp, pos, rpl_idx, ref_idx, cand_msk, &dst);
             } else {
                 avail = tmvp_from_l1(inter_ctx, tmvp, pos, rpl_idx, ref_idx, cand_msk, &dst);
@@ -1751,8 +1726,8 @@ check_sbtmvp_cand(const uint64_t *v_map0, const uint64_t *v_map1,
                   struct OVPos pos)
 {
     /* Derive availability based on CTB inter fields */
-    uint64_t col_rpl0 = v_map0[(pos.x >> 2) + 1];
-    uint64_t col_rpl1 = v_map1[(pos.x >> 2) + 1];
+    uint64_t col_rpl0 = v_map0[(pos.x >> 2)];
+    uint64_t col_rpl1 = v_map1[(pos.x >> 2)];
 
     uint8_t cand_rpl0 = !!(col_rpl0 & TMVP_POS_MASK((pos.y >> 2)));
     uint8_t cand_rpl1 = !!(col_rpl1 & TMVP_POS_MASK((pos.y >> 2)));
@@ -1800,7 +1775,7 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
     uint8_t cand_msk = check_sbtmvp_cand(tmvp->dir_map_v0, tmvp->dir_map_v1, center_pos);
 
     if (cand_msk) {
-        if (tmvp->ldc) {
+        if (inter_ctx->low_delay) {
             OVMV col_mv[2];
             inter_dir  = sbtmvp_from_ldc(inter_ctx, tmvp, center_pos,
                                          RPL_0, 0, cand_msk, col_mv);
@@ -1852,9 +1827,6 @@ set_zero_mvs_p(struct InterDRVCtx *inter_ctx,
 
     for (i = 0; i < nb_sb_h; ++i) {
         for (j = 0; j < nb_sb_w; ++j) {
-
-            mv0.ref_idx       = 0;
-            mv0.bcw_idx_plus1 = 0;
 
             tmvp_mv0[j] = tmvpmv0;
 
@@ -1923,7 +1895,7 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
             uint8_t cand_msk = check_sbtmvp_cand(tmvp->dir_map_v0, tmvp->dir_map_v1, col_pos);
 
             if (cand_msk) {
-                if (tmvp->ldc) {
+                if (inter_ctx->low_delay) {
                     OVMV col_mv[2];
                     inter_dir  = sbtmvp_from_ldc(inter_ctx, tmvp, col_pos, RPL_0, 0, cand_msk, col_mv);
 
@@ -1948,6 +1920,7 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
                                         2, 2);
             mv0.ref_idx       = 0;
             mv0.bcw_idx_plus1 = 0;
+
             struct TMVPMV tmvpmv = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->dist_ref_0[0]};
 
             tmvp_mv0[j] = tmvpmv;
@@ -2085,7 +2058,7 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
             uint8_t cand_msk = check_sbtmvp_cand(tmvp->dir_map_v0, tmvp->dir_map_v1, col_pos);
 
             if (cand_msk) {
-                if (tmvp->ldc) {
+                if (inter_ctx->low_delay) {
                     OVMV col_mv[2];
                     inter_dir  = sbtmvp_from_ldc(inter_ctx, tmvp, col_pos, RPL_0, 0, cand_msk, col_mv);
 
@@ -2767,7 +2740,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
                 dir[3] = 0;
 
                 /* FIXME inter_dir */
-                if (tmvp->ldc) {
+                if (inter_ctx->low_delay) {
                     avail_dir = merge_tmvp_from_ldc(inter_ctx, tmvp, pos,
                                                     rpl_idx, 0, cand_msk, c0_mv);
                 } else if (!col_ref_l0) {

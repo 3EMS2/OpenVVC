@@ -2298,7 +2298,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
     if (tools->bcw_enabled && (1 << (log2_cb_h + log2_cb_w) >= BCW_SIZE_CONSTRAINT)) {
         uint8_t bcw_flag = ovcabac_read_ae_bcw_flag(cabac_ctx);
         if (bcw_flag) {
-            bcw_idx = ovcabac_read_ae_bcw_idx(cabac_ctx, inter_ctx->tmvp_ctx.ldc);
+            bcw_idx = ovcabac_read_ae_bcw_idx(cabac_ctx, inter_ctx->low_delay);
         }
     }
 

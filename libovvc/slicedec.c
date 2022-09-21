@@ -897,9 +897,10 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
 {
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct ToolsInfo *tools = &ctudec->tools;
+
     tools->smvd_enabled = 0;
 
-    if (prms->sps->sps_smvd_enabled_flag && !inter_ctx->tmvp_ctx.ldc
+    if (prms->sps->sps_smvd_enabled_flag && !inter_ctx->low_delay
         && !tools->mvd1_zero_enabled) {
         const int nb_active_ref0 = inter_ctx->nb_active_ref0;
         const int nb_active_ref1 = inter_ctx->nb_active_ref1;
@@ -1041,7 +1042,6 @@ static void
 ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
 {
     struct Frame *frame = pic->frame;
-    /*FIXME only 420*/
     uint16_t add_w = (pic->scale_info.scaling_win_left + pic->scale_info.scaling_win_right) << 1;
     uint16_t add_h = (pic->scale_info.scaling_win_top + pic->scale_info.scaling_win_bottom) << 1;
     uint16_t pic_w = frame->width  - add_w;
@@ -1050,14 +1050,15 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
     int scale_h, scale_v;
     int ref_pic_w, ref_pic_h;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+
     inter_ctx->rpr_scale_msk0 = 0;
     inter_ctx->rpr_scale_msk1 = 0;
+
     for (int i = 0;  i < inter_ctx->nb_active_ref0; ++i){
         OVPicture *ref_pic  = inter_ctx->rpl0[i];
         frame = ref_pic->frame;
         if (!frame)
             continue;
-        /*FIXME only 420*/
         add_w = (ref_pic->scale_info.scaling_win_left + ref_pic->scale_info.scaling_win_right) << 1;
         add_h = (ref_pic->scale_info.scaling_win_top + ref_pic->scale_info.scaling_win_bottom) << 1;
         ref_pic_w = frame->width  - add_w;
@@ -1071,12 +1072,12 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
 
         inter_ctx->rpr_scale_msk0 |= (scale_h != RPR_NO_SCALE || scale_v != RPR_NO_SCALE) << i;
     }
+
     for (int i = 0;  i < inter_ctx->nb_active_ref1; ++i){
         OVPicture *ref_pic = inter_ctx->rpl1[i];
         frame = ref_pic->frame;
         if (!frame)
             continue;
-        /*FIXME only 420*/
         add_w = (ref_pic->scale_info.scaling_win_left + ref_pic->scale_info.scaling_win_right) << 1;
         add_h = (ref_pic->scale_info.scaling_win_top  + ref_pic->scale_info.scaling_win_bottom) << 1;
         ref_pic_w = frame->width  - add_w;
@@ -1121,12 +1122,14 @@ copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVP
 
     derive_ref_weights(ctudec, &sldec->active_params);
 
-    inter_ctx->tmvp_ctx.ldc = 1;
+    inter_ctx->low_delay = 1;
+
+    /* FIXME Bidir only */
     for (int i = 0; i < nb_active_refs0; ++i) {
         uint8_t opp_ref_idx0 = 0xFF;
 
         if (sldec->dist_ref_0[i] < 0) {
-            inter_ctx->tmvp_ctx.ldc = 0;
+            inter_ctx->low_delay = 0;
         }
 
         for (int j = 0; j < nb_active_refs1; j ++) {
@@ -1142,7 +1145,7 @@ copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVP
         uint8_t opp_ref_idx1 = 0xFF;
 
         if (sldec->dist_ref_1[i] < 0) {
-            inter_ctx->tmvp_ctx.ldc = 0;
+            inter_ctx->low_delay = 0;
         }
 
         for (int j = 0; j < nb_active_refs0; j ++) {
@@ -1154,7 +1157,6 @@ copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVP
         inter_ctx->rpl1_opp[i] = opp_ref_idx1;
     }
 
-    /* FIXME Bidir only */
     slicedec_smvd_params(ctudec, prms, sldec->pic->poc);
 }
 

@@ -381,9 +381,8 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 
         if (plane0 && plane0->dirs) {
             const uint64_t *src_map = plane0->dirs + ctb_addr_rs * nb_unit_ctb;
-                  uint64_t *dst_map = tmvp_ctx->dir_map_v0 + 1;
+                  uint64_t *dst_map = tmvp_ctx->dir_map_v0;
             const struct TMVPMV *src_mvs = plane0->mvs + ctb_offset;
-                  struct TMVPMV *dst_mvs = tmvp_ctx->mvs0;
             int i;
 
             tmvp_ctx->ctb_mv0 = src_mvs;
@@ -393,9 +392,8 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 
         if (plane1 && plane1->dirs) {
             const uint64_t *src_map = plane1->dirs + ctb_addr_rs * nb_unit_ctb;
-                  uint64_t *dst_map = tmvp_ctx->dir_map_v1 + 1;
+                  uint64_t *dst_map = tmvp_ctx->dir_map_v1;
             const struct TMVPMV *src_mvs = plane1->mvs + ctb_offset;
-                  struct TMVPMV *dst_mvs = tmvp_ctx->mvs1;
             int i;
 
             /*FIXME memory could be spared with smaller map size when possible */
@@ -446,8 +444,8 @@ derive_tmvp_status(const uint64_t *rpl0_vmap, const uint64_t *rpl1_vmap,
     uint64_t c0_vmsk = TMVP_POS_MASK(c0_y);
     uint64_t c1_vmsk = TMVP_POS_MASK(c1_y);
 
-    uint8_t c0_col_idx = c0_x + 1;
-    uint8_t c1_col_idx = c1_x + 1;
+    uint8_t c0_col_idx = c0_x;
+    uint8_t c1_col_idx = c1_x;
 
     uint64_t c0_rpl0 = rpl0_vmap[c0_col_idx] & c0_vmsk;
     uint64_t c0_rpl1 = rpl1_vmap[c0_col_idx] & c0_vmsk;
@@ -492,7 +490,7 @@ derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx
         struct TMVPMV col_mv;
         int16_t scale;
 
-        if (!(tmvp->col_ref_l0 || tmvp->ldc) || (tmvp->ldc && is_rpl0)) {
+        if (!(tmvp->col_ref_l0 || inter_ctx->low_delay) || (inter_ctx->low_delay && is_rpl0)) {
 
             if (status & 0x1) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
@@ -996,7 +994,7 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
         struct TMVPMV col_mv_opp;
         struct TMVPMV col_mv;
 
-        if (tmvp->ldc) {
+        if (inter_ctx->low_delay) {
             int pos_in_buff =  TMVP_POS_IN_BUF2(c0_x, c0_y);
             uint8_t cand_cur = 1 ? cand_c0_cur : cand_c1_cur;
             uint8_t cand_opp = 1 ? cand_c0_opp : cand_c1_opp;
