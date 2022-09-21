@@ -1247,10 +1247,12 @@ init_affine_status(OVCTUDec *const ctudec, const OVSPS *const sps,
                    const OVPH *const ph)
 {
     struct ToolsInfo *tools = &ctudec->tools;
-    tools->affine_nb_merge_cand = 5 - sps->sps_five_minus_max_num_subblock_merge_cand;
     tools->affine_status  = sps->sps_affine_amvr_enabled_flag;
     tools->affine_status |= sps->sps_6param_affine_enabled_flag << 1;
     tools->affine_status |= sps->sps_affine_prof_enabled_flag << 2;
+
+    tools->affine_nb_merge_cand = 5 - sps->sps_five_minus_max_num_subblock_merge_cand;
+
     ctudec->drv_ctx.inter_ctx.affine_6params_enabled = sps->sps_6param_affine_enabled_flag;
 }
 
@@ -1344,68 +1346,73 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
                           ctudec->dbf_disable = 1;
 #endif
     ctudec->dbf_info.ibc_ctx = &ctudec->drv_ctx.ibc_ctx;
+    ctudec->drv_ctx.ibc_ctx.bs1_map = &ctudec->dbf_info.bs1_map;
 
-    ctudec->dbf_info.beta_offset = pps->pps_luma_beta_offset_div2 * 2;
-    ctudec->dbf_info.tc_offset   = pps->pps_luma_tc_offset_div2 * 2;
+    struct DBFInfo *const dbf_info = &ctudec->dbf_info;
+
+    dbf_info->beta_offset = pps->pps_luma_beta_offset_div2 * 2;
+    dbf_info->tc_offset   = pps->pps_luma_tc_offset_div2 * 2;
     if (pps->pps_chroma_tool_offsets_present_flag) {
-        ctudec->dbf_info.beta_offset_cb = pps->pps_cb_beta_offset_div2 * 2;
-        ctudec->dbf_info.tc_offset_cb   = pps->pps_cb_tc_offset_div2 * 2;
-        ctudec->dbf_info.beta_offset_cr = pps->pps_cr_beta_offset_div2 * 2;
-        ctudec->dbf_info.tc_offset_cr   = pps->pps_cr_tc_offset_div2 * 2;
+        dbf_info->beta_offset_cb = pps->pps_cb_beta_offset_div2 * 2;
+        dbf_info->tc_offset_cb   = pps->pps_cb_tc_offset_div2 * 2;
+        dbf_info->beta_offset_cr = pps->pps_cr_beta_offset_div2 * 2;
+        dbf_info->tc_offset_cr   = pps->pps_cr_tc_offset_div2 * 2;
     } else {
-        ctudec->dbf_info.beta_offset_cb = ctudec->dbf_info.beta_offset;
-        ctudec->dbf_info.tc_offset_cb   = ctudec->dbf_info.tc_offset;
-        ctudec->dbf_info.beta_offset_cr = ctudec->dbf_info.beta_offset;
-        ctudec->dbf_info.tc_offset_cr   = ctudec->dbf_info.tc_offset;
+        dbf_info->beta_offset_cb = ctudec->dbf_info.beta_offset;
+        dbf_info->tc_offset_cb   = ctudec->dbf_info.tc_offset;
+        dbf_info->beta_offset_cr = ctudec->dbf_info.beta_offset;
+        dbf_info->tc_offset_cr   = ctudec->dbf_info.tc_offset;
     }
 
     if (ph->ph_deblocking_params_present_flag) {
-        ctudec->dbf_info.beta_offset = ph->ph_luma_beta_offset_div2 * 2;
-        ctudec->dbf_info.tc_offset   = ph->ph_luma_tc_offset_div2 * 2;
+        dbf_info->beta_offset = ph->ph_luma_beta_offset_div2 * 2;
+        dbf_info->tc_offset   = ph->ph_luma_tc_offset_div2 * 2;
         if (pps->pps_chroma_tool_offsets_present_flag) {
-            ctudec->dbf_info.beta_offset_cb = ph->ph_cb_beta_offset_div2 * 2;
-            ctudec->dbf_info.tc_offset_cb   = ph->ph_cb_tc_offset_div2 * 2;
-            ctudec->dbf_info.beta_offset_cr = ph->ph_cr_beta_offset_div2 * 2;
-            ctudec->dbf_info.tc_offset_cr   = ph->ph_cr_tc_offset_div2 * 2;
+            dbf_info->beta_offset_cb = ph->ph_cb_beta_offset_div2 * 2;
+            dbf_info->tc_offset_cb   = ph->ph_cb_tc_offset_div2 * 2;
+            dbf_info->beta_offset_cr = ph->ph_cr_beta_offset_div2 * 2;
+            dbf_info->tc_offset_cr   = ph->ph_cr_tc_offset_div2 * 2;
         } else {
-            ctudec->dbf_info.beta_offset_cb = ctudec->dbf_info.beta_offset;
-            ctudec->dbf_info.tc_offset_cb   = ctudec->dbf_info.tc_offset;
-            ctudec->dbf_info.beta_offset_cr = ctudec->dbf_info.beta_offset;
-            ctudec->dbf_info.tc_offset_cr   = ctudec->dbf_info.tc_offset;
+            dbf_info->beta_offset_cb = ctudec->dbf_info.beta_offset;
+            dbf_info->tc_offset_cb   = ctudec->dbf_info.tc_offset;
+            dbf_info->beta_offset_cr = ctudec->dbf_info.beta_offset;
+            dbf_info->tc_offset_cr   = ctudec->dbf_info.tc_offset;
         }
     }
 
     if (sh->sh_deblocking_params_present_flag) {
-        ctudec->dbf_info.beta_offset = sh->sh_luma_beta_offset_div2 * 2;
-        ctudec->dbf_info.tc_offset   = sh->sh_luma_tc_offset_div2 * 2;
+        dbf_info->beta_offset = sh->sh_luma_beta_offset_div2 * 2;
+        dbf_info->tc_offset   = sh->sh_luma_tc_offset_div2 * 2;
         if (pps->pps_chroma_tool_offsets_present_flag) {
-            ctudec->dbf_info.beta_offset_cb = sh->sh_cb_beta_offset_div2 * 2;
-            ctudec->dbf_info.tc_offset_cb   = sh->sh_cb_tc_offset_div2 * 2;
-            ctudec->dbf_info.beta_offset_cr = sh->sh_cr_beta_offset_div2 * 2;
-            ctudec->dbf_info.tc_offset_cr   = sh->sh_cr_tc_offset_div2 * 2;
+            dbf_info->beta_offset_cb = sh->sh_cb_beta_offset_div2 * 2;
+            dbf_info->tc_offset_cb   = sh->sh_cb_tc_offset_div2 * 2;
+            dbf_info->beta_offset_cr = sh->sh_cr_beta_offset_div2 * 2;
+            dbf_info->tc_offset_cr   = sh->sh_cr_tc_offset_div2 * 2;
         } else {
-            ctudec->dbf_info.beta_offset_cb = ctudec->dbf_info.beta_offset;
-            ctudec->dbf_info.tc_offset_cb   = ctudec->dbf_info.tc_offset;
-            ctudec->dbf_info.beta_offset_cr = ctudec->dbf_info.beta_offset;
-            ctudec->dbf_info.tc_offset_cr   = ctudec->dbf_info.tc_offset;
+            dbf_info->beta_offset_cb = ctudec->dbf_info.beta_offset;
+            dbf_info->tc_offset_cb   = ctudec->dbf_info.tc_offset;
+            dbf_info->beta_offset_cr = ctudec->dbf_info.beta_offset;
+            dbf_info->tc_offset_cr   = ctudec->dbf_info.tc_offset;
         }
     }
 
-    ctudec->drv_ctx.inter_ctx.prof_enabled = sps->sps_affine_prof_enabled_flag  && !ph->ph_prof_disabled_flag;
-    ctudec->drv_ctx.inter_ctx.bdof_enabled = sps->sps_bdof_enabled_flag && (!ph->ph_bdof_disabled_flag);
-    ctudec->drv_ctx.inter_ctx.bdof_enabled &= sh->sh_slice_type == SLICE_B;
-    ctudec->drv_ctx.inter_ctx.dmvr_enabled = sps->sps_dmvr_enabled_flag && (!ph->ph_dmvr_disabled_flag);
-    ctudec->drv_ctx.inter_ctx.dmvr_enabled &= sh->sh_slice_type == SLICE_B;
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
-    ctudec->drv_ctx.inter_ctx.log2_parallel_merge_level = sps->sps_log2_parallel_merge_level_minus2 + 2;
-    ctudec->drv_ctx.inter_ctx.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
-    ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag ||
-                                                    sh->sh_collocated_from_l0_flag ||
-                                                    sh->sh_slice_type == SLICE_P;
+    inter_ctx->prof_enabled = sps->sps_affine_prof_enabled_flag  && !ph->ph_prof_disabled_flag;
+    inter_ctx->bdof_enabled = sps->sps_bdof_enabled_flag && (!ph->ph_bdof_disabled_flag);
+    inter_ctx->dmvr_enabled = sps->sps_dmvr_enabled_flag && (!ph->ph_dmvr_disabled_flag);
+    inter_ctx->bdof_enabled &= sh->sh_slice_type == SLICE_B;
+    inter_ctx->dmvr_enabled &= sh->sh_slice_type == SLICE_B;
 
-    ctudec->drv_ctx.ibc_ctx.bs1_map = &ctudec->dbf_info.bs1_map;
+    inter_ctx->log2_parallel_merge_level = sps->sps_log2_parallel_merge_level_minus2 + 2;
+    inter_ctx->sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
+    inter_ctx->mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
+    inter_ctx->tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
+
+    inter_ctx->tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag ||
+                                     sh->sh_collocated_from_l0_flag ||
+                                     sh->sh_slice_type == SLICE_P;
+
 
     slice_init_qp_ctx(ctudec, prms);
 
@@ -1418,11 +1425,12 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     init_slice_tree_ctx(ctudec, prms);
 
     rcn_init_functions(&ctudec->rcn_funcs, ict_type(ph), tools->lm_chroma_enabled,
-                        sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag,
-                        sps->sps_bitdepth_minus8 + 8, sh->sh_dep_quant_used_flag);
+                       sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag,
+                       sps->sps_bitdepth_minus8 + 8, sh->sh_dep_quant_used_flag);
 
     //In loop filter information for CTU reconstruction
     ctudec_init_in_loop_filters(ctudec, prms);
+
     ctudec->tmp_slice_type = sh->sh_slice_type;
 
     if (tools->scaling_list_enabled) {
