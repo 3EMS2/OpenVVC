@@ -610,12 +610,6 @@ found :
 
     mv.mv = tmvp_rescale(mv.mv, scale);
 
-    #if 0
-    mv.ref_idx = ref_idx;
-    mv.bcw_idx_plus1 = 0;
-    mv.prec_amvr = 0;
-    #endif
-
     dst->x = mv.mv.x;
     dst->y = mv.mv.y;
     dst->ref_idx = ref_idx;
@@ -673,12 +667,6 @@ found :
 
     mv.mv = tmvp_rescale(mv.mv, scale);
 
-    #if 0
-    mv.ref_idx = ref_idx;
-    mv.bcw_idx_plus1 = 0;
-    mv.prec_amvr = 0;
-    #endif
-
     dst->x = mv.mv.x;
     dst->y = mv.mv.y;
     dst->ref_idx = ref_idx;
@@ -720,8 +708,6 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             mv.mv = tmvp_rescale(mv.mv, scale);
 
-            //mv.ref_idx = ref_idx;
-
             dst[0].x = mv.mv.x;
             dst[0].y = mv.mv.y;
 
@@ -733,10 +719,6 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv.mv = tmvp_rescale(mv.mv, scale);
-
-            //mv.ref_idx = ref_idx;
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
 
             dst[1].x = mv.mv.x;
             dst[1].y = mv.mv.y;
@@ -750,8 +732,6 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             mv.mv = tmvp_rescale(mv.mv, scale);
 
-            //mv.ref_idx = ref_idx;
-
             dst[0].x = mv.mv.x;
             dst[0].y = mv.mv.y;
 
@@ -763,10 +743,6 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv.mv = tmvp_rescale(mv.mv, scale);
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
-
-            //mv.ref_idx = ref_idx;
 
             dst[1].x = mv.mv.x;
             dst[1].y = mv.mv.y;
@@ -780,8 +756,6 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             mv.mv = tmvp_rescale(mv.mv, scale);
 
-            //mv.ref_idx = ref_idx;
-
             dst[0].x = mv.mv.x;
             dst[0].y = mv.mv.y;
 
@@ -792,10 +766,6 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv.mv = tmvp_rescale(mv.mv, scale);
-
-            //mv.ref_idx = ref_idx;
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
 
             dst[1].x = mv.mv.x;
             dst[1].y = mv.mv.y;
@@ -823,10 +793,6 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv.mv = tmvp_rescale(mv.mv, scale);
-
-            //mv.ref_idx = ref_idx;
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
 
             dst[1].x = mv.mv.x;
             dst[1].y = mv.mv.y;
@@ -1626,10 +1592,6 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             mv.mv = tmvp_rescale(mv.mv, scale);
 
-            //mv.ref_idx = ref_idx;
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
-
             dst[0].x = mv.mv.x;
             dst[0].y = mv.mv.y;
 
@@ -1641,10 +1603,6 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv.mv = tmvp_rescale(mv.mv, scale);
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
-
-            //mv.ref_idx = ref_idx;
 
             dst[1].x = mv.mv.x;
             dst[1].y = mv.mv.y;
@@ -1658,10 +1616,6 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             mv.mv = tmvp_rescale(mv.mv, scale);
 
-            //mv.ref_idx = ref_idx;
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
-
             dst[0].x = mv.mv.x;
             dst[0].y = mv.mv.y;
 
@@ -1673,10 +1627,6 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv.mv = tmvp_rescale(mv.mv, scale);
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
-
-            //mv.ref_idx = ref_idx;
 
             dst[1].x = mv.mv.x;
             dst[1].y = mv.mv.y;
@@ -1690,10 +1640,6 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             mv.mv = tmvp_rescale(mv.mv, scale);
 
-            //mv.ref_idx = ref_idx;
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
-
             dst[0].x = mv.mv.x;
             dst[0].y = mv.mv.y;
 
@@ -1704,10 +1650,6 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv.mv = tmvp_rescale(mv.mv, scale);
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
-
-            //mv.ref_idx = ref_idx;
 
             dst[1].x = mv.mv.x;
             dst[1].y = mv.mv.y;
@@ -1723,10 +1665,6 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             mv.mv = tmvp_rescale(mv.mv, scale);
 
-            //mv.ref_idx = ref_idx;
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
-
             dst[0].x = mv.mv.x;
             dst[0].y = mv.mv.y;
 
@@ -1737,15 +1675,11 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv.mv = tmvp_rescale(mv.mv, scale);
-            //mv.bcw_idx_plus1 = 0;
-            //mv.prec_amvr = 0;
 
-            //mv.ref_idx = ref_idx;
-
-            //dst[1] = mv;
             dst[1].x = mv.mv.x;
             dst[1].y = mv.mv.y;
         }
+
         dst[0].ref_idx = ref_idx;
         dst[0].bcw_idx_plus1 = 0;
         dst[0].prec_amvr = 0;
