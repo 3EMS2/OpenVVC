@@ -264,13 +264,10 @@ static uint8_t
 check_identical_motion(struct InterDRVCtx *const inter_ctx, int inter_dir, const OVMV mv0, const OVMV mv1,
                        uint8_t ref_idx0, uint8_t ref_idx1)
 {
-    if (inter_dir != 3)
-        return 0;
+    uint16_t dist_0 = inter_ctx->inter_params.dist_ref_0[ref_idx0];
+    uint16_t dist_1 = inter_ctx->inter_params.dist_ref_1[ref_idx1];
 
-    uint16_t poc0 = inter_ctx->inter_params.rpl0[ref_idx0] ? inter_ctx->inter_params.rpl0[ref_idx0]->poc : -1;
-    uint16_t poc1 = inter_ctx->inter_params.rpl1[ref_idx1] ? inter_ctx->inter_params.rpl1[ref_idx1]->poc : -1;
-
-    return (poc0 == poc1 && mv0.x == mv1.x && mv0.y == mv1.y);
+    return inter_dir == 3 && (dist_0 == dist_1 && mv0.x == mv1.x && mv0.y == mv1.y);
 }
 
 

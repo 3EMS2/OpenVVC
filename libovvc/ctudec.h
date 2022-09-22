@@ -451,6 +451,7 @@ struct InterDRVCtx
         uint16_t pln1_stride;
 
         uint8_t col_ref_l0;
+        int8_t col_dist;
         /* Vertical bit map of motions available in collocated MV CTU */
         uint64_t dir_map_v0[34];
         uint64_t dir_map_v1[34];

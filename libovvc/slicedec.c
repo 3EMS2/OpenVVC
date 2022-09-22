@@ -848,6 +848,28 @@ find_tmvp_collocated_ref(const OVSliceDec *const sldec, const OVPS *const ps)
 
 }
 
+static uint8_t
+tmvp_collocated_ref_dist(const OVSliceDec *const sldec, const OVPS *const ps)
+{
+    int8_t dist = 0;
+    const OVPPS *pps = ps->pps;
+    const OVPH *ph = ps->ph;
+    const OVSH *sh = ps->sh;
+
+    uint8_t slice_type = sh->sh_slice_type;
+    if(ph->ph_temporal_mvp_enabled_flag) {
+        if (ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag || sh->sh_slice_type == SLICE_P) {
+            int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
+            return sldec->inter_ctx.dist_ref_0[ref_idx];
+        } else if (sh->sh_slice_type != SLICE_I) {
+            int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
+            return sldec->inter_ctx.dist_ref_1[ref_idx];
+        }
+    }
+    return dist;
+
+}
+
 static void
 tmvp_entry_init(OVCTUDec *ctudec, const OVSliceDec *const sldec, const OVPS *const ps)
 {
@@ -856,7 +878,8 @@ tmvp_entry_init(OVCTUDec *ctudec, const OVSliceDec *const sldec, const OVPS *con
     const OVPicture *const col_ref = find_tmvp_collocated_ref(sldec, ps);
     const OVPicture *const active_pic = sldec->pic;
 
-    tmvp_ctx->col_ref = col_ref;
+    tmvp_ctx->col_ref  = col_ref;
+    tmvp_ctx->col_dist = tmvp_collocated_ref_dist(sldec, ps);
 
     /* FIXME try to remove ctu decoder reference from inter context */
     tmvp_ctx->ctudec = ctudec;
@@ -864,8 +887,14 @@ tmvp_entry_init(OVCTUDec *ctudec, const OVSliceDec *const sldec, const OVPS *con
     tmvp_ctx->plane0 = &active_pic->mv_plane0;
     tmvp_ctx->plane1 = &active_pic->mv_plane1;
 
-    tmvp_ctx->col_plane0 = col_ref ? &col_ref->mv_plane0 : NULL;
-    tmvp_ctx->col_plane1 = col_ref ? &col_ref->mv_plane1 : NULL;
+    if (col_ref) {
+        tmvp_ctx->col_plane0 = &col_ref->mv_plane0;
+        tmvp_ctx->col_plane1 = &col_ref->mv_plane1;
+        tmvp_ctx->col_dist = ov_clip_intp2(active_pic->poc - col_ref->poc, 8);
+    } else {
+        tmvp_ctx->col_plane0 = NULL;
+        tmvp_ctx->col_plane1 = NULL;
+    }
 
     memset(tmvp_ctx->dir_map_v0, 0, 34 * sizeof(uint64_t));
     memset(tmvp_ctx->dir_map_v1, 0, 34 * sizeof(uint64_t));

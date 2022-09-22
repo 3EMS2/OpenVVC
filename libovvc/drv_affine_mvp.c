@@ -418,9 +418,8 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         memset(tmvp_ctx->dir_map_v1, 0, sizeof(uint64_t) * 34);
     }
 
-    const OVPicture* ref_pic = tmvp_ctx->col_ref;
-    if (ref_pic)
-    tmvp_inter_synchronization(ref_pic, ctb_x, ctb_y, log2_ctb_s);
+    if (tmvp_ctx->col_ref)
+    tmvp_inter_synchronization(tmvp_ctx->col_ref, ctb_x, ctb_y, log2_ctb_s);
 
     if (plane0 && plane0->dirs) {
         uint64_t *src_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;
@@ -1507,11 +1506,10 @@ derive_sbtmvp_mv_offset(const struct InterDRVCtx *inter_ctx,
     if (avail_rpl0 | avail_rpl1) {
         const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
         const uint16_t a1_pos = derive_cand_position(*pb_info, A1);
-        /* FIXME derive this */
 
         if (avail_rpl0) {
             a1_mv = inter_ctx->mv_ctx0.mvs[a1_pos];
-            uint8_t a1_ref0_is_col_pic = inter_ctx->inter_params.rpl0[a1_mv.ref_idx] == tmvp->col_ref;
+            uint8_t a1_ref0_is_col_pic = inter_ctx->inter_params.dist_ref_0[a1_mv.ref_idx] == tmvp->col_dist;
             if (a1_ref0_is_col_pic) {
                 goto found;
             }
@@ -1519,7 +1517,7 @@ derive_sbtmvp_mv_offset(const struct InterDRVCtx *inter_ctx,
 
         if (avail_rpl1) {
             a1_mv = inter_ctx->mv_ctx1.mvs[a1_pos];
-            uint8_t a1_ref1_is_col_pic = inter_ctx->inter_params.rpl1[a1_mv.ref_idx] == tmvp->col_ref;
+            uint8_t a1_ref1_is_col_pic = inter_ctx->inter_params.dist_ref_1[a1_mv.ref_idx] == tmvp->col_dist;
             if (a1_ref1_is_col_pic) {
                 goto found;
             }

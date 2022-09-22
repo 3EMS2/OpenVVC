@@ -326,13 +326,13 @@ hmvp_update_lut_b(struct HMVPLUT *const hmvp_lut, OVMV mv0, OVMV mv1, uint8_t in
 }
 
 void
-tmvp_inter_synchronization(const OVPicture *ref_pic, int ctb_x, int ctb_y, int log2_ctu_s)
+tmvp_inter_synchronization(const OVPicture *col_ref, int ctb_x, int ctb_y, int log2_ctu_s)
 {
-    FrameSynchroFunction sync_func = (FrameSynchroFunction)atomic_load(ref_pic->sync.func);
+    FrameSynchroFunction sync_func = (FrameSynchroFunction)atomic_load(col_ref->sync.func);
 
     if (sync_func) {
-        const int pic_w = ref_pic->frame->width;
-        const int pic_h = ref_pic->frame->height;
+        const int pic_w = col_ref->frame->width;
+        const int pic_h = col_ref->frame->height;
 
         /*Frame thread synchronization to ensure data is available
         */
@@ -341,7 +341,7 @@ tmvp_inter_synchronization(const OVPicture *ref_pic, int ctb_x, int ctb_y, int l
         int br_ctu_x = OVMIN(ctb_x + 1, nb_ctb_pic_w-1);
         int br_ctu_y = OVMIN(ctb_y, nb_ctb_pic_h-1);
 
-        sync_func(ref_pic, ctb_x, ctb_y, br_ctu_x, br_ctu_y);
+        sync_func(col_ref, ctb_x, ctb_y, br_ctu_x, br_ctu_y);
     }
 }
 
@@ -361,9 +361,8 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     uint8_t nb_unit_ctb = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
 
-    const OVPicture* ref_pic = tmvp_ctx->col_ref;
-    if (ref_pic) {
-        tmvp_inter_synchronization(ref_pic, ctb_x, ctb_y, log2_ctb_s);
+    if (tmvp_ctx->col_ref) {
+        tmvp_inter_synchronization(tmvp_ctx->col_ref, ctb_x, ctb_y, log2_ctb_s);
     }
 
     uint8_t is_border_pic = nb_ctb_w - 1 == ctb_x;
@@ -1839,8 +1838,8 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
         uint8_t is_lterm0 = !dist_ref0;
         uint8_t is_lterm1 = !dist_ref1;
 
-        dist_ref0 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl0[ref0]->poc;
-        dist_ref1 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl1[ref1]->poc;
+        //dist_ref0 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl0[ref0]->poc;
+        //dist_ref1 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl1[ref1]->poc;
         /* Same ref */
         if (dist_ref0 == dist_ref1){
             mvd1.x = mvd0.x;
