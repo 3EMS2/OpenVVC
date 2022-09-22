@@ -2100,10 +2100,12 @@ clip_rpr_position(int* pos_x, int* pos_y, int pic_w, int pic_h, int pb_w, int pb
 
 static void
 mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-          OVMV mv, uint8_t rpl_idx, uint8_t ref_idx, int scaling_hor, int scaling_ver)
+          OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
-    struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    int scaling_hor = rpl_idx ? inter_ctx->inter_params.scale_fact_rpl1[ref_idx][0] : inter_ctx->inter_params.scale_fact_rpl0[ref_idx][0];
+    int scaling_ver = rpl_idx ? inter_ctx->inter_params.scale_fact_rpl1[ref_idx][1] : inter_ctx->inter_params.scale_fact_rpl0[ref_idx][1];
+    struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
 
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
@@ -2328,8 +2330,11 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
 
 static void
 mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-          OVMV mv, uint8_t rpl_idx, uint8_t ref_idx, int scaling_hor, int scaling_ver)
+          OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    int scaling_hor = rpl_idx ? inter_ctx->inter_params.scale_fact_rpl1[ref_idx][0] : inter_ctx->inter_params.scale_fact_rpl0[ref_idx][0];
+    int scaling_ver = rpl_idx ? inter_ctx->inter_params.scale_fact_rpl1[ref_idx][1] : inter_ctx->inter_params.scale_fact_rpl0[ref_idx][1];
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
@@ -2342,7 +2347,6 @@ mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     uint16_t tmp_emul_str = 2*RCN_CTB_STRIDE;
     uint16_t tmp_rpr_str  = 2*RCN_CTB_STRIDE;
 
-    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
 
     OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
@@ -2586,10 +2590,10 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
 
 static void
 mcp_rpr(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-        OVMV mv, uint8_t rpl_idx, uint8_t ref_idx, int scaling_hor, int scaling_ver)
+        OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
-    mcp_rpr_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, scaling_hor, scaling_ver);
-    mcp_rpr_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, scaling_hor, scaling_ver);
+    mcp_rpr_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx);
+    mcp_rpr_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx);
 }
 
 
@@ -2597,20 +2601,37 @@ static void
 mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
            uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
            OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
-           int rpr_scale_h0, int rpr_scale_v0,
-           int rpr_scale_h1, int rpr_scale_v1, struct VVCGPM* gpm_ctx )
+           struct VVCGPM* gpm_ctx )
 {
-    uint8_t no_rpr_l0 = rpr_scale_h0 == RPR_NO_SCALE && rpr_scale_v0 == RPR_NO_SCALE;
-    uint8_t no_rpr_l1 = rpr_scale_h1 == RPR_NO_SCALE && rpr_scale_v1 == RPR_NO_SCALE;
+    const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+
+    int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+    int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
+    int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+    int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
+
     int type0 = 0;
     int type1 = 1;
     uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
-    const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     if (gpm_ctx) {
+        const uint16_t* scale_fact_rpl ;
+
         type0 = gpm_ctx->inter_dir0 - 1;
         type1 = gpm_ctx->inter_dir1 - 1;
+        scale_fact_rpl = gpm_ctx->inter_dir0 == 1 ? inter_ctx->inter_params.scale_fact_rpl0[mv0.ref_idx]
+                                                  : inter_ctx->inter_params.scale_fact_rpl1[mv0.ref_idx];
+        rpr_scale_h0 = scale_fact_rpl[0];
+        rpr_scale_v0 = scale_fact_rpl[1];
+
+        scale_fact_rpl = gpm_ctx->inter_dir1 == 1 ? inter_ctx->inter_params.scale_fact_rpl0[mv1.ref_idx]
+                                                  : inter_ctx->inter_params.scale_fact_rpl1[mv1.ref_idx];
+        rpr_scale_h1 = scale_fact_rpl[0];
+        rpr_scale_v1 = scale_fact_rpl[1];
     }
+
+    uint8_t no_rpr_l0 = rpr_scale_h0 == RPR_NO_SCALE && rpr_scale_v0 == RPR_NO_SCALE;
+    uint8_t no_rpr_l1 = rpr_scale_h1 == RPR_NO_SCALE && rpr_scale_v1 == RPR_NO_SCALE;
 
     struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
     uint16_t* tmp_rpl0 = rcn_ctx->data.tmp_bi_mrg0;
@@ -2666,14 +2687,17 @@ static void
 mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                 uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
                 OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
-                int rpr_scale_h0, int rpr_scale_v0,
-                int rpr_scale_h1, int rpr_scale_v1,
                 uint8_t prof_dir, const struct PROFInfo *const prof_info )
 {
-    uint8_t no_rpr_l0 = rpr_scale_h0 == RPR_NO_SCALE && rpr_scale_v0 == RPR_NO_SCALE;
-    uint8_t no_rpr_l1 = rpr_scale_h1 == RPR_NO_SCALE && rpr_scale_v1 == RPR_NO_SCALE;
     uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+    int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
+    int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+    int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
+    uint8_t no_rpr_l0 = rpr_scale_h0 == RPR_NO_SCALE && rpr_scale_v0 == RPR_NO_SCALE;
+    uint8_t no_rpr_l1 = rpr_scale_h1 == RPR_NO_SCALE && rpr_scale_v1 == RPR_NO_SCALE;
+
 
     struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
     uint16_t *tmp_rpl0 = &rcn_ctx->data.tmp_bi_mrg0[0];
@@ -2721,19 +2745,37 @@ static void
 mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
            uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
            OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
-           int rpr_scale_h0, int rpr_scale_v0,
-           int rpr_scale_h1, int rpr_scale_v1, struct VVCGPM* gpm_ctx )
+           struct VVCGPM* gpm_ctx )
 {
-    uint8_t no_rpr_l0 = rpr_scale_h0 == RPR_NO_SCALE && rpr_scale_v0 == RPR_NO_SCALE;
-    uint8_t no_rpr_l1 = rpr_scale_h1 == RPR_NO_SCALE && rpr_scale_v1 == RPR_NO_SCALE;
     uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+
+    int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+    int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
+    int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+    int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
+
+
     int type0 = 0;
     int type1 = 1;
     if (gpm_ctx) {
+        const uint16_t* scale_fact_rpl ;
+
         type0 = gpm_ctx->inter_dir0 - 1;
         type1 = gpm_ctx->inter_dir1 - 1;
+        scale_fact_rpl = gpm_ctx->inter_dir0 == 1 ? inter_ctx->inter_params.scale_fact_rpl0[mv0.ref_idx]
+                                                  : inter_ctx->inter_params.scale_fact_rpl1[mv0.ref_idx];
+        rpr_scale_h0 = scale_fact_rpl[0];
+        rpr_scale_v0 = scale_fact_rpl[1];
+
+        scale_fact_rpl = gpm_ctx->inter_dir1 == 1 ? inter_ctx->inter_params.scale_fact_rpl0[mv1.ref_idx]
+                                                  : inter_ctx->inter_params.scale_fact_rpl1[mv1.ref_idx];
+        rpr_scale_h1 = scale_fact_rpl[0];
+        rpr_scale_v1 = scale_fact_rpl[1];
     }
+
+    uint8_t no_rpr_l0 = rpr_scale_h0 == RPR_NO_SCALE && rpr_scale_v0 == RPR_NO_SCALE;
+    uint8_t no_rpr_l1 = rpr_scale_h1 == RPR_NO_SCALE && rpr_scale_v1 == RPR_NO_SCALE;
 
     struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
     uint16_t* tmp_rpl0_cb = rcn_ctx->data.tmp_bi_mrg0;
@@ -2811,9 +2853,7 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
         mcp_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx);
         mcp_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx);
     } else {
-        int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx][0];
-        int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx][1];
-        mcp_rpr(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, rpr_scale_h0, rpr_scale_v0);
+        mcp_rpr(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx);
     }
 
 }
@@ -2835,14 +2875,8 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
             motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
             rcn_motion_compensation_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
         } else {
-            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
-            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
-            mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
-                       rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
-            mc_rpr_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
-                       rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
+            mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, NULL);
+            mc_rpr_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, NULL);
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
@@ -2851,9 +2885,7 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
             mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
             mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         } else {
-            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
-            mcp_rpr(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, rpr_scale_h1, rpr_scale_v1);
+            mcp_rpr(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         }
 
     } else if (inter_dir & 0x1) {
@@ -2862,9 +2894,7 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
             mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
             mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         } else {
-            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
-            mcp_rpr(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, rpr_scale_h0, rpr_scale_v0);
+            mcp_rpr(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         }
     }
 }
@@ -2886,12 +2916,7 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
         if (no_rpr_l0 && no_rpr_l1) {
             motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
         } else {
-            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
-            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
-            mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
-                            rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
+            mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, NULL);
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
@@ -2899,9 +2924,7 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
         if (no_rpr_l1) {
             mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         } else {
-            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
-            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, rpr_scale_h1, rpr_scale_v1);
+            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         }
 
     } else if (inter_dir & 0x1) {
@@ -2909,9 +2932,7 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
         if (no_rpr_l0) {
             mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         } else {
-            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
-            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, rpr_scale_h0, rpr_scale_v0);
+            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         }
     }
 }
@@ -2934,21 +2955,11 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
             prof_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1,
                                          ref_idx0, ref_idx1, prof_dir, prof_info);
         } else if (apply_prof) {
-            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
-            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
-
             mc_rpr_prof_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
-                            rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, prof_dir, prof_info);
+                            prof_dir, prof_info);
         } else {
-            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
-            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
 
-            mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
-                       rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
+            mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, NULL);
         }
 
     } else if (inter_dir & 0x2) {
@@ -2958,11 +2969,8 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
                            prof_info->dmv_scale_h_1,
                            prof_info->dmv_scale_v_1);
         } else {
-            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
 
-            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
-                      rpr_scale_h1, rpr_scale_v1);
+            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         }
 
     } else if (inter_dir & 0x1) {
@@ -2972,11 +2980,8 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
                            prof_info->dmv_scale_h_0,
                            prof_info->dmv_scale_v_0);
         } else {
-            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
 
-            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
-                      rpr_scale_h0, rpr_scale_v0);
+            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         }
     }
 }
@@ -2997,13 +3002,7 @@ rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
         if (no_rpr_l0 && no_rpr_l1) {
             rcn_motion_compensation_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
         } else {
-            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
-            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
-
-            mc_rpr_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
-                       rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
+            mc_rpr_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, NULL);
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
@@ -3011,10 +3010,7 @@ rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
         if (no_rpr_l1) {
             mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         } else {
-            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
-            mcp_rpr_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
-                      rpr_scale_h1, rpr_scale_v1);
+            mcp_rpr_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         }
 
     } else if (inter_dir & 0x1) {
@@ -3022,10 +3018,7 @@ rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
         if (no_rpr_l0) {
             mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         } else {
-            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
-            mcp_rpr_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
-                      rpr_scale_h0, rpr_scale_v0);
+            mcp_rpr_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         }
     }
 }
@@ -3203,22 +3196,9 @@ rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
     OVMV mv1 = gpm_ctx->mv1;
     gpm_ctx->split_dir = gpm_part_idx;
 
-    const uint16_t* scale_fact_rpl ;
-    scale_fact_rpl = gpm_ctx->inter_dir0 == 1 ? inter_ctx->inter_params.scale_fact_rpl0[mv0.ref_idx]
-                                              : inter_ctx->inter_params.scale_fact_rpl1[mv0.ref_idx];
-    int rpr_scale_h0 = scale_fact_rpl[0];
-    int rpr_scale_v0 = scale_fact_rpl[1];
-
-    scale_fact_rpl = gpm_ctx->inter_dir1 == 1 ? inter_ctx->inter_params.scale_fact_rpl0[mv1.ref_idx]
-                                              : inter_ctx->inter_params.scale_fact_rpl1[mv1.ref_idx];
-    int rpr_scale_h1 = scale_fact_rpl[0];
-    int rpr_scale_v1 = scale_fact_rpl[1];
-
     /*The RPR functions apply the same bidir0 filters than non-RPR, therefore use only RPR function*/
-    mc_rpr_b_l(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, mv0.ref_idx, mv1.ref_idx,
-               rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, gpm_ctx);
-    mc_rpr_b_c(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, mv0.ref_idx, mv1.ref_idx,
-               rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, gpm_ctx);
+    mc_rpr_b_l(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, mv0.ref_idx, mv1.ref_idx, gpm_ctx);
+    mc_rpr_b_c(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, mv0.ref_idx, mv1.ref_idx, gpm_ctx);
 
 }
 
