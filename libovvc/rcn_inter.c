@@ -267,8 +267,8 @@ check_identical_motion(struct InterDRVCtx *const inter_ctx, int inter_dir, const
     if (inter_dir != 3)
         return 0;
 
-    uint16_t poc0 = inter_ctx->rpl0[ref_idx0] ? inter_ctx->rpl0[ref_idx0]->poc : -1;
-    uint16_t poc1 = inter_ctx->rpl1[ref_idx1] ? inter_ctx->rpl1[ref_idx1]->poc : -1;
+    uint16_t poc0 = inter_ctx->inter_params.rpl0[ref_idx0] ? inter_ctx->inter_params.rpl0[ref_idx0]->poc : -1;
+    uint16_t poc1 = inter_ctx->inter_params.rpl1[ref_idx1] ? inter_ctx->inter_params.rpl1[ref_idx1]->poc : -1;
 
     return (poc0 == poc1 && mv0.x == mv1.x && mv0.y == mv1.y);
 }
@@ -538,8 +538,8 @@ motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     int16_t wt0, wt1;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx0];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx1];
     if (!ref0 || !ref1) return;
 
     OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
@@ -588,7 +588,7 @@ motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride,
                                                 pu_h, prec_x0, prec_y0, pu_w);
 
-    if (!use_bcw && !inter_ctx->weighted_pred_status) {
+    if (!use_bcw && !inter_ctx->inter_params.weighted_pred_status) {
         mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, dst.stride, ref1_b.y, ref1_b.stride,
                                                     tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
     } else if (use_bcw) {
@@ -598,12 +598,12 @@ motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                                      tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1, 0, 0,
                                                      prec_x1, prec_y1, pu_w);
     } else {
-        int16_t offset0 = inter_ctx->wp_info0[ref_idx0].offset_y;
-        int16_t offset1 = inter_ctx->wp_info1[ref_idx1].offset_y;
-        wt1 = inter_ctx->wp_info1[ref_idx1].weight_y;
-        wt0 = inter_ctx->wp_info0[ref_idx0].weight_y;
+        int16_t offset0 = inter_ctx->inter_params.wp_info0[ref_idx0].offset_y;
+        int16_t offset1 = inter_ctx->inter_params.wp_info1[ref_idx1].offset_y;
+        wt1 = inter_ctx->inter_params.wp_info1[ref_idx1].weight_y;
+        wt0 = inter_ctx->inter_params.wp_info0[ref_idx0].weight_y;
         mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1](dst.y, dst.stride, ref1_b.y, ref1_b.stride,
-                                                     tmp_buff,  MAX_PB_SIZE, pu_h, inter_ctx->weighted_denom, wt0, wt1, offset0, offset1,
+                                                     tmp_buff,  MAX_PB_SIZE, pu_h, inter_ctx->inter_params.weighted_denom, wt0, wt1, offset0, offset1,
                                                      prec_x1, prec_y1, pu_w);
     }
 
@@ -883,8 +883,8 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct BDOFFunctions *bdof = &ctudec->rcn_funcs.bdof;
     uint8_t use_alt_filter = mv0->prec_amvr == MV_PRECISION_HALF;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx0];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx1];
     if (!ref0 | !ref1) return 0;
 
     OVSample edge_buff0[RCN_CTB_SIZE];
@@ -1080,8 +1080,8 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
-    uint8_t use_wp_c = inter_ctx->weighted_pred_status && (inter_ctx->wp_info1[ref_idx1].flag_c |
-                                                           inter_ctx->wp_info0[ref_idx0].flag_c);
+    uint8_t use_wp_c = inter_ctx->inter_params.weighted_pred_status && (inter_ctx->inter_params.wp_info1[ref_idx1].flag_c |
+                                                           inter_ctx->inter_params.wp_info0[ref_idx0].flag_c);
     struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
 
     OVSample *edge_buff0_1 = (OVSample *)rcn_ctx->data.edge_buff0;
@@ -1160,8 +1160,8 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct BDOFFunctions *bdof = &ctudec->rcn_funcs.bdof;
     uint8_t use_alt_filter = mv0.prec_amvr == MV_PRECISION_HALF;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx0];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx1];
     if (!ref0 | !ref1) return;
 
     OVSample edge_buff0[RCN_CTB_SIZE];
@@ -1273,8 +1273,8 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t use_alt_filter = mv0.prec_amvr == MV_PRECISION_HALF;
     uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx0];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx1];
     if (!ref0 || !ref1) return;
 
 
@@ -1365,7 +1365,7 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                   tmp_grad_x, tmp_grad_y, 4,
                   prof_info->dmv_scale_h_1, prof_info->dmv_scale_v_1);
 
-        if (!use_bcw && !inter_ctx->weighted_pred_status) {
+        if (!use_bcw && !inter_ctx->inter_params.weighted_pred_status) {
             prof->tmp_prof_mrg(dst.y, dst.stride, tmp_buff1, MAX_PB_SIZE,
                                tmp_buff, pu_h, 0, 0, pu_w);
         } else if (use_bcw) {
@@ -1374,17 +1374,17 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
             prof->tmp_prof_mrg_w(dst.y, dst.stride, tmp_buff1, MAX_PB_SIZE,
                                  tmp_buff, pu_h, 0, 0, pu_w, BCW_DENOM, wt1, wt0, 0, 0);
         } else {
-            int16_t offset0 = inter_ctx->wp_info0[ref_idx0].offset_y;
-            int16_t offset1 = inter_ctx->wp_info1[ref_idx1].offset_y;
-            int16_t wt1 = inter_ctx->wp_info1[ref_idx1].weight_y;
-            int16_t wt0 = inter_ctx->wp_info0[ref_idx0].weight_y;
+            int16_t offset0 = inter_ctx->inter_params.wp_info0[ref_idx0].offset_y;
+            int16_t offset1 = inter_ctx->inter_params.wp_info1[ref_idx1].offset_y;
+            int16_t wt1 = inter_ctx->inter_params.wp_info1[ref_idx1].weight_y;
+            int16_t wt0 = inter_ctx->inter_params.wp_info0[ref_idx0].weight_y;
             prof->tmp_prof_mrg_w(dst.y, dst.stride, tmp_buff1, MAX_PB_SIZE,
-                                 tmp_buff, pu_h, 0, 0, pu_w, inter_ctx->weighted_denom, wt1, wt0, offset1, offset0);
+                                 tmp_buff, pu_h, 0, 0, pu_w, inter_ctx->inter_params.weighted_denom, wt1, wt0, offset1, offset0);
         }
 
     } else {
         int wt0, wt1;
-        if (!use_bcw && !inter_ctx->weighted_pred_status) {
+        if (!use_bcw && !inter_ctx->inter_params.weighted_pred_status) {
             mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, dst.stride, ref1_b.y, ref1_b.stride,
                                                         tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
         } else if (use_bcw) {
@@ -1394,12 +1394,12 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                                          tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1, 0, 0,
                                                          prec_x1, prec_y1, pu_w);
         } else {
-            int16_t offset0 = inter_ctx->wp_info0[ref_idx0].offset_y;
-            int16_t offset1 = inter_ctx->wp_info1[ref_idx1].offset_y;
-            wt1 = inter_ctx->wp_info1[ref_idx1].weight_y;
-            wt0 = inter_ctx->wp_info0[ref_idx0].weight_y;
+            int16_t offset0 = inter_ctx->inter_params.wp_info0[ref_idx0].offset_y;
+            int16_t offset1 = inter_ctx->inter_params.wp_info1[ref_idx1].offset_y;
+            wt1 = inter_ctx->inter_params.wp_info1[ref_idx1].weight_y;
+            wt0 = inter_ctx->inter_params.wp_info0[ref_idx0].weight_y;
             mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1](dst.y, dst.stride, ref1_b.y, ref1_b.stride,
-                                                         tmp_buff,  MAX_PB_SIZE, pu_h, inter_ctx->weighted_denom, wt0, wt1, offset0, offset1,
+                                                         tmp_buff,  MAX_PB_SIZE, pu_h, inter_ctx->inter_params.weighted_denom, wt0, wt1, offset0, offset1,
                                                          prec_x1, prec_y1, pu_w);
         }
     }
@@ -1418,13 +1418,13 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
-    uint8_t use_wp_c = inter_ctx->weighted_pred_status && (inter_ctx->wp_info1[ref_idx1].flag_c |
-                                                           inter_ctx->wp_info0[ref_idx0].flag_c);
+    uint8_t use_wp_c = inter_ctx->inter_params.weighted_pred_status && (inter_ctx->inter_params.wp_info1[ref_idx1].flag_c |
+                                                           inter_ctx->inter_params.wp_info0[ref_idx0].flag_c);
     uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
     int16_t wt0, wt1;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx0];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx1];
     if (!ref0 || !ref1) return;
 
     OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
@@ -1492,18 +1492,18 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                                      ref_data1,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1, 0, 0,
                                                      prec_x1, prec_y1, pu_w);
     } else {
-        int16_t denom = inter_ctx->weighted_denom_c;
-        int16_t wt1 = inter_ctx->wp_info1[ref_idx1].weight_cb;
-        int16_t wt0 = inter_ctx->wp_info0[ref_idx0].weight_cb;
-        int16_t o1 = inter_ctx->wp_info1[ref_idx1].offset_cb;
-        int16_t o0 = inter_ctx->wp_info0[ref_idx0].offset_cb;
+        int16_t denom = inter_ctx->inter_params.weighted_denom_c;
+        int16_t wt1 = inter_ctx->inter_params.wp_info1[ref_idx1].weight_cb;
+        int16_t wt0 = inter_ctx->inter_params.wp_info0[ref_idx0].weight_cb;
+        int16_t o1 = inter_ctx->inter_params.wp_info1[ref_idx1].offset_cb;
+        int16_t o0 = inter_ctx->inter_params.wp_info0[ref_idx0].offset_cb;
         mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2](dst.cb, dst.stride_c, ref1_c.cb, ref1_c.stride_c,
                                                      ref_data0,  MAX_PB_SIZE, pu_h, denom, wt0, wt1, o0, o1,
                                                      prec_x1, prec_y1, pu_w);
-        wt1 = inter_ctx->wp_info1[ref_idx1].weight_cr;
-        wt0 = inter_ctx->wp_info0[ref_idx0].weight_cr;
-        o1 = inter_ctx->wp_info1[ref_idx1].offset_cr;
-        o0 = inter_ctx->wp_info0[ref_idx0].offset_cr;
+        wt1 = inter_ctx->inter_params.wp_info1[ref_idx1].weight_cr;
+        wt0 = inter_ctx->inter_params.wp_info0[ref_idx0].weight_cr;
+        o1 = inter_ctx->inter_params.wp_info1[ref_idx1].offset_cr;
+        o0 = inter_ctx->inter_params.wp_info0[ref_idx0].offset_cr;
         mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2](dst.cr, dst.stride_c, ref1_c.cr, ref1_c.stride_c,
                                                      ref_data1,  MAX_PB_SIZE, pu_h, denom, wt0, wt1, o0, o1,
                                                      prec_x1, prec_y1, pu_w);
@@ -1520,8 +1520,8 @@ mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     uint8_t use_alt_filter = mv.prec_amvr == MV_PRECISION_HALF;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
 
     dst.y  += x0 + y0 * dst.stride;
 
@@ -1582,16 +1582,16 @@ mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
         src_stride = RCN_CTB_STRIDE;
     }
 
-    if (!inter_ctx->weighted_pred_status) {
+    if (!inter_ctx->inter_params.weighted_pred_status) {
         mc_l->unidir[prec_mc_type][log2_pu_w - 1](dst.y, dst.stride,
                                                   src_y, src_stride, pu_h,
                                                   prec_x, prec_y, pu_w);
     } else {
-        int16_t offset0 = rpl_idx ? inter_ctx->wp_info1[ref_idx].offset_y : inter_ctx->wp_info0[ref_idx].offset_y;
-        int wx = rpl_idx ? inter_ctx->wp_info1[ref_idx].weight_y : inter_ctx->wp_info0[ref_idx].weight_y;
+        int16_t offset0 = rpl_idx ? inter_ctx->inter_params.wp_info1[ref_idx].offset_y : inter_ctx->inter_params.wp_info0[ref_idx].offset_y;
+        int wx = rpl_idx ? inter_ctx->inter_params.wp_info1[ref_idx].weight_y : inter_ctx->inter_params.wp_info0[ref_idx].weight_y;
         mc_l->unidir_w[prec_mc_type][log2_pu_w - 1](dst.y, dst.stride,
                                                     src_y, src_stride, pu_h,
-                                                    inter_ctx->weighted_denom, wx, offset0,
+                                                    inter_ctx->inter_params.weighted_denom, wx, offset0,
                                                     prec_x, prec_y, pu_w);
     }
 
@@ -1609,8 +1609,8 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     uint8_t use_alt_filter = mv.prec_amvr == MV_PRECISION_HALF;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
     if (!ref0 | !ref1) return;
 
     dst  += x0 + y0 * dst_stride;
@@ -1690,8 +1690,8 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     struct PROFFunctions *prof = &ctudec->rcn_funcs.prof;
     uint8_t use_alt_filter = mv.prec_amvr == MV_PRECISION_HALF;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
 
     dst.y  += x0 + y0 * dst.stride;
 
@@ -1767,15 +1767,15 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     prof->grad(tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
-    if (!inter_ctx->weighted_pred_status) {
+    if (!inter_ctx->inter_params.weighted_pred_status) {
         prof->rcn0(dst.y, dst.stride, tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
                    4, dmv_scale_h, dmv_scale_v);
     } else {
-        int16_t offset = rpl_idx ? inter_ctx->wp_info1[ref_idx].offset_y : inter_ctx->wp_info0[ref_idx].offset_y;
-        int16_t wx = rpl_idx ? inter_ctx->wp_info1[ref_idx].weight_y : inter_ctx->wp_info0[ref_idx].weight_y;
+        int16_t offset = rpl_idx ? inter_ctx->inter_params.wp_info1[ref_idx].offset_y : inter_ctx->inter_params.wp_info0[ref_idx].offset_y;
+        int16_t wx = rpl_idx ? inter_ctx->inter_params.wp_info1[ref_idx].weight_y : inter_ctx->inter_params.wp_info0[ref_idx].weight_y;
 
         prof->rcn0_w(dst.y, dst.stride, tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
-                     4, dmv_scale_h, dmv_scale_v, inter_ctx->weighted_denom, wx, offset);
+                     4, dmv_scale_h, dmv_scale_v, inter_ctx->inter_params.weighted_denom, wx, offset);
 
     }
 
@@ -1797,8 +1797,8 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
     struct PROFFunctions *prof = &ctudec->rcn_funcs.prof;
     uint8_t use_alt_filter = mv.prec_amvr == MV_PRECISION_HALF;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
 
     dst  += x0 + y0 * dst_stride;
 
@@ -1886,11 +1886,11 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
-    uint8_t use_wp_c = inter_ctx->weighted_pred_status && (rpl_idx ? inter_ctx->wp_info1[ref_idx].flag_c
-                                                                   : inter_ctx->wp_info0[ref_idx].flag_c);
+    uint8_t use_wp_c = inter_ctx->inter_params.weighted_pred_status && (rpl_idx ? inter_ctx->inter_params.wp_info1[ref_idx].flag_c
+                                                                   : inter_ctx->inter_params.wp_info0[ref_idx].flag_c);
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
 
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
@@ -1947,11 +1947,11 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     mc_c->unidir[prec_c_mc_type][log2_pu_w - 2](dst.cb, dst.stride_c, src_cb, src_stride_c,
                                                 pu_h, prec_x_c, prec_y_c, pu_w);
     } else {
-        int16_t denom = inter_ctx->weighted_denom_c;
-        int16_t wx = rpl_idx ? inter_ctx->wp_info1[ref_idx].weight_cb
-                             : inter_ctx->wp_info0[ref_idx].weight_cb;
-        int16_t ox = rpl_idx ? inter_ctx->wp_info1[ref_idx].offset_cb
-                             : inter_ctx->wp_info0[ref_idx].offset_cb;
+        int16_t denom = inter_ctx->inter_params.weighted_denom_c;
+        int16_t wx = rpl_idx ? inter_ctx->inter_params.wp_info1[ref_idx].weight_cb
+                             : inter_ctx->inter_params.wp_info0[ref_idx].weight_cb;
+        int16_t ox = rpl_idx ? inter_ctx->inter_params.wp_info1[ref_idx].offset_cb
+                             : inter_ctx->inter_params.wp_info0[ref_idx].offset_cb;
         mc_c->unidir_w[prec_c_mc_type][log2_pu_w - 2](dst.cb, dst.stride_c, src_cb, src_stride_c,
                                                       pu_h, denom, wx, ox, prec_x_c, prec_y_c, pu_w);
     }
@@ -1972,11 +1972,11 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     mc_c->unidir[prec_c_mc_type][log2_pu_w - 2](dst.cr, dst.stride_c, src_cr, src_stride_c,
                                                 pu_h, prec_x_c, prec_y_c, pu_w);
     } else {
-        int16_t denom = inter_ctx->weighted_denom_c;
-        int16_t wx = rpl_idx ? inter_ctx->wp_info1[ref_idx].weight_cr
-                             : inter_ctx->wp_info0[ref_idx].weight_cr;
-        int16_t ox = rpl_idx ? inter_ctx->wp_info1[ref_idx].offset_cr
-                             : inter_ctx->wp_info0[ref_idx].offset_cr;
+        int16_t denom = inter_ctx->inter_params.weighted_denom_c;
+        int16_t wx = rpl_idx ? inter_ctx->inter_params.wp_info1[ref_idx].weight_cr
+                             : inter_ctx->inter_params.wp_info0[ref_idx].weight_cr;
+        int16_t ox = rpl_idx ? inter_ctx->inter_params.wp_info1[ref_idx].offset_cr
+                             : inter_ctx->inter_params.wp_info0[ref_idx].offset_cr;
         mc_c->unidir_w[prec_c_mc_type][log2_pu_w - 2](dst.cr, dst.stride_c, src_cr, src_stride_c,
                                                       pu_h, denom, wx, ox, prec_x_c, prec_y_c, pu_w);
     }
@@ -1991,8 +1991,8 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
 
     struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
     if (!ref0 | !ref1) return;
 
     dst_cb += (x0 >> 1) + (y0 >> 1) * dst_stride;
@@ -2121,8 +2121,8 @@ mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     uint16_t tmp_emul_str = 2 * RCN_CTB_STRIDE;
     uint16_t tmp_rpr_str  = 2 * RCN_CTB_STRIDE;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
     OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
 
@@ -2238,8 +2238,8 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
 
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
     OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
 
@@ -2348,8 +2348,8 @@ mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
     OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
 
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
@@ -2477,8 +2477,8 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
+    OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
     OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
 
@@ -2808,14 +2808,14 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
         OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx));
+    uint8_t no_rpr_l0 = !(inter_ctx->inter_params.rpr_scale_msk0 & (1 << ref_idx));
 
     if (no_rpr_l0) {
         mcp_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx);
         mcp_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx);
     } else {
-        int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx][0];
-        int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx][1];
+        int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx][0];
+        int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx][1];
         mcp_rpr(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, rpr_scale_h0, rpr_scale_v0);
     }
 
@@ -2832,16 +2832,16 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
     uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0, mv1, ref_idx0, ref_idx1);
 
     if (inter_dir == 3 && !identical_motion) {
-        uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
-        uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
+        uint8_t no_rpr_l1 = !(inter_ctx->inter_params.rpr_scale_msk1 & (1 << ref_idx1));
+        uint8_t no_rpr_l0 = !(inter_ctx->inter_params.rpr_scale_msk0 & (1 << ref_idx0));
         if (no_rpr_l0 && no_rpr_l1) {
             motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
             rcn_motion_compensation_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
         } else {
-            int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
-            int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
+            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
+            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
             mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
                        rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
             mc_rpr_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
@@ -2849,24 +2849,24 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
-        uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
+        uint8_t no_rpr_l1 = !(inter_ctx->inter_params.rpr_scale_msk1 & (1 << ref_idx1));
         if (no_rpr_l1) {
             mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
             mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         } else {
-            int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
+            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
             mcp_rpr(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, rpr_scale_h1, rpr_scale_v1);
         }
 
     } else if (inter_dir & 0x1) {
-        uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
+        uint8_t no_rpr_l0 = !(inter_ctx->inter_params.rpr_scale_msk0 & (1 << ref_idx0));
         if (no_rpr_l0) {
             mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
             mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         } else {
-            int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
+            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
             mcp_rpr(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, rpr_scale_h0, rpr_scale_v0);
         }
     }
@@ -2884,36 +2884,36 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
     uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0, mv1, ref_idx0, ref_idx1);
 
     if (inter_dir == 3 && !identical_motion) {
-        uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
-        uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
+        uint8_t no_rpr_l1 = !(inter_ctx->inter_params.rpr_scale_msk1 & (1 << ref_idx1));
+        uint8_t no_rpr_l0 = !(inter_ctx->inter_params.rpr_scale_msk0 & (1 << ref_idx0));
         if (no_rpr_l0 && no_rpr_l1) {
             motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
         } else {
-            int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
-            int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
+            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
+            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
             mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
                             rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
-        uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
+        uint8_t no_rpr_l1 = !(inter_ctx->inter_params.rpr_scale_msk1 & (1 << ref_idx1));
         if (no_rpr_l1) {
             mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         } else {
-            int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
+            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
             mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, rpr_scale_h1, rpr_scale_v1);
         }
 
     } else if (inter_dir & 0x1) {
-        uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
+        uint8_t no_rpr_l0 = !(inter_ctx->inter_params.rpr_scale_msk0 & (1 << ref_idx0));
         if (no_rpr_l0) {
             mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         } else {
-            int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
+            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
             mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, rpr_scale_h0, rpr_scale_v0);
         }
     }
@@ -2930,53 +2930,53 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
                  uint8_t prof_dir, const struct PROFInfo *const prof_info)
 {
     if (inter_dir == 3) {
-        uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
-        uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
+        uint8_t no_rpr_l1 = !(inter_ctx->inter_params.rpr_scale_msk1 & (1 << ref_idx1));
+        uint8_t no_rpr_l0 = !(inter_ctx->inter_params.rpr_scale_msk0 & (1 << ref_idx0));
         uint8_t apply_prof = (no_rpr_l0 && (prof_dir & 0x1)) || (no_rpr_l1 && (prof_dir & 0x2));
         if (no_rpr_l0 && no_rpr_l1) {
             prof_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1,
                                          ref_idx0, ref_idx1, prof_dir, prof_info);
         } else if (apply_prof) {
-            int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
-            int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
+            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
+            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
 
             mc_rpr_prof_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
                             rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, prof_dir, prof_info);
         } else {
-            int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
-            int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
+            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
+            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
 
             mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
                        rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
         }
 
     } else if (inter_dir & 0x2) {
-        uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
+        uint8_t no_rpr_l1 = !(inter_ctx->inter_params.rpr_scale_msk1 & (1 << ref_idx1));
         if (no_rpr_l1) {
             rcn_prof_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
                            prof_info->dmv_scale_h_1,
                            prof_info->dmv_scale_v_1);
         } else {
-            int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
+            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
 
             mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
                       rpr_scale_h1, rpr_scale_v1);
         }
 
     } else if (inter_dir & 0x1) {
-        uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
+        uint8_t no_rpr_l0 = !(inter_ctx->inter_params.rpr_scale_msk0 & (1 << ref_idx0));
         if (no_rpr_l0) {
             rcn_prof_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
                            prof_info->dmv_scale_h_0,
                            prof_info->dmv_scale_v_0);
         } else {
-            int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
+            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
 
             mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
                       rpr_scale_h0, rpr_scale_v0);
@@ -2994,39 +2994,39 @@ rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
 {
     uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0, mv1, ref_idx0, ref_idx1);
     if (inter_dir == 3 && !identical_motion) {
-        uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
-        uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
+        uint8_t no_rpr_l1 = !(inter_ctx->inter_params.rpr_scale_msk1 & (1 << ref_idx1));
+        uint8_t no_rpr_l0 = !(inter_ctx->inter_params.rpr_scale_msk0 & (1 << ref_idx0));
 
         if (no_rpr_l0 && no_rpr_l1) {
             rcn_motion_compensation_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
         } else {
-            int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
-            int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
+            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
+            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
 
             mc_rpr_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
                        rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
-        uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
+        uint8_t no_rpr_l1 = !(inter_ctx->inter_params.rpr_scale_msk1 & (1 << ref_idx1));
         if (no_rpr_l1) {
             mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         } else {
-            int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
-            int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
+            int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
+            int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
             mcp_rpr_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
                       rpr_scale_h1, rpr_scale_v1);
         }
 
     } else if (inter_dir & 0x1) {
-        uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
+        uint8_t no_rpr_l0 = !(inter_ctx->inter_params.rpr_scale_msk0 & (1 << ref_idx0));
         if (no_rpr_l0) {
             mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         } else {
-            int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
-            int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
+            int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
+            int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
             mcp_rpr_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
                       rpr_scale_h0, rpr_scale_v0);
         }
@@ -3207,13 +3207,13 @@ rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
     gpm_ctx->split_dir = gpm_part_idx;
 
     const uint16_t* scale_fact_rpl ;
-    scale_fact_rpl = gpm_ctx->inter_dir0 == 1 ? inter_ctx->scale_fact_rpl0[mv0.ref_idx]
-                                              : inter_ctx->scale_fact_rpl1[mv0.ref_idx];
+    scale_fact_rpl = gpm_ctx->inter_dir0 == 1 ? inter_ctx->inter_params.scale_fact_rpl0[mv0.ref_idx]
+                                              : inter_ctx->inter_params.scale_fact_rpl1[mv0.ref_idx];
     int rpr_scale_h0 = scale_fact_rpl[0];
     int rpr_scale_v0 = scale_fact_rpl[1];
 
-    scale_fact_rpl = gpm_ctx->inter_dir1 == 1 ? inter_ctx->scale_fact_rpl0[mv1.ref_idx]
-                                              : inter_ctx->scale_fact_rpl1[mv1.ref_idx];
+    scale_fact_rpl = gpm_ctx->inter_dir1 == 1 ? inter_ctx->inter_params.scale_fact_rpl0[mv1.ref_idx]
+                                              : inter_ctx->inter_params.scale_fact_rpl1[mv1.ref_idx];
     int rpr_scale_h1 = scale_fact_rpl[0];
     int rpr_scale_v1 = scale_fact_rpl[1];
 

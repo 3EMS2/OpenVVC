@@ -737,10 +737,10 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
 void
 ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVSliceDec *sldec)
 {
-    vvc_unmark_refs(sldec->pic, sldec->rpl0, sldec->nb_active_refs0, sldec->nb_refs0);
+    vvc_unmark_refs(sldec->pic, sldec->inter_ctx.rpl0, sldec->inter_ctx.nb_active_refs0, sldec->nb_refs0);
 
     if (slice_type == SLICE_B){
-        vvc_unmark_refs(sldec->pic, sldec->rpl1, sldec->nb_active_refs1, sldec->nb_refs1);
+        vvc_unmark_refs(sldec->pic, sldec->inter_ctx.rpl1, sldec->inter_ctx.nb_active_refs1, sldec->nb_refs1);
     }
 }
 
@@ -768,20 +768,20 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     }
     uint8_t weighted_pred = sldec->active_params.sps->sps_weighted_pred_flag || sldec->active_params.sps->sps_weighted_bipred_flag;
 
-    ret = vvc_mark_refs(dpb, rpl0, poc, sldec->rpl0, weighted_pred);
+    ret = vvc_mark_refs(dpb, rpl0, poc, sldec->inter_ctx.rpl0, weighted_pred);
 
     sldec->nb_refs0 = rpl0->num_ref_entries;
-    sldec->nb_active_refs0 = rpl0->num_ref_active_entries;
+    sldec->inter_ctx.nb_active_refs0 = rpl0->num_ref_active_entries;
 
     if (slice_type == SLICE_B){
-        ret |= vvc_mark_refs(dpb, rpl1, poc, sldec->rpl1, weighted_pred);
+        ret |= vvc_mark_refs(dpb, rpl1, poc, sldec->inter_ctx.rpl1, weighted_pred);
         sldec->nb_refs1 = rpl1->num_ref_entries;
-        sldec->nb_active_refs1 = rpl1->num_ref_active_entries;
+        sldec->inter_ctx.nb_active_refs1 = rpl1->num_ref_active_entries;
     } else {
-        sldec->nb_active_refs1 = 0;
+        sldec->inter_ctx.nb_active_refs1 = 0;
     }
 
-    if ((slice_type != SLICE_I && !sldec->nb_active_refs0) || (!sldec->nb_active_refs1 && slice_type == SLICE_B)) {
+    if ((slice_type != SLICE_I && !sldec->inter_ctx.nb_active_refs0) || (!sldec->inter_ctx.nb_active_refs1 && slice_type == SLICE_B)) {
          ret = OVVC_EINDATA;
     }
 
@@ -1040,9 +1040,9 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
                     last_dist += rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
                                                           : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
 
-                    sldec->dist_ref_0[i] = ov_clip_intp2(last_dist, 8);
+                    sldec->inter_ctx.dist_ref_0[i] = ov_clip_intp2(last_dist, 8);
                 } else {
-                    sldec->dist_ref_0[i] = 0;
+                    sldec->inter_ctx.dist_ref_0[i] = 0;
                 }
             }
 
@@ -1053,9 +1053,9 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
                     last_dist += rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
                                                           : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
 
-                    sldec->dist_ref_1[i] = ov_clip_intp2(last_dist, 8);
+                    sldec->inter_ctx.dist_ref_1[i] = ov_clip_intp2(last_dist, 8);
                 } else {
-                    sldec->dist_ref_1[i] = 0;
+                    sldec->inter_ctx.dist_ref_1[i] = 0;
                 }
             }
         }

@@ -1550,8 +1550,8 @@ static uint64_t
 check_dbf_enabled(const struct InterDRVCtx *const inter_ctx,
                   OVMV mv_p0, OVMV mv_p1, OVMV mv_q0, OVMV mv_q1)
 {
-    const int16_t *dist_0 = inter_ctx->dist_ref_0;
-    const int16_t *dist_1 = inter_ctx->dist_ref_1;
+    const int16_t *dist_0 = inter_ctx->inter_params.dist_ref_0;
+    const int16_t *dist_1 = inter_ctx->inter_params.dist_ref_1;
 
     int16_t ref0_p = dist_0[mv_p0.ref_idx];
     int16_t ref1_p = dist_1[mv_p1.ref_idx];
@@ -1619,8 +1619,8 @@ dbf_mv_set_hedges(const struct InterDRVCtx *const inter_ctx,
     uint64_t chk_p0 = mv_q_p0 & (mv_p_p0 | mv_p_p1);
     uint64_t chk_p1 = mv_q_p1 & (mv_p_p0 | mv_p_p1);
 
-    const int16_t *dist_ref0 = inter_ctx->dist_ref_0;
-    const int16_t *dist_ref1 = inter_ctx->dist_ref_1;
+    const int16_t *dist_ref0 = inter_ctx->inter_params.dist_ref_0;
+    const int16_t *dist_ref1 = inter_ctx->inter_params.dist_ref_1;
 
     chk_b  &= (~(bs1_map_h | (ibc_p_msk & ibc_q_msk))) & unit_msk_h;
     chk_p0 &= (~(bs1_map_h | (ibc_p_msk & ibc_q_msk))) & unit_msk_h;
@@ -1740,8 +1740,8 @@ dbf_mv_set_vedges(const struct InterDRVCtx *const inter_ctx,
     uint64_t chk_p0 = mv_q_p0 & (mv_p_p0 | mv_p_p1);
     uint64_t chk_p1 = mv_q_p1 & (mv_p_p0 | mv_p_p1);
 
-    const int16_t *dist_ref0 = inter_ctx->dist_ref_0;
-    const int16_t *dist_ref1 = inter_ctx->dist_ref_1;
+    const int16_t *dist_ref0 = inter_ctx->inter_params.dist_ref_0;
+    const int16_t *dist_ref1 = inter_ctx->inter_params.dist_ref_1;
 
     chk_b  &= (~(bs1_map_v | (ibc_p_msk & ibc_q_msk))) & unit_msk_v;
 

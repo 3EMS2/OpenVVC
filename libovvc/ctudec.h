@@ -135,6 +135,7 @@ struct DBFInfo
     uint64_t ctb_bound_hor[16 + 33]; /* Row map of horizontal edges */
     uint64_t ctb_bound_ver_c[16 + 33]; /* Column map of vertical edges */
     uint64_t ctb_bound_hor_c[16 + 33]; /* Row map of horizontal edges */
+
     struct EdgeMap cu_edge;
     struct EdgeMap tu_edge;
     struct EdgeMap sb_edge;
@@ -168,6 +169,7 @@ struct DBFInfo
     struct DBFQPMap qp_map_y;
     struct DBFQPMap qp_map_cb;
     struct DBFQPMap qp_map_cr;
+
     uint8_t disable_v;
     uint8_t disable_h;
     const struct IBCMVCtx *ibc_ctx;
@@ -176,7 +178,6 @@ struct DBFInfo
         uint8_t nb_intervals;
         int16_t threshold[6];
         int8_t  qp_offset[6];
-
     } ladf_prms;
 };
 
@@ -371,6 +372,7 @@ struct WPInfo
 
 struct InterDRVCtx
 {
+    struct {
     /* References Pictures Lists */
     uint8_t nb_active_ref0;
     uint8_t nb_active_ref1;
@@ -415,6 +417,7 @@ struct InterDRVCtx
     uint8_t bdof_enabled;
     uint8_t dmvr_enabled;
     uint8_t log2_parallel_merge_level;
+    } inter_params;
 
     /* CTU Local Map Motion Vectors */
     struct OVMVCtx mv_ctx0;

@@ -485,12 +485,12 @@ derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx
         int pos_in_buff = is_c0 ? TMVP_POS_IN_BUF2(c0_x, c0_y) : TMVP_POS_IN_BUF2(c1_x, c1_y);
 
         uint8_t is_rpl0 = (mv_ctx == &inter_ctx->mv_ctx0);
-        int16_t dist_ref = is_rpl0 ? inter_ctx->dist_ref_0[ref_idx] : inter_ctx->dist_ref_1[ref_idx];
+        int16_t dist_ref = is_rpl0 ? inter_ctx->inter_params.dist_ref_0[ref_idx] : inter_ctx->inter_params.dist_ref_1[ref_idx];
 
         struct TMVPMV col_mv;
         int16_t scale;
 
-        if (!(tmvp->col_ref_l0 || inter_ctx->low_delay) || (inter_ctx->low_delay && is_rpl0)) {
+        if (!(tmvp->col_ref_l0 || inter_ctx->inter_params.low_delay) || (inter_ctx->inter_params.low_delay && is_rpl0)) {
 
             if (status & 0x1) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
@@ -665,7 +665,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         }
     }
 
-    if (inter_ctx->tmvp_enabled && nb_cand < 2 && !is_small) {
+    if (inter_ctx->inter_params.tmvp_enabled && nb_cand < 2 && !is_small) {
         if (!inter_ctx->tmvp_avail) {
             /*FIXME dirty ref to ctudec */
             OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
@@ -712,7 +712,7 @@ derive_tmvp_merge_cand(const struct InterDRVCtx *const inter_ctx,
                                         c0_x, c0_y, c1_x, c1_y);
 
     if (status) {
-        int8_t dist_ref0 = inter_ctx->dist_ref_0[0];
+        int8_t dist_ref0 = inter_ctx->inter_params.dist_ref_0[0];
         int is_c0 = status & 0x3;
         int pos_in_buff = is_c0 ? TMVP_POS_IN_BUF2(c0_x, c0_y) : TMVP_POS_IN_BUF2(c1_x, c1_y);
 
@@ -849,7 +849,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         }
     }
 
-    if (inter_ctx->tmvp_enabled && !is_small) {
+    if (inter_ctx->inter_params.tmvp_enabled && !is_small) {
 
         if (!inter_ctx->tmvp_avail) {
             /*FIXME dirty ref to ctudec */
@@ -896,7 +896,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
     }
 
     int8_t diff_cand = merge_idx - nb_cand;
-    int8_t num_min_ref = inter_ctx->nb_active_ref0;
+    int8_t num_min_ref = inter_ctx->inter_params.nb_active_ref0;
     int8_t ref_idx = 0;
     if (diff_cand <= num_min_ref - 1) ref_idx = diff_cand;
 
@@ -981,8 +981,8 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
         const struct TMVPMV *mv_cur = !tmvp->col_ref_l0 ? tmvp->ctb_mv0 : tmvp->ctb_mv1;
         const struct TMVPMV *mv_opp = !tmvp->col_ref_l0 ? tmvp->ctb_mv1 : tmvp->ctb_mv0;
 
-        int8_t dist_ref_cur = !tmvp->col_ref_l0 ? inter_ctx->dist_ref_0[0] : inter_ctx->dist_ref_1[0];
-        int8_t dist_ref_opp = !tmvp->col_ref_l0 ? inter_ctx->dist_ref_1[0] : inter_ctx->dist_ref_0[0];
+        int8_t dist_ref_cur = !tmvp->col_ref_l0 ? inter_ctx->inter_params.dist_ref_0[0] : inter_ctx->inter_params.dist_ref_1[0];
+        int8_t dist_ref_opp = !tmvp->col_ref_l0 ? inter_ctx->inter_params.dist_ref_1[0] : inter_ctx->inter_params.dist_ref_0[0];
 
         OVMV *dst_cur = !tmvp->col_ref_l0 ? &cand->mv0 : &cand->mv1;
         OVMV *dst_opp = !tmvp->col_ref_l0 ? &cand->mv1 : &cand->mv0;
@@ -994,7 +994,7 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
         struct TMVPMV col_mv_opp;
         struct TMVPMV col_mv;
 
-        if (inter_ctx->low_delay) {
+        if (inter_ctx->inter_params.low_delay) {
             int pos_in_buff =  TMVP_POS_IN_BUF2(c0_x, c0_y);
             uint8_t cand_cur = 1 ? cand_c0_cur : cand_c1_cur;
             uint8_t cand_opp = 1 ? cand_c0_opp : cand_c1_opp;
@@ -1138,7 +1138,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
 
     uint64_t lft_col1 = mv_ctx1->map.vfield[pb_x];
     uint64_t abv_row1 = mv_ctx1->map.hfield[pb_y];
-    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
+    uint8_t log2_pmerge_lvl = inter_ctx->inter_params.log2_parallel_merge_level;
     uint8_t enable_msk = derive_merge_enable_cand_list(pb_x, pb_y, nb_pb_w, nb_pb_h, log2_pmerge_lvl);
 
     /*FIXME use flags for inter_dir and availability*/
@@ -1240,7 +1240,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         }
     }
 
-    if (inter_ctx->tmvp_enabled && !is_small) {
+    if (inter_ctx->inter_params.tmvp_enabled && !is_small) {
         if (!inter_ctx->tmvp_avail) {
             /*FIXME dirty ref to ctudec */
             OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
@@ -1313,7 +1313,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
     }
     /*FIXME saturation or ridx based on nb_active_ref*/
     int8_t diff_cand = merge_idx - nb_cand;
-    int8_t num_min_ref = OVMIN(inter_ctx->nb_active_ref0, inter_ctx->nb_active_ref1);
+    int8_t num_min_ref = OVMIN(inter_ctx->inter_params.nb_active_ref0, inter_ctx->inter_params.nb_active_ref1);
     int8_t ridx = 0;
     if (diff_cand <= num_min_ref - 1)
         ridx = diff_cand;
@@ -1386,8 +1386,8 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     if (inter_dir == 3) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->dist_ref_0[mv0.ref_idx]};
-        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->dist_ref_1[mv1.ref_idx]};
+        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
+        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
         fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, tmvpmv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1397,7 +1397,7 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->dist_ref_1[mv1.ref_idx]};
+        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, tmvpmv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1405,7 +1405,7 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->dist_ref_0[mv0.ref_idx]};
+        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1423,8 +1423,8 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     if (inter_dir == 3) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->dist_ref_0[mv0.ref_idx]};
-        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->dist_ref_1[mv1.ref_idx]};
+        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
+        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
         fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, tmvpmv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1435,7 +1435,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->dist_ref_1[mv1.ref_idx]};
+        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, tmvpmv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1444,7 +1444,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->dist_ref_0[mv0.ref_idx]};
+        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1473,12 +1473,12 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
               uint8_t nb_pb_w, uint8_t nb_pb_h,
               uint8_t inter_dir)
 {
-    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
+    uint8_t log2_pmerge_lvl = inter_ctx->inter_params.log2_parallel_merge_level;
     uint8_t enable_hmvp = enable_hmvp_storage(pb_x, pb_y, nb_pb_w, nb_pb_h, log2_pmerge_lvl);
     if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv = {.mv.x=mv.x, .mv.y=mv.y, .z=inter_ctx->dist_ref_1[mv.ref_idx]};
+        struct TMVPMV tmvpmv = {.mv.x=mv.x, .mv.y=mv.y, .z=inter_ctx->inter_params.dist_ref_1[mv.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, tmvpmv, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1487,7 +1487,7 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv = {.mv.x=mv.x, .mv.y=mv.y, .z=inter_ctx->dist_ref_0[mv.ref_idx]};
+        struct TMVPMV tmvpmv = {.mv.x=mv.x, .mv.y=mv.y, .z=inter_ctx->inter_params.dist_ref_0[mv.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1586,11 +1586,11 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
     uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
 
-    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
+    uint8_t log2_pmerge_lvl = inter_ctx->inter_params.log2_parallel_merge_level;
     uint8_t enable_hmvp = enable_hmvp_storage(x0_unit, y0_unit, nb_unit_w, nb_unit_h, log2_pmerge_lvl);
     /* FIXME can we combine mvp derivation for bi pred */
     if (inter_dir & 0x1) {
-        uint8_t opp_ref_idx0 = inter_ctx->rpl0_opp[ref_idx0];
+        uint8_t opp_ref_idx0 = inter_ctx->inter_params.rpl0_opp[ref_idx0];
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
@@ -1611,7 +1611,7 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
     }
 
     if (inter_dir & 0x2) {
-        uint8_t opp_ref_idx1 = inter_ctx->rpl1_opp[ref_idx1];
+        uint8_t opp_ref_idx1 = inter_ctx->inter_params.rpl1_opp[ref_idx1];
 
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
@@ -1680,7 +1680,7 @@ drv_mmvd_merge_mvp(struct InterDRVCtx *const inter_ctx,
 
     int offset = (uint16_t)ref_mvd_cands[(idx >> 2)] << 2;
 
-    offset <<= inter_ctx->mmvd_shift;
+    offset <<= inter_ctx->inter_params.mmvd_shift;
 
     int f_pos = idx - ((idx >> 2) << 2);
 
@@ -1748,8 +1748,8 @@ drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
     uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
     uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
     uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
-    uint8_t opp_ref_idx0 = inter_ctx->rpl0_opp[ref_idx0];
-    uint8_t opp_ref_idx1 = inter_ctx->rpl1_opp[ref_idx1];
+    uint8_t opp_ref_idx0 = inter_ctx->inter_params.rpl0_opp[ref_idx0];
+    uint8_t opp_ref_idx1 = inter_ctx->inter_params.rpl1_opp[ref_idx1];
 
     const struct OVMVCtx *const mv_ctx_opp = &inter_ctx->mv_ctx0 == mv_ctx ? &inter_ctx->mv_ctx1 :
                                                                              &inter_ctx->mv_ctx0;
@@ -1790,7 +1790,7 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_pb_w = (1 << log2_pu_w) >> LOG2_MIN_CU_S;
     uint8_t nb_pb_h = (1 << log2_pu_h) >> LOG2_MIN_CU_S;
 
-    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
+    uint8_t log2_pmerge_lvl = inter_ctx->inter_params.log2_parallel_merge_level;
     uint8_t enable_hmvp = enable_hmvp_storage(pb_x, pb_y, nb_pb_w, nb_pb_h, log2_pmerge_lvl);
 
     VVCMergeInfo mv_info = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
@@ -1815,7 +1815,7 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 
     int ref0 = mv_info.mv0.ref_idx;
     int ref1 = mv_info.mv1.ref_idx;
-    offset <<= inter_ctx->mmvd_shift;
+    offset <<= inter_ctx->inter_params.mmvd_shift;
 
     if (mv_info.inter_dir == 0x3){
         /* FIXME handle LT ref differently */
@@ -1834,13 +1834,13 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
             mvd0.y = -offset;
         }
 
-        int32_t dist_ref0 = inter_ctx->dist_ref_0[ref0];
-        int32_t dist_ref1 = inter_ctx->dist_ref_1[ref1];
+        int32_t dist_ref0 = inter_ctx->inter_params.dist_ref_0[ref0];
+        int32_t dist_ref1 = inter_ctx->inter_params.dist_ref_1[ref1];
         uint8_t is_lterm0 = !dist_ref0;
         uint8_t is_lterm1 = !dist_ref1;
 
-        dist_ref0 = inter_ctx->poc - inter_ctx->rpl0[ref0]->poc;
-        dist_ref1 = inter_ctx->poc - inter_ctx->rpl1[ref1]->poc;
+        dist_ref0 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl0[ref0]->poc;
+        dist_ref1 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl1[ref1]->poc;
         /* Same ref */
         if (dist_ref0 == dist_ref1){
             mvd1.x = mvd0.x;
@@ -2011,7 +2011,7 @@ drv_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
     uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
     uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
-    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
+    uint8_t log2_pmerge_lvl = inter_ctx->inter_params.log2_parallel_merge_level;
     uint8_t enable_hmvp = enable_hmvp_storage(x0_unit, y0_unit, nb_unit_w, nb_unit_h, log2_pmerge_lvl);
 
     mv_info = vvc_derive_merge_mvp_b(inter_ctx, x0_unit, y0_unit,

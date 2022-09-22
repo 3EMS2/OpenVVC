@@ -156,18 +156,21 @@ typedef struct OVSliceDec
      */
     struct DRVLines drv_lines;
 
+    uint8_t nb_refs0;
+    uint8_t nb_refs1;
+
     /* Reference to current pic being decoded */
     OVPicture *pic;
+    struct {
     struct OVPicture *rpl0[16];
     struct OVPicture *rpl1[16];
 
     int16_t dist_ref_0[16];
     int16_t dist_ref_1[16];
 
-    uint8_t nb_refs0;
-    uint8_t nb_refs1;
     uint8_t nb_active_refs0;
     uint8_t nb_active_refs1;
+    } inter_ctx;
 
 } OVSliceDec;
 

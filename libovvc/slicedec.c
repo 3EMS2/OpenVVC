@@ -379,8 +379,8 @@ slicedec_finish_decoding(OVSliceDec *sldec)
 
     sldec->nb_refs0 = 0;
     sldec->nb_refs1 = 0;
-    sldec->nb_active_refs0 = 0;
-    sldec->nb_active_refs1 = 0;
+    sldec->inter_ctx.nb_active_refs0 = 0;
+    sldec->inter_ctx.nb_active_refs1 = 0;
 
     pthread_mutex_unlock(&slice_sync->gnrl_mtx);
 
@@ -838,10 +838,10 @@ find_tmvp_collocated_ref(const OVSliceDec *const sldec, const OVPS *const ps)
     if(ph->ph_temporal_mvp_enabled_flag) {
         if (ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag || sh->sh_slice_type == SLICE_P) {
             int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
-            col_pic = sldec->rpl0[ref_idx];
+            col_pic = sldec->inter_ctx.rpl0[ref_idx];
         } else if (sh->sh_slice_type != SLICE_I) {
             int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
-            col_pic = sldec->rpl1[ref_idx];
+            col_pic = sldec->inter_ctx.rpl1[ref_idx];
         }
     }
     return col_pic;
@@ -900,10 +900,10 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
 
     tools->smvd_enabled = 0;
 
-    if (prms->sps->sps_smvd_enabled_flag && !inter_ctx->low_delay
+    if (prms->sps->sps_smvd_enabled_flag && !inter_ctx->inter_params.low_delay
         && !tools->mvd1_zero_enabled) {
-        const int nb_active_ref0 = inter_ctx->nb_active_ref0;
-        const int nb_active_ref1 = inter_ctx->nb_active_ref1;
+        const int nb_active_ref0 = inter_ctx->inter_params.nb_active_ref0;
+        const int nb_active_ref1 = inter_ctx->inter_params.nb_active_ref1;
         int ref = 0;
         int ref_idx0 = -1;
         int ref_idx1 = -1;
@@ -912,7 +912,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
 
         // search nearest forward POC in List 0
         for (ref = 0; ref < nb_active_ref0; ref++) {
-            int ref_poc = inter_ctx->rpl0[ref]->poc;
+            int ref_poc = inter_ctx->inter_params.rpl0[ref]->poc;
             int ref_type = ST_REF;
             uint8_t is_lterm = (ref_type == LT_REF);
             if (ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx0 == -1)  && !is_lterm) {
@@ -923,7 +923,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
 
         // search nearest backward POC in List 1
         for (ref = 0; ref < nb_active_ref1; ref++) {
-            int ref_poc = inter_ctx->rpl1[ref]->poc;
+            int ref_poc = inter_ctx->inter_params.rpl1[ref]->poc;
             int ref_type = ST_REF;
             uint8_t is_lterm = (ref_type == LT_REF);
             if (ref_poc > cur_poc && (ref_poc < back_poc || ref_idx1 == -1)  && !is_lterm) {
@@ -940,7 +940,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
 
             // search nearest backward POC in List 0
             for (ref = 0; ref < nb_active_ref0; ref++) {
-                int ref_poc = inter_ctx->rpl0[ref]->poc;
+                int ref_poc = inter_ctx->inter_params.rpl0[ref]->poc;
                 int ref_type = ST_REF;
                 uint8_t is_lterm = (ref_type == LT_REF);
                 if (ref_poc > cur_poc && (ref_poc < back_poc || ref_idx0 == -1)  && !is_lterm) {
@@ -951,7 +951,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
 
             // search nearest forward POC in List 1
             for (ref = 0; ref < nb_active_ref1; ref++) {
-                int ref_poc = inter_ctx->rpl1[ref]->poc;
+                int ref_poc = inter_ctx->inter_params.rpl1[ref]->poc;
                 int ref_type = ST_REF;
                 uint8_t is_lterm = (ref_type == LT_REF);
                 if (ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx1 == -1)  && !is_lterm) {
@@ -962,8 +962,8 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
         }
 
         if (forw_poc < cur_poc && back_poc > cur_poc) {
-            inter_ctx->ref_smvd_idx0 = ref_idx0;
-            inter_ctx->ref_smvd_idx1 = ref_idx1;
+            inter_ctx->inter_params.ref_smvd_idx0 = ref_idx0;
+            inter_ctx->inter_params.ref_smvd_idx1 = ref_idx1;
             tools->smvd_enabled = 1;
         }
     }
@@ -1025,15 +1025,15 @@ static void
 derive_ref_weights(OVCTUDec *const ctudec, const OVPS *const prms)
 {
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    inter_ctx->weighted_pred_status = (prms->pps->pps_weighted_bipred_flag << 1) | prms->pps->pps_weighted_pred_flag;
-    if (inter_ctx->weighted_pred_status) {
+    inter_ctx->inter_params.weighted_pred_status = (prms->pps->pps_weighted_bipred_flag << 1) | prms->pps->pps_weighted_pred_flag;
+    if (inter_ctx->inter_params.weighted_pred_status) {
         const struct RPLWeightInfo *const wgh_info = prms->pps->pps_wp_info_in_ph_flag ? &prms->ph->wgt_info
                                                                                        : &prms->sh->wgt_info;
 
-        set_ref_weights_l0(inter_ctx->wp_info0, wgh_info);
-        set_ref_weights_l1(inter_ctx->wp_info1, wgh_info);
-        inter_ctx->weighted_denom = wgh_info->luma_log2_weight_denom;
-        inter_ctx->weighted_denom_c = wgh_info->luma_log2_weight_denom + wgh_info->delta_chroma_log2_weight_denom;
+        set_ref_weights_l0(inter_ctx->inter_params.wp_info0, wgh_info);
+        set_ref_weights_l1(inter_ctx->inter_params.wp_info1, wgh_info);
+        inter_ctx->inter_params.weighted_denom = wgh_info->luma_log2_weight_denom;
+        inter_ctx->inter_params.weighted_denom_c = wgh_info->luma_log2_weight_denom + wgh_info->delta_chroma_log2_weight_denom;
     }
 }
 
@@ -1051,11 +1051,11 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
     int ref_pic_w, ref_pic_h;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
-    inter_ctx->rpr_scale_msk0 = 0;
-    inter_ctx->rpr_scale_msk1 = 0;
+    inter_ctx->inter_params.rpr_scale_msk0 = 0;
+    inter_ctx->inter_params.rpr_scale_msk1 = 0;
 
-    for (int i = 0;  i < inter_ctx->nb_active_ref0; ++i){
-        OVPicture *ref_pic  = inter_ctx->rpl0[i];
+    for (int i = 0;  i < inter_ctx->inter_params.nb_active_ref0; ++i){
+        OVPicture *ref_pic  = inter_ctx->inter_params.rpl0[i];
         frame = ref_pic->frame;
         if (!frame)
             continue;
@@ -1067,14 +1067,14 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
         scale_h = ((ref_pic_w << RPR_SCALE_BITS) + (pic_w >> 1)) / pic_w;
         scale_v = ((ref_pic_h << RPR_SCALE_BITS) + (pic_h >> 1)) / pic_h;
 
-        inter_ctx->scale_fact_rpl0[i][0] = scale_h;
-        inter_ctx->scale_fact_rpl0[i][1] = scale_v;
+        inter_ctx->inter_params.scale_fact_rpl0[i][0] = scale_h;
+        inter_ctx->inter_params.scale_fact_rpl0[i][1] = scale_v;
 
-        inter_ctx->rpr_scale_msk0 |= (scale_h != RPR_NO_SCALE || scale_v != RPR_NO_SCALE) << i;
+        inter_ctx->inter_params.rpr_scale_msk0 |= (scale_h != RPR_NO_SCALE || scale_v != RPR_NO_SCALE) << i;
     }
 
-    for (int i = 0;  i < inter_ctx->nb_active_ref1; ++i){
-        OVPicture *ref_pic = inter_ctx->rpl1[i];
+    for (int i = 0;  i < inter_ctx->inter_params.nb_active_ref1; ++i){
+        OVPicture *ref_pic = inter_ctx->inter_params.rpl1[i];
         frame = ref_pic->frame;
         if (!frame)
             continue;
@@ -1085,10 +1085,10 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
 
         scale_h = ((ref_pic_w << RPR_SCALE_BITS) + (pic_w >> 1)) / pic_w;
         scale_v = ((ref_pic_h << RPR_SCALE_BITS) + (pic_h >> 1)) / pic_h;
-        inter_ctx->scale_fact_rpl1[i][0] = scale_h;
-        inter_ctx->scale_fact_rpl1[i][1] = scale_v;
+        inter_ctx->inter_params.scale_fact_rpl1[i][0] = scale_h;
+        inter_ctx->inter_params.scale_fact_rpl1[i][1] = scale_v;
 
-        inter_ctx->rpr_scale_msk1 |= (scale_h != RPR_NO_SCALE || scale_v != RPR_NO_SCALE) << i;
+        inter_ctx->inter_params.rpr_scale_msk1 |= (scale_h != RPR_NO_SCALE || scale_v != RPR_NO_SCALE) << i;
     }
 }
 
@@ -1097,8 +1097,8 @@ copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVP
 {
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
-    uint8_t nb_active_refs0 = sldec->nb_active_refs0;
-    uint8_t nb_active_refs1 = sldec->nb_active_refs1;
+    uint8_t nb_active_refs0 = sldec->inter_ctx.nb_active_refs0;
+    uint8_t nb_active_refs1 = sldec->inter_ctx.nb_active_refs1;
 
     ctudec->qp_ctx2.current_qp = ctudec->slice_qp;
 
@@ -1108,53 +1108,53 @@ copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVP
 
     ctudec->rcn_ctx.ctudec = ctudec;
 
-    inter_ctx->poc = sldec->pic->poc;
+    inter_ctx->inter_params.poc = sldec->pic->poc;
 
-    inter_ctx->nb_active_ref0 = nb_active_refs0;
-    inter_ctx->nb_active_ref1 = nb_active_refs1;
+    inter_ctx->inter_params.nb_active_ref0 = nb_active_refs0;
+    inter_ctx->inter_params.nb_active_ref1 = nb_active_refs1;
 
-    memcpy(inter_ctx->rpl0, sldec->rpl0, sizeof(sldec->rpl0));
-    memcpy(inter_ctx->rpl1, sldec->rpl1, sizeof(sldec->rpl1));
-    memcpy(inter_ctx->dist_ref_0, sldec->dist_ref_0, sizeof(inter_ctx->dist_ref_0));
-    memcpy(inter_ctx->dist_ref_1, sldec->dist_ref_1, sizeof(inter_ctx->dist_ref_1));
+    memcpy(inter_ctx->inter_params.rpl0, sldec->inter_ctx.rpl0, sizeof(sldec->inter_ctx.rpl0));
+    memcpy(inter_ctx->inter_params.rpl1, sldec->inter_ctx.rpl1, sizeof(sldec->inter_ctx.rpl1));
+    memcpy(inter_ctx->inter_params.dist_ref_0, sldec->inter_ctx.dist_ref_0, sizeof(inter_ctx->inter_params.dist_ref_0));
+    memcpy(inter_ctx->inter_params.dist_ref_1, sldec->inter_ctx.dist_ref_1, sizeof(inter_ctx->inter_params.dist_ref_1));
 
     ctudec_compute_refs_scaling(ctudec, sldec->pic);
 
     derive_ref_weights(ctudec, &sldec->active_params);
 
-    inter_ctx->low_delay = 1;
+    inter_ctx->inter_params.low_delay = 1;
 
     /* FIXME Bidir only */
     for (int i = 0; i < nb_active_refs0; ++i) {
         uint8_t opp_ref_idx0 = 0xFF;
 
-        if (sldec->dist_ref_0[i] < 0) {
-            inter_ctx->low_delay = 0;
+        if (inter_ctx->inter_params.dist_ref_0[i] < 0) {
+            inter_ctx->inter_params.low_delay = 0;
         }
 
         for (int j = 0; j < nb_active_refs1; j ++) {
-            if (inter_ctx->rpl0[i] == inter_ctx->rpl1[j]) {
+            if (inter_ctx->inter_params.rpl0[i] == inter_ctx->inter_params.rpl1[j]) {
                 opp_ref_idx0 = j;
                 break;
             }
         }
-        inter_ctx->rpl0_opp[i] = opp_ref_idx0;
+        inter_ctx->inter_params.rpl0_opp[i] = opp_ref_idx0;
     }
 
     for (int i = 0; i < nb_active_refs1; ++i) {
         uint8_t opp_ref_idx1 = 0xFF;
 
-        if (sldec->dist_ref_1[i] < 0) {
-            inter_ctx->low_delay = 0;
+        if (inter_ctx->inter_params.dist_ref_1[i] < 0) {
+            inter_ctx->inter_params.low_delay = 0;
         }
 
         for (int j = 0; j < nb_active_refs0; j ++) {
-            if (inter_ctx->rpl1[i] == inter_ctx->rpl0[j]) {
+            if (inter_ctx->inter_params.rpl1[i] == inter_ctx->inter_params.rpl0[j]) {
                 opp_ref_idx1 = j;
                 break;
             }
         }
-        inter_ctx->rpl1_opp[i] = opp_ref_idx1;
+        inter_ctx->inter_params.rpl1_opp[i] = opp_ref_idx1;
     }
 
     slicedec_smvd_params(ctudec, prms, sldec->pic->poc);
@@ -1255,7 +1255,7 @@ init_affine_status(OVCTUDec *const ctudec, const OVSPS *const sps,
 
     tools->affine_nb_merge_cand = 5 - sps->sps_five_minus_max_num_subblock_merge_cand;
 
-    ctudec->drv_ctx.inter_ctx.affine_6params_enabled = sps->sps_6param_affine_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.inter_params.affine_6params_enabled = sps->sps_6param_affine_enabled_flag;
 }
 
 static void
@@ -1400,16 +1400,16 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
-    inter_ctx->prof_enabled = sps->sps_affine_prof_enabled_flag  && !ph->ph_prof_disabled_flag;
-    inter_ctx->bdof_enabled = sps->sps_bdof_enabled_flag && (!ph->ph_bdof_disabled_flag);
-    inter_ctx->dmvr_enabled = sps->sps_dmvr_enabled_flag && (!ph->ph_dmvr_disabled_flag);
-    inter_ctx->bdof_enabled &= sh->sh_slice_type == SLICE_B;
-    inter_ctx->dmvr_enabled &= sh->sh_slice_type == SLICE_B;
+    inter_ctx->inter_params.prof_enabled = sps->sps_affine_prof_enabled_flag  && !ph->ph_prof_disabled_flag;
+    inter_ctx->inter_params.bdof_enabled = sps->sps_bdof_enabled_flag && (!ph->ph_bdof_disabled_flag);
+    inter_ctx->inter_params.dmvr_enabled = sps->sps_dmvr_enabled_flag && (!ph->ph_dmvr_disabled_flag);
+    inter_ctx->inter_params.bdof_enabled &= sh->sh_slice_type == SLICE_B;
+    inter_ctx->inter_params.dmvr_enabled &= sh->sh_slice_type == SLICE_B;
 
-    inter_ctx->log2_parallel_merge_level = sps->sps_log2_parallel_merge_level_minus2 + 2;
-    inter_ctx->sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
-    inter_ctx->mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
-    inter_ctx->tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
+    inter_ctx->inter_params.log2_parallel_merge_level = sps->sps_log2_parallel_merge_level_minus2 + 2;
+    inter_ctx->inter_params.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
+    inter_ctx->inter_params.mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
+    inter_ctx->inter_params.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
 
     inter_ctx->tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag ||
                                      sh->sh_collocated_from_l0_flag ||
