@@ -250,7 +250,7 @@ tmvp_store_mv(OVCTUDec *ctudec)
             memcpy(dst_map, src_map, sizeof(uint64_t) * nb_unit_ctb);
 
             for (i = 0; i < nb_tmvp_unit; ++i) {
-                memcpy(dst_mv, src_mv, sizeof(OVMV) * nb_tmvp_unit);
+                memcpy(dst_mv, src_mv, sizeof(struct TMVPMV) * nb_tmvp_unit);
                 src_mv += 16;
                 dst_mv += pln_stride;
             }
@@ -269,7 +269,7 @@ tmvp_store_mv(OVCTUDec *ctudec)
             memcpy(dst_map, src_map, sizeof(uint64_t) * nb_unit_ctb);
 
             for (i = 0; i < nb_tmvp_unit; ++i) {
-                memcpy(dst_mv, src_mv, sizeof(OVMV) * nb_tmvp_unit);
+                memcpy(dst_mv, src_mv, sizeof(struct TMVPMV) * nb_tmvp_unit);
                 src_mv += 16;
                 dst_mv += pln_stride;
             }
