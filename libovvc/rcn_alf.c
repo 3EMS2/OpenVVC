@@ -308,9 +308,10 @@ rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, const OVPS *c
     }
 
     if (chroma_flag) {
-        const struct OVALFData* alf_data_c = ctudec->alf_info.aps_alf_data_c;
+        const struct OVALFData* alf_data_c = prms->aps_alf_c ? &prms->aps_alf_c->aps_alf_data : NULL;
         if (alf_data_c) {
             alf_init_filter_c(alf, alf_data_c);
+            ctudec->alf_info.nb_alt_c = alf_data_c->alf_chroma_num_alt_filters_minus1;
         }
     }
 

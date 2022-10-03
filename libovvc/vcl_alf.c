@@ -111,7 +111,7 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
 
 
     if (alf_cb_enabled) {
-        uint8_t nb_alt_c = alf_info->aps_alf_data_c->alf_chroma_num_alt_filters_minus1;
+        uint8_t nb_alt_c = alf_info->nb_alt_c;
         uint8_t ctx  = ctu_ngh_ctx & CTU_LFT_FLG && (ctb_alf_lft & 2);
                 ctx += ctu_ngh_ctx & CTU_UP_FLG  && (ctb_alf_abv & 2);
 
@@ -133,7 +133,7 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
     }
 
     if (alf_cr_enabled) {
-        uint8_t nb_alt_c = alf_info->aps_alf_data_c->alf_chroma_num_alt_filters_minus1;
+        uint8_t nb_alt_c = alf_info->nb_alt_c;
         uint8_t ctx  = ctu_ngh_ctx & CTU_LFT_FLG && (ctb_alf_lft & 1);
                 ctx += ctu_ngh_ctx & CTU_UP_FLG  && (ctb_alf_abv & 1);
 

@@ -189,9 +189,9 @@ struct SAOInfo
 struct ALFInfo
 {
     const struct OVALFData* aps_alf_data[8];
-    const struct OVALFData* aps_alf_data_c;
     uint8_t nb_ccalf_alt_cb;
     uint8_t nb_ccalf_alt_cr;
+    uint8_t nb_alt_c;
 
     //TODO: use width in ctu of image (or tile) instead of max value 32.
     uint8_t ctb_alf_flag_line[256];

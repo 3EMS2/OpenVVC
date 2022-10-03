@@ -76,7 +76,6 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
             alf_info->aps_alf_data[i] = prms->aps_alf[i] ? &prms->aps_alf[i]->aps_alf_data : NULL;
         }
 
-        alf_info->aps_alf_data_c = prms->aps_alf_c ? &prms->aps_alf_c->aps_alf_data : NULL;
 
         if (!alf_info->ctb_alf_params) {
             alf_info->ctb_alf_params = ov_malloc(sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
