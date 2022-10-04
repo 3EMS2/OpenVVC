@@ -296,7 +296,6 @@ static void
 ovdpb_clear_refs(OVDPB *dpb)
 {
     //TODO: loop untill min_idx == nb_dpb_pic or nb_used_pic > dpb->max_nb_dpb_pic
-    ov_log(NULL, OVLOG_DEBUG, "Release reference pictures\n");
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int nb_used_pic = nb_used_slots(dpb->status);
     int min_cvs_id = find_min_cvs_id(dpb);
@@ -307,9 +306,7 @@ ovdpb_clear_refs(OVDPB *dpb)
         int min_idx = nb_dpb_pic;
         /* Determine the min POC among those pic */
         uint64_t status = dpb->status;
-        #if 0
-        for (i = 0; i < nb_used_pic; i++) {
-        #endif
+
         while (status) {
             uint8_t idx = next_used_slot(status);
             status &= ~((uint64_t)1 << idx);
@@ -565,7 +562,6 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
             ref_pic->flags  = 0;
 
 
-            /*FIXME  Set output / corrupt flag ? */
             dst_rpl[i] = ref_pic; 
         }
     }
