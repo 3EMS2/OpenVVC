@@ -32,6 +32,8 @@ libarmoptim_la_SOURCES +=	rcn_mc_neon.S                         \
 							rcn_dequant_neon_wrapper.c			  \
 							rcn_transform_add_neon.S              \
 							rcn_transform_add_neon_wrapper.c      \
+							rcn_sao_neon.S                        \
+							rcn_sao_neon_wrapper.c                \
 							rcn_transform_neon.S                  \
                             rcn_transform_neon_wrapper.c
 endif
