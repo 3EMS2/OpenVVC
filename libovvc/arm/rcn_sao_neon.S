@@ -38,6 +38,37 @@
        SMIN  \val, \val, \max_val
 .endm 
 
+.macro OFFSET_REGUALATE, val, b=.b
+    mov \val\b[1] , wzr
+    mov \val\b[3] , wzr
+    mov \val\b[5] , wzr
+    mov \val\b[7] , wzr
+    mov \val\b[9] , wzr
+    mov \val\b[11], wzr
+    mov \val\b[13], wzr
+    mov \val\b[15], wzr
+.endm
+
+.macro SHIFT_VECT_ELEM, val, h=.h
+    mov \val\h[0], \val\h[1]
+    mov \val\h[1], \val\h[2]
+    mov \val\h[2], \val\h[3]
+    mov \val\h[3], \val\h[4]
+    mov \val\h[4], \val\h[5]
+    mov \val\h[5], \val\h[6]
+    mov \val\h[6], \val\h[7]
+.endm
+
+.macro REPLACE, val1, val2, h=.h
+    mov \val1\h[0], \val2\h[0]
+    mov \val1\h[1], \val2\h[1]
+    mov \val1\h[2], \val2\h[2]
+    mov \val1\h[3], \val2\h[3]
+    mov \val1\h[4], \val2\h[4]
+    mov \val1\h[5], \val2\h[5]
+    mov \val1\h[6], \val2\h[6]
+    mov \val1\h[7], \val2\h[7]
+.endm
 
 function sao_band_filter_neon, export=1
     
@@ -69,43 +100,11 @@ function sao_band_filter_neon, export=1
     dup v6.16b, v4.b[2]
     dup v7.16b, v4.b[3]
     dup v4.16b, v4.b[0]
-
     // offset_val[0] broadcast over 8 16-bits registers
-    mov v4.b[1] , wzr
-    mov v4.b[3] , wzr
-    mov v4.b[5] , wzr
-    mov v4.b[7] , wzr
-    mov v4.b[9] , wzr
-    mov v4.b[11], wzr
-    mov v4.b[13], wzr
-    mov v4.b[15], wzr
-    // offset_val[1] broadcast
-    mov v5.b[1] , wzr
-    mov v5.b[3] , wzr
-    mov v5.b[5] , wzr
-    mov v5.b[7] , wzr
-    mov v5.b[9] , wzr
-    mov v5.b[11], wzr
-    mov v5.b[13], wzr
-    mov v5.b[15], wzr
-    // offset_val[2] broadcast
-    mov v6.b[1] , wzr
-    mov v6.b[3] , wzr
-    mov v6.b[5] , wzr
-    mov v6.b[7] , wzr
-    mov v6.b[9] , wzr
-    mov v6.b[11], wzr
-    mov v6.b[13], wzr
-    mov v6.b[15], wzr
-    // offset_val[3] broadcast
-    mov v7.b[1] , wzr
-    mov v7.b[3] , wzr
-    mov v7.b[5] , wzr
-    mov v7.b[7] , wzr
-    mov v7.b[9] , wzr
-    mov v7.b[11], wzr
-    mov v7.b[13], wzr
-    mov v7.b[15], wzr
+    OFFSET_REGUALATE v4
+    OFFSET_REGUALATE v5
+    OFFSET_REGUALATE v6
+    OFFSET_REGUALATE v7
     // first loop
 
 0:  
@@ -155,8 +154,114 @@ endfunc
 
 
 function sao_edge_filter_h_neon, export=1
+    // preparing the clippin borders
+    mov w10, #0x03FF
+    dup v30.8h, w10
+    dup v31.8h, wzr
+    // preparing offset values
+    ld1 {v4.8h}, [x5]
+    dup v5.16b, v4.b[1]
+    dup v6.16b, v4.b[2]
+    dup v7.16b, v4.b[3]
+    dup v4.16b, v4.b[0]
+    // offset_val[0] broadcast over 8 16-bits registers
+    OFFSET_REGUALATE v4
+    OFFSET_REGUALATE v5
+    OFFSET_REGUALATE v6
+    OFFSET_REGUALATE v7
+    //
+    ld1 {v9.8h}, [x2]  // load previous source column data 
+    add x2, x2, #64
+    mov x14, #8
+    mov x11, x0 // dst data pointer
+    mov x12, x0 // src data pointer
+0:  
+    CBZ x4, 4f
+    sub x4, x4, #1 // x -=1
+    ld1 {v8.8h}, [x12]  // load current source data
+    mov x8, x3 // store width to x8 register
+    //
+    mov x9 , x12 // strore src pointer to x9 register
+    mov x10, x11 // store dst pointer
+    //
+    dup v10.8h, v9.H[0]
+    //
+    SHIFT_VECT_ELEM v9
+   
+1: 
+    CBZ x8, 2f
+    sub x8, x8, #8 // y -=8
+    Add x9, x9, #8
+    ld1 {v11.8h}, [x9] // load next source data
+    // operations remaining
+    // need to be completed with equilante of _mm_alignr_epi8, use V12 => a, V13 => b
 
     
+    // _mm_min_epu16(): use v14
+
+    // _mm_cmpeq_epi16 
+    CMEQ v15.8h, v12.8h, v14.8h  // x1
+    CMEQ v16.8h, v8.8h , v14.8h  // x2
+    SUB v15.8h, v16.8h, v15.8h   // x1=x1-x2
+
+    // _mm_min_epu16(): use v14
+
+    // _mm_cmpeq_epi16 
+    CMEQ V16.8h, v13.8h, v14.8H // x3
+    CMEQ v17.8h, v8.8h, v14.8h // x2
+    SUB v16.8h, v17.8h, v16.8h // x2=x2-x3
+
+    // _mm_add_epi16
+    add v15.8h, v15.8h, v16.8h // x1+x2
+
+    //_mm_cmpeq_epi16 => v12, v13, v14, v15
+    mov w15, #-2
+    dup v12.8h, w15
+    CMEQ v12.8h, v15.8h, v12.8h // r0
+    mov w15, #-1
+    dup v13.8h, w15
+    CMEQ v13.8h, v15.8h, v13.8h // r1
+    mov w15, #1
+    dup v14.8h, w15
+    CMEQ v14.8h, v15.8h, v14.8h // r3
+    mov w15, #2
+    dup v16.8h, w15
+    CMEQ v15.8h, v15.8h, v16.8h // r4
+    // AND offset val
+    AND v12.16b, v12.16b, v4.16b // r0 & offset0
+    AND v13.16b, v13.16b, v5.16b // r1 & offset0
+    AND v14.16b, v14.16b, v6.16b // r3 & offset0
+    AND v15.16b, v15.16b, v7.16b // r4 & offset0
+    // add all with current
+    add v12.8h, v12.8h, v13.8h // r0 + r1
+    add v12.8h, v12.8h, v14.8h // r0 + r1 + r3
+    add v12.8h, v12.8h, v15.8h // r0 = r0 + r1 + r3 + r4
+    add v12.8h, v12.8h, v8.8h  // r0 = r0 + current
+    // clip and store
+    CLIP V12.8h, v31.8h, v30.8h
+    ST1 {v12.8h}, [x10]
+    add x10, x10, #64
+    // prev = c
+    // c = next
+    REPLACE v10, v8 
+    REPLACE v8, v11
+    B 1b
+2: 
+    add x11, x11, x7
+    add x12, x12, x6
+    // change load for the source left data
+    sub x14, x14, #1
+    CBZ x14, 3f
+    B 0b
+3:  
+    ld1 {v9.8h}, [x2]  // load first 8 source column data 
+    add x2, x2, #64
+    mov x14, #8
+    B 0b
+
+4:  
+    ret lr
+ 
 endfunc
 
 function sao_edge_filter_v_neon, export=1
