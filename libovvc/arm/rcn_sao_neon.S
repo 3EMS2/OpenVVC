@@ -193,7 +193,6 @@ function sao_edge_filter_h_neon, export=1
     sub x8, x8, #8 // y -=8
     Add x9, x9, #8
     ld1 {v11.8h}, [x9] // load next source data
-    // operations remaining
     // need to be completed with equilante of _mm_alignr_epi8, use V12 => a, V13 => b
 
     
@@ -286,7 +285,7 @@ function sao_edge_filter_v_neon, export=1
 0:  
     CBZ x3, 3f
     sub x3, x3, #8 // x -=1
-    ld1 {v8.8h}, [11]  // load current source data   : c
+    ld1 {v8.8h}, [x11]  // load current source data   : c
     ld1 {v9.8h}, [x1]  // load bottom source row data : a
     //
     add x1, x1, #16
@@ -299,16 +298,24 @@ function sao_edge_filter_v_neon, export=1
     ld1 {v10.8h}, [x14] // load next source data : b
 
     // _mm_min_epu16(): use v14
-
+    CMGE v14.8h, v8.8h, v9.8h
+    CMGE v15.8h, v9.8h, v8.8h
+    AND v14.16b, v14.16b, v9.16b
+    AND v15.16b, v15.16b, v8.16b
+    ORR v14.16b, v14.16b, v15.16b
     // _mm_cmpeq_epi16 
-    CMEQ v15.8h, v12.8h, v14.8h  // x1
+    CMEQ v15.8h, v9.8h, v14.8h  // x1
     CMEQ v16.8h, v8.8h , v14.8h  // x2
     SUB v15.8h, v16.8h, v15.8h   // x1=x1-x2
 
     // _mm_min_epu16(): use v14
-
+    CMGE v14.8h, v8.8h, v10.8h
+    CMGE v16.8h, v10.8h, v8.8h
+    AND v14.16b, v14.16b, v9.16b
+    AND v16.16b, v16.16b, v8.16b
+    ORR v14.16b, v14.16b, v16.16b
     // _mm_cmpeq_epi16 
-    CMEQ V16.8h, v13.8h, v14.8H // x3
+    CMEQ V16.8h, v10.8h, v14.8H // x3
     CMEQ v17.8h, v8.8h, v14.8h // x2
     SUB v16.8h, v17.8h, v16.8h // x2=x2-x3
 
