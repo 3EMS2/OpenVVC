@@ -264,8 +264,94 @@ function sao_edge_filter_h_neon, export=1
  
 endfunc
 
-function sao_edge_filter_v_neon, export=1
 
+function sao_edge_filter_v_neon, export=1
+      // preparing the clippin borders
+    mov w10, #0x03FF
+    dup v30.8h, w10
+    dup v31.8h, wzr
+    // preparing offset values
+    ld1 {v4.8h}, [x5]
+    dup v5.16b, v4.b[1]
+    dup v6.16b, v4.b[2]
+    dup v7.16b, v4.b[3]
+    dup v4.16b, v4.b[0]
+    // offset_val[0] broadcast over 8 16-bits registers
+    OFFSET_REGUALATE v4
+    OFFSET_REGUALATE v5
+    OFFSET_REGUALATE v6
+    OFFSET_REGUALATE v7
+    //
+    mov x11, x0 // src data pointer
+0:  
+    CBZ x3, 3f
+    sub x3, x3, #8 // x -=1
+    ld1 {v8.8h}, [11]  // load current source data   : c
+    ld1 {v9.8h}, [x1]  // load bottom source row data : a
+    //
+    add x1, x1, #16
+    mov x8, x4 // store height to x8 register
+    mov x9 , x11 // strore src pointer to x9 register   
+1: 
+    CBZ x8, 2f
+    sub x8, x8, #1 // y -=1
+    add x14, x9, x7
+    ld1 {v10.8h}, [x14] // load next source data : b
+
+    // _mm_min_epu16(): use v14
+
+    // _mm_cmpeq_epi16 
+    CMEQ v15.8h, v12.8h, v14.8h  // x1
+    CMEQ v16.8h, v8.8h , v14.8h  // x2
+    SUB v15.8h, v16.8h, v15.8h   // x1=x1-x2
+
+    // _mm_min_epu16(): use v14
+
+    // _mm_cmpeq_epi16 
+    CMEQ V16.8h, v13.8h, v14.8H // x3
+    CMEQ v17.8h, v8.8h, v14.8h // x2
+    SUB v16.8h, v17.8h, v16.8h // x2=x2-x3
+
+    // _mm_add_epi16
+    add v15.8h, v15.8h, v16.8h // x1+x2
+
+    //_mm_cmpeq_epi16 => v12, v13, v14, v15
+    mov w15, #-2
+    dup v12.8h, w15
+    CMEQ v12.8h, v15.8h, v12.8h // r0
+    mov w15, #-1
+    dup v13.8h, w15
+    CMEQ v13.8h, v15.8h, v13.8h // r1
+    mov w15, #1
+    dup v14.8h, w15
+    CMEQ v14.8h, v15.8h, v14.8h // r3
+    mov w15, #2
+    dup v16.8h, w15
+    CMEQ v15.8h, v15.8h, v16.8h // r4
+    // AND offset val
+    AND v12.16b, v12.16b, v4.16b // r0 & offset0
+    AND v13.16b, v13.16b, v5.16b // r1 & offset0
+    AND v14.16b, v14.16b, v6.16b // r3 & offset0
+    AND v15.16b, v15.16b, v7.16b // r4 & offset0
+    // add all with current
+    add v12.8h, v12.8h, v13.8h // r0 + r1
+    add v12.8h, v12.8h, v14.8h // r0 + r1 + r3
+    add v12.8h, v12.8h, v15.8h // r0 = r0 + r1 + r3 + r4
+    add v12.8h, v12.8h, v8.8h  // r0 = r0 + current
+    // clip and store
+    CLIP V12.8h, v31.8h, v30.8h
+    ST1 {v12.8h}, [x9]
+    Add x9, x9, x7
+    // prev = c
+    // c = next
+    REPLACE v9, v8 
+    REPLACE v8, v10
+    B 1b
+2: 
+    add x11, x11, #16
+    B 0b
+3:  
+    ret lr
    
 endfunc
 
