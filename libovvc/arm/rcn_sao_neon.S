@@ -281,37 +281,36 @@ function sao_edge_filter_v_neon, export=1
     OFFSET_REGUALATE v6
     OFFSET_REGUALATE v7
     //
-    mov x11, x0 // src data pointer
 0:  
     CBZ x3, 3f
-    sub x3, x3, #8 // x -=1
-    ld1 {v8.8h}, [x11]  // load current source data   : c
+    sub x3, x3, #8 // x -=8
+    ld1 {v8.8h}, [x0]  // load current source data   : c
     ld1 {v9.8h}, [x1]  // load bottom source row data : a
     //
     add x1, x1, #16
     mov x8, x4 // store height to x8 register
-    mov x9 , x11 // strore src pointer to x9 register   
+    mov x9 , x0 // strore src pointer to x9 register   
 1: 
     CBZ x8, 2f
     sub x8, x8, #1 // y -=1
-    add x14, x9, x7
+    add x14, x9, x6
     ld1 {v10.8h}, [x14] // load next source data : b
 
     // _mm_min_epu16(): use v14
     CMGE v14.8h, v8.8h, v9.8h
-    CMGE v15.8h, v9.8h, v8.8h
+    CMGT v15.8h, v9.8h, v8.8h
     AND v14.16b, v14.16b, v9.16b
     AND v15.16b, v15.16b, v8.16b
     ORR v14.16b, v14.16b, v15.16b
     // _mm_cmpeq_epi16 
     CMEQ v15.8h, v9.8h, v14.8h  // x1
-    CMEQ v16.8h, v8.8h , v14.8h  // x2
+    CMEQ v16.8h, v8.8h, v14.8h  // x2
     SUB v15.8h, v16.8h, v15.8h   // x1=x1-x2
 
     // _mm_min_epu16(): use v14
     CMGE v14.8h, v8.8h, v10.8h
-    CMGE v16.8h, v10.8h, v8.8h
-    AND v14.16b, v14.16b, v9.16b
+    CMGT v16.8h, v10.8h, v8.8h
+    AND v14.16b, v14.16b, v10.16b
     AND v16.16b, v16.16b, v8.16b
     ORR v14.16b, v14.16b, v16.16b
     // _mm_cmpeq_epi16 
@@ -348,14 +347,14 @@ function sao_edge_filter_v_neon, export=1
     // clip and store
     CLIP V12.8h, v31.8h, v30.8h
     ST1 {v12.8h}, [x9]
-    Add x9, x9, x7
+    Add x9, x9, x6
     // prev = c
     // c = next
     REPLACE v9, v8 
     REPLACE v8, v10
     B 1b
 2: 
-    add x11, x11, #16
+    add x0, x0, #16
     B 0b
 3:  
     ret lr
