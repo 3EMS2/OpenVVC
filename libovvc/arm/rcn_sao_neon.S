@@ -38,7 +38,7 @@
        SMIN  \val, \val, \max_val
 .endm 
 
-.macro OFFSET_REGUALATE, val, b=.b
+.macro OFFSET_REGUALATE, val, b=.b    
     mov \val\b[1] , wzr
     mov \val\b[3] , wzr
     mov \val\b[5] , wzr
@@ -270,17 +270,8 @@ function sao_edge_filter_v_neon, export=1
     dup v30.8h, w10
     dup v31.8h, wzr
     // preparing offset values
-    ld1 {v4.8h}, [x5]
-    dup v5.16b, v4.b[1]
-    dup v6.16b, v4.b[2]
-    dup v7.16b, v4.b[3]
-    dup v4.16b, v4.b[0]
-    // offset_val[0] broadcast over 8 16-bits registers
-    OFFSET_REGUALATE v4
-    OFFSET_REGUALATE v5
-    OFFSET_REGUALATE v6
-    OFFSET_REGUALATE v7
-    //
+    ld1 {v4.8h-v7.8h}, [x5]
+    
 0:  
     CBZ x3, 3f
     sub x3, x3, #8 // x -=8
@@ -289,7 +280,7 @@ function sao_edge_filter_v_neon, export=1
     //
     add x1, x1, #16
     mov x8, x4 // store height to x8 register
-    mov x9 , x0 // strore src pointer to x9 register   
+    mov x9, x0 // strore src pointer to x9 register   
 1: 
     CBZ x8, 2f
     sub x8, x8, #1 // y -=1
