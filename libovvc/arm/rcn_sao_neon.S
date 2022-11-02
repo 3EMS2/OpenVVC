@@ -466,7 +466,6 @@ function sao_edge_filter_d_neon, export=1
    
 endfunc
 
-
 function sao_edge_filter_b_neon, export=1
   
  // preparing the clippin borders
@@ -580,5 +579,4 @@ function sao_edge_filter_b_neon, export=1
     ret lr
    
 endfunc
-
 

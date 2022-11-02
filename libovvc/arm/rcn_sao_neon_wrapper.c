@@ -110,7 +110,7 @@ sao_edge_filter_d_neon(OVSample *dst, OVSample *src_row, OVSample *src_col,
     offset_val_inter[i+24] = (int16_t) offset_val[3];
   }
 
-  ov_sao_edge_filter_d_neon(dst, src_row, src_col, width, height ,offset_val_inter, (int16_t)(stride_dst<<1));
+  ov_sao_edge_filter_d_neon(dst, src_row, src_col-1, width, height ,offset_val_inter, (int16_t)(stride_dst<<1));
 
 
 
@@ -159,8 +159,8 @@ sao_edge_filter_h_neon(OVSample *dst, OVSample *src_row, OVSample *src_col,
 }
 void rcn_init_sao_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->sao.band= &sao_band_filter_0_10_neon;
-  rcn_funcs->sao.edge2[0]= &sao_edge_filter_h_neon;
+  //rcn_funcs->sao.edge2[0]= &sao_edge_filter_h_neon;
   rcn_funcs->sao.edge2[1]= &sao_edge_filter_v_neon;
-  /*rcn_funcs->sao.edge2[2]= &sao_edge_filter_d_neon;
-  rcn_funcs->sao.edge2[3]= &sao_edge_filter_b_neon;*/
+  rcn_funcs->sao.edge2[2]= &sao_edge_filter_d_neon;
+  //rcn_funcs->sao.edge2[3]= &sao_edge_filter_b_neon;
 }
