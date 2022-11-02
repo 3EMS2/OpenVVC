@@ -70,6 +70,27 @@
     mov \val1\h[7], \val2\h[7]
 .endm
 
+.macro ALIGN_UP, val1, val2, val3, h=.h
+    mov \val1\h[0], \val3\h[7]
+    mov \val1\h[1], \val2\h[0]
+    mov \val1\h[2], \val2\h[1]
+    mov \val1\h[3], \val2\h[2]
+    mov \val1\h[4], \val2\h[3]
+    mov \val1\h[5], \val2\h[4]
+    mov \val1\h[6], \val2\h[5]
+    mov \val1\h[7], \val2\h[6]
+.endm
+
+.macro ALIGN_DW, val1, val2, val3, h=.h
+    mov \val1\h[0], \val2\h[1]
+    mov \val1\h[1], \val2\h[2]
+    mov \val1\h[2], \val2\h[3]
+    mov \val1\h[3], \val2\h[4]
+    mov \val1\h[4], \val2\h[5]
+    mov \val1\h[5], \val2\h[6]
+    mov \val1\h[6], \val2\h[7]
+    mov \val1\h[7], \val3\h[0]
+.endm
 function sao_band_filter_neon, export=1
     
     mov w11, #5
@@ -172,42 +193,27 @@ function sao_edge_filter_h_neon, export=1
     Add x10, x9, #16
     ld1 {v11.8h}, [x10] // load next source data
     // need to be completed with equilante of _mm_alignr_epi8, use V12 => a, V13 => b
-    mov v12.h[0], v10.h[7]
-    mov v12.h[1], v8.h[0]
-    mov v12.h[2], v8.h[1]
-    mov v12.h[3], v8.h[2]
-    mov v12.h[4], v8.h[3]
-    mov v12.h[5], v8.h[4]
-    mov v12.h[6], v8.h[5]
-    mov v12.h[7], v8.h[6]
-    //
-    mov v13.h[0], v8.h[1]
-    mov v13.h[1], v8.h[2]
-    mov v13.h[2], v8.h[3]
-    mov v13.h[3], v8.h[4]
-    mov v13.h[4], v8.h[5]
-    mov v13.h[5], v8.h[6]
-    mov v13.h[6], v8.h[7]
-    mov v13.h[7], v11.h[0]
+    ALIGN_UP v12, v8, v10
+    ALIGN_DW v13, v8, v11
     // _mm_min_epu16(): use v14
-    CMGE v14.8h, v8.8h, v9.8h
-    CMGT v15.8h, v9.8h, v8.8h
-    AND v14.16b, v14.16b, v9.16b
+    CMGE v14.8h, v8.8h, v12.8h
+    CMGT v15.8h, v12.8h, v8.8h
+    AND v14.16b, v14.16b, v12.16b
     AND v15.16b, v15.16b, v8.16b
     ORR v14.16b, v14.16b, v15.16b
     // _mm_cmpeq_epi16 
-    CMEQ v15.8h, v9.8h, v14.8h  // x1
+    CMEQ v15.8h, v12.8h, v14.8h  // x1
     CMEQ v16.8h, v8.8h, v14.8h  // x2
     SUB v15.8h, v16.8h, v15.8h   // x1=x1-x2
 
     // _mm_min_epu16(): use v14
-    CMGE v14.8h, v8.8h, v10.8h
-    CMGT v16.8h, v10.8h, v8.8h
-    AND v14.16b, v14.16b, v10.16b
+    CMGE v14.8h, v8.8h, v13.8h
+    CMGT v16.8h, v13.8h, v8.8h
+    AND v14.16b, v14.16b, v13.16b
     AND v16.16b, v16.16b, v8.16b
     ORR v14.16b, v14.16b, v16.16b
     // _mm_cmpeq_epi16 
-    CMEQ V16.8h, v10.8h, v14.8H // x3
+    CMEQ V16.8h, v13.8h, v14.8H // x3
     CMEQ v17.8h, v8.8h, v14.8h // x2
     SUB v16.8h, v17.8h, v16.8h // x2=x2-x3
 
@@ -351,7 +357,6 @@ function sao_edge_filter_v_neon, export=1
    
 endfunc
 
-
 function sao_edge_filter_d_neon, export=1
     // preparing the clippin borders
     mov w10, #0x03FF
@@ -461,7 +466,6 @@ function sao_edge_filter_d_neon, export=1
    
 endfunc
 
-
 function sao_edge_filter_b_neon, export=1
   
  // preparing the clippin borders
@@ -502,6 +506,7 @@ function sao_edge_filter_b_neon, export=1
     add x2, x2, x13 
     ldr w15, [x2]
     dup v19.8h, w15
+    
     mov h15, v11.h[7] //check
     str h15, [x2]
     add x13, x13, #2
