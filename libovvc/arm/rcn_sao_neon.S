@@ -466,6 +466,7 @@ function sao_edge_filter_d_neon, export=1
    
 endfunc
 
+
 function sao_edge_filter_b_neon, export=1
   
  // preparing the clippin borders
@@ -490,7 +491,8 @@ function sao_edge_filter_b_neon, export=1
     
     mov x9, x0
     //
-    mov x13, #2
+    mov x11, x2
+    add x11, x2, #2
     //
     mov x8, x4 // store height to x8 register
 1: 
@@ -503,13 +505,11 @@ function sao_edge_filter_b_neon, export=1
     add x14, x14, x6
     ld1 {v11.8h}, [x14] // load next source data : b_
     // store b0
-    add x2, x2, x13 
-    ldr w15, [x2]
-    dup v19.8h, w15
-    
-    mov h15, v11.h[7] //check
-    str h15, [x2]
-    add x13, x13, #2
+    LD1R {v19.8h}, [x11]
+    ld1 {v21.8h}, [x11]
+    mov v21.h[0], v11.h[7]
+    st1 {v21.8h}, [x11]
+    add x11, x11, #2 
 
     // align up/down
     ALIGN_UP v12, v11, v19
@@ -580,4 +580,5 @@ function sao_edge_filter_b_neon, export=1
     ret lr
    
 endfunc
+
 
