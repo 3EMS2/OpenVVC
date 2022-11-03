@@ -371,12 +371,12 @@ function sao_edge_filter_d_neon, export=1
     CBZ x3, 3f
     sub x3, x3, #8 // x -=8
     
-    add x1, x1, x12
+    
     ld1 {v9.8h}, [x1]  // load left data
+    add x1, x1, #16
     
-    add x10, x10, x12
     ld1 {v8.8h}, [x10]  // load curent source row data 
-    
+    add x10, x10, #16
     mov x9, x0
     //
     mov x11, x2
@@ -401,24 +401,24 @@ function sao_edge_filter_d_neon, export=1
     ALIGN_UP v12, v9, v19
     ALIGN_DW v13, v10, v11
 
-    // _mm_min_epu16(): use v14
+
     CMGE v14.8h, v8.8h, v12.8h
     CMGT v15.8h, v12.8h, v8.8h
     AND v14.16b, v14.16b, v12.16b
     AND v15.16b, v15.16b, v8.16b
     ORR v14.16b, v14.16b, v15.16b
-    // _mm_cmpeq_epi16 
+
     CMEQ v15.8h, v12.8h, v14.8h  // x1
     CMEQ v16.8h, v8.8h, v14.8h  // x2
     SUB v15.8h, v16.8h, v15.8h   // x1=x1-x2
 
-    // _mm_min_epu16(): use v14
+
     CMGE v14.8h, v8.8h, v13.8h
     CMGT v16.8h, v13.8h, v8.8h
     AND v14.16b, v14.16b, v13.16b
     AND v16.16b, v16.16b, v8.16b
     ORR v14.16b, v14.16b, v16.16b
-    // _mm_cmpeq_epi16 
+
     CMEQ V16.8h, v13.8h, v14.8H // x3
     CMEQ v17.8h, v8.8h, v14.8h // x2
     SUB v16.8h, v17.8h, v16.8h // x2=x2-x3
