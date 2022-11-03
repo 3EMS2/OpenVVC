@@ -58,18 +58,9 @@ sao_band_filter_0_10_neon(OVSample* _dst,
                           uint8_t band_pos)
 {
 
+  int16_t offset_val_inter[4] = {offset_val[0], offset_val[1], offset_val[2], offset_val[3]};
 
-  uint16_t* dst = (uint16_t*)_dst;
-  uint16_t* src = (uint16_t*)_src;
-  int16_t offset_val_inter[8*4] = {0};
-
-  for (int i = 0; i < 8; i++){
-    offset_val_inter[i]    = (int16_t) offset_val[0];
-    offset_val_inter[i+8]  = (int16_t) offset_val[1];
-    offset_val_inter[i+16] = (int16_t) offset_val[2];
-    offset_val_inter[i+24] = (int16_t) offset_val[3];
-  }
-  ov_sao_band_filter_neon(dst, src, width, height, offset_val_inter, band_pos, (int16_t)(_stride_dst<<1), (int16_t)(_stride_src<<1));
+  ov_sao_band_filter_neon(_dst, _src, width, height,  offset_val_inter, band_pos, (int16_t)(_stride_dst<<1), (int16_t)(_stride_src<<1));
 
 }
 
@@ -82,15 +73,9 @@ sao_edge_filter_v_neon(OVSample *dst, OVSample *src_row, OVSample *src_col,
                        uint8_t eo_dir)
 {
 
-  int16_t offset_val_inter[8*4] = {0};
+  int16_t offset_val_inter[4] = {offset_val[0], offset_val[1], offset_val[2], offset_val[3]};
 
-  for (int i = 0; i < 8; i++){
-    offset_val_inter[i]    = (int16_t) offset_val[0];
-    offset_val_inter[i+8]  = (int16_t) offset_val[1];
-    offset_val_inter[i+16] = (int16_t) offset_val[2];
-    offset_val_inter[i+24] = (int16_t) offset_val[3];
-  }
-  ov_sao_edge_filter_v_neon((uint16_t*)dst, (uint16_t*)src_row, (uint16_t*)src_col, width, height,(int16_t*) offset_val_inter,(int16_t)(stride_dst<<1));
+  ov_sao_edge_filter_v_neon((uint16_t*)dst, (uint16_t*)src_row, (uint16_t*)src_col, width, height, offset_val_inter,(int16_t)(stride_dst<<1));
 
 }
 
@@ -101,14 +86,8 @@ sao_edge_filter_d_neon(OVSample *dst, OVSample *src_row, OVSample *src_col,
                        int8_t offset_val[],
                        uint8_t eo_dir)
 {
-  int16_t offset_val_inter[8*4] = {0};
 
-  for (int i = 0; i < 8; i++){
-    offset_val_inter[i]    = (int16_t) offset_val[0];
-    offset_val_inter[i+8]  = (int16_t) offset_val[1];
-    offset_val_inter[i+16] = (int16_t) offset_val[2];
-    offset_val_inter[i+24] = (int16_t) offset_val[3];
-  }
+  int16_t offset_val_inter[4] = {offset_val[0], offset_val[1], offset_val[2], offset_val[3]};
 
   ov_sao_edge_filter_d_neon(dst, src_row, src_col-1, width, height ,offset_val_inter, (int16_t)(stride_dst<<1));
 
@@ -123,14 +102,8 @@ sao_edge_filter_b_neon(OVSample *dst, OVSample *src_row, OVSample *src_col,
                        int8_t offset_val[],
                        uint8_t eo_dir)
 {
-  int16_t offset_val_inter[8*4] = {0};
 
-  for (int i = 0; i < 8; i++){
-    offset_val_inter[i]    = (int16_t) offset_val[0];
-    offset_val_inter[i+8]  = (int16_t) offset_val[1];
-    offset_val_inter[i+16] = (int16_t) offset_val[2];
-    offset_val_inter[i+24] = (int16_t) offset_val[3];
-  }
+  int16_t offset_val_inter[4] = {offset_val[0], offset_val[1], offset_val[2], offset_val[3]};
 
   ov_sao_edge_filter_b_neon(dst, src_row, src_col, width, height ,offset_val_inter, (int16_t)(stride_dst<<1));
 
@@ -145,22 +118,16 @@ sao_edge_filter_h_neon(OVSample *dst, OVSample *src_row, OVSample *src_col,
                        int8_t offset_val[],
                        uint8_t eo_dir)
 {
-  int16_t offset_val_inter[8*4] = {0};
 
-  for (int i = 0; i < 8; i++){
-    offset_val_inter[i]    = (int16_t) offset_val[0];
-    offset_val_inter[i+8]  = (int16_t) offset_val[1];
-    offset_val_inter[i+16] = (int16_t) offset_val[2];
-    offset_val_inter[i+24] = (int16_t) offset_val[3];
-  }
+  int16_t offset_val_inter[4] = {offset_val[0], offset_val[1], offset_val[2], offset_val[3]};
 
   ov_sao_edge_filter_h_neon(dst, src_col, width, height, offset_val_inter,(int16_t)(stride_dst<<1));
 
 }
 void rcn_init_sao_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->sao.band= &sao_band_filter_0_10_neon;
-  //rcn_funcs->sao.edge2[0]= &sao_edge_filter_h_neon;
+  rcn_funcs->sao.edge2[0]= &sao_edge_filter_h_neon;
   rcn_funcs->sao.edge2[1]= &sao_edge_filter_v_neon;
   rcn_funcs->sao.edge2[2]= &sao_edge_filter_d_neon;
-  //rcn_funcs->sao.edge2[3]= &sao_edge_filter_b_neon;
+  rcn_funcs->sao.edge2[3]= &sao_edge_filter_b_neon;
 }

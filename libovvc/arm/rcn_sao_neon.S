@@ -116,7 +116,13 @@ function sao_band_filter_neon, export=1
     //
     dup v9.16b, wzr
 
-    ld1 {v4.8h-v7.8h}, [x4]
+    LD1R {v4.8h}, [x4]
+    add x4, x4, #2
+    LD1R {v5.8h}, [x4]
+    add x4, x4, #2
+    LD1R {v6.8h}, [x4]
+    add x4, x4, #2
+    LD1R {v7.8h}, [x4]
 
 0:  
     CBZ x3, 3f
@@ -168,7 +174,14 @@ function sao_edge_filter_h_neon, export=1
     mov w10, #0x03FF
     dup v30.8h, w10
     dup v31.8h, wzr
-    ld1 {v4.8h-v7.8h}, [x4]
+
+    LD1R {v4.8h}, [x4]
+    add x4, x4, #2
+    LD1R {v5.8h}, [x4]
+    add x4, x4, #2
+    LD1R {v6.8h}, [x4]
+    add x4, x4, #2
+    LD1R {v7.8h}, [x4]
 
 0:  
     CBZ x3, 3f
@@ -259,7 +272,13 @@ function sao_edge_filter_v_neon, export=1
     dup v30.8h, w10
     dup v31.8h, wzr
     // preparing offset values
-    ld1 {v4.8h-v7.8h}, [x5]
+    LD1R {v4.8h}, [x5]
+    add x5, x5, #2
+    LD1R {v5.8h}, [x5]
+    add x5, x5, #2
+    LD1R {v6.8h}, [x5]
+    add x5, x5, #2
+    LD1R {v7.8h}, [x5]
     
 0:  
     CBZ x3, 3f
@@ -345,7 +364,15 @@ function sao_edge_filter_d_neon, export=1
     mov w10, #0x03FF
     dup v30.8h, w10
     dup v31.8h, wzr
-    ld1 {v4.8h-v7.8h}, [x5]
+
+    LD1R {v4.8h}, [x5]
+    add x5, x5, #2
+    LD1R {v5.8h}, [x5]
+    add x5, x5, #2
+    LD1R {v6.8h}, [x5]
+    add x5, x5, #2
+    LD1R {v7.8h}, [x5]
+
     mov x10, x0
     mov x12, xzr
     
@@ -450,7 +477,15 @@ function sao_edge_filter_b_neon, export=1
     mov w10, #0x03FF
     dup v30.8h, w10
     dup v31.8h, wzr
-    ld1 {v4.8h-v7.8h}, [x5]
+
+    LD1R {v4.8h}, [x5]
+    add x5, x5, #2
+    LD1R {v5.8h}, [x5]
+    add x5, x5, #2
+    LD1R {v6.8h}, [x5]
+    add x5, x5, #2
+    LD1R {v7.8h}, [x5]
+    
     mov x10, x0
     mov x12, xzr
     
