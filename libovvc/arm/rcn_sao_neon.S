@@ -165,27 +165,20 @@ endfunc
 
 
 function sao_edge_filter_h_neon, export=1
-    // preparing the clippin borders
     mov w10, #0x03FF
     dup v30.8h, w10
     dup v31.8h, wzr
-    // preparing offset values
     ld1 {v4.8h-v7.8h}, [x4]
-    //
-    ld1 {v9.8h}, [x1]  // load previous source column data 
-    add x1, x1, #64
-    mov x14, #8
+
 0:  
-    CBZ x3, 4f
+    CBZ x3, 3f
     sub x3, x3, #1 // x -=1
     ld1 {v8.8h}, [x0]  // load current source data
     mov x8, x2 // store width to x8 register
     //
     mov x9 , x0 // strore src pointer to x9 register
     //
-    dup v10.8h, v9.H[0]
-    //
-    SHIFT_VECT_ELEM v9
+    LD1R {v10.8h}, [x1]
    
 1: 
     CBZ x8, 2f
@@ -195,7 +188,7 @@ function sao_edge_filter_h_neon, export=1
     // need to be completed with equilante of _mm_alignr_epi8, use V12 => a, V13 => b
     ALIGN_UP v12, v8, v10
     ALIGN_DW v13, v8, v11
-    // _mm_min_epu16(): use v14
+    //
     CMGE v14.8h, v8.8h, v12.8h
     CMGT v15.8h, v12.8h, v8.8h
     AND v14.16b, v14.16b, v12.16b
@@ -206,7 +199,6 @@ function sao_edge_filter_h_neon, export=1
     CMEQ v16.8h, v8.8h, v14.8h  // x2
     SUB v15.8h, v16.8h, v15.8h   // x1=x1-x2
 
-    // _mm_min_epu16(): use v14
     CMGE v14.8h, v8.8h, v13.8h
     CMGT v16.8h, v13.8h, v8.8h
     AND v14.16b, v14.16b, v13.16b
@@ -217,7 +209,6 @@ function sao_edge_filter_h_neon, export=1
     CMEQ v17.8h, v8.8h, v14.8h // x2
     SUB v16.8h, v17.8h, v16.8h // x2=x2-x3
 
-    // _mm_add_epi16
     add v15.8h, v15.8h, v16.8h // x1+x2
 
     mov w15, #-2
@@ -252,18 +243,11 @@ function sao_edge_filter_h_neon, export=1
     REPLACE v8, v11
     B 1b
 2: 
-    add x0, x0, x6
+    add x0, x0, x5
     // change load for the source left data
-    sub x14, x14, #1
-    CBZ x14, 3f
+    add x1, x1, #2
     B 0b
 3:  
-    ld1 {v9.8h}, [x1]  // load first 8 source column data 
-    add x1, x1, #64
-    mov x14, #8
-    B 0b
-
-4:  
     ret lr
  
 endfunc
