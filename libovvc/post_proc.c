@@ -51,6 +51,7 @@ void
 pp_init_functions(const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
 {
     pp_funcs->pp_apply_flag = 0;
+
     if (sei) {
         if (sei->sei_fg) {
             pp_funcs->pp_film_grain = fg_grain_apply_pic;
@@ -76,61 +77,72 @@ pp_init_functions(const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
 int
 pp_process_frame2(const OVSEI* sei, OVFrame **frame_p)
 {
-    int ret=0;
     struct PostProcFunctions pp_funcs;
-    uint16_t max_width[3];
-    uint16_t max_height[3];
 
+    /* FIXME  find another place to init this */
     pp_init_functions(sei, &pp_funcs);
 
-    //TODOpp: switch buffers src and dst when 2 or more post process are applied
-    if (pp_funcs.pp_apply_flag){
-        OVFrame* frame = *frame_p;
-        /* Request a writable picture from same frame pool */
-        OVFrame* frame_post_proc = ovframepool_request_frame(frame->internal.frame_pool);
-        if (!frame_post_proc) {
+    if (pp_funcs.pp_apply_flag) {
+        OVFrame* src_frm = *frame_p;
+
+        /* Request a writable picture from same src_frm pool */
+        OVFrame* pp_frm = ovframepool_request_frame(src_frm->internal.frame_pool);
+        if (!pp_frm) {
             ov_log(NULL, OVLOG_ERROR, "Could not get a writable picture for post processing\n");
             goto no_writable_pic;
         }
 
-        for(int comp = 0; comp < 3; comp++){
-            max_width[comp]  = frame_post_proc->width >> !!comp;
-            max_height[comp] = frame_post_proc->height >> !!comp;
-        }
-        frame_post_proc->width = frame->width;
-        frame_post_proc->height = frame->height;
+        pp_frm->width  = src_frm->width;
+        pp_frm->height = src_frm->height;
 
-        int16_t* srcComp[3] = {(int16_t*)frame->data[0], (int16_t*)frame->data[1], (int16_t*)frame->data[2]};
-        int16_t* dstComp[3] = {(int16_t*)frame_post_proc->data[0], (int16_t*)frame_post_proc->data[1], 
-            (int16_t*)frame_post_proc->data[2]};
+        int16_t *src_planes[3] = {
+            (int16_t*)src_frm->data[0],
+            (int16_t*)src_frm->data[1],
+            (int16_t*)src_frm->data[2]
+        };
+
+        int16_t* dst_planes[3] = {
+            (int16_t*)pp_frm->data[0],
+            (int16_t*)pp_frm->data[1],
+            (int16_t*)pp_frm->data[2]
+        };
 
         uint8_t enable_deblock = 1;
-        pp_funcs.pp_film_grain(dstComp, srcComp, sei->sei_fg, 
-                               frame->width, frame->height, frame->poc, 0, enable_deblock);
+
+        pp_funcs.pp_film_grain(dst_planes, src_planes, sei->sei_fg,
+                               src_frm->width, src_frm->height,
+                               src_frm->poc, 0, enable_deblock);
 
 #if HAVE_SLHDR
         if(sei->sei_slhdr){
-            pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, srcComp, dstComp, 
-                                   sei->sei_slhdr->payload_array, frame->width, frame->height);
+            pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, src_planes, dst_planes,
+                                   sei->sei_slhdr->payload_array, src_frm->width, src_frm->height);
         }
 #endif
         if (sei->upscale_flag){
-            frame_post_proc->width = max_width[0];
-            frame_post_proc->height = max_height[0];
             for(int comp = 0; comp < 3; comp++){
-                pp_sample_rate_conv((uint16_t*)frame_post_proc->data[comp], frame_post_proc->linesize[comp]>>1, 
-                                    max_width[comp], max_height[comp], 
-                                    (uint16_t*)frame->data[comp], frame->linesize[comp]>>1, 
-                                    frame->width >> (!!comp), frame->height >> (!!comp), 
-                                    &sei->scaling_info, comp == 0 );
+                uint16_t dst_w =  pp_frm->width  >> (!!comp);
+                uint16_t dst_h =  pp_frm->height >> (!!comp);
+                uint16_t src_w = src_frm->width  >> (!!comp);
+                uint16_t src_h = src_frm->height >> (!!comp);
+
+                uint16_t dst_stride =  pp_frm->linesize[comp] >> 1;
+                uint16_t src_stride = src_frm->linesize[comp] >> 1;
+
+                uint8_t is_luma = comp == 0;
+
+                pp_sample_rate_conv((uint16_t*) pp_frm->data[comp], dst_stride, dst_w, dst_h,
+                                    (uint16_t*)src_frm->data[comp], src_stride, src_w, src_h,
+                                    &sei->scaling_info, is_luma);
             }
         }
 
+        /* Replace pointer to output picture by post processed picture. */
         ovframe_unref(frame_p);
-        *frame_p = frame_post_proc;
+        *frame_p = pp_frm;
     }
 
-    return ret;
+    return 0;
 
 no_writable_pic:
 
