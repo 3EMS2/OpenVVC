@@ -65,6 +65,8 @@
 #define LSB16(x) (x&0x0000FFFF)
 #define BIT0(x) (x&0x1)
 
+#define BITDEPTH 10
+
 
 /* static look up table definitions */
 static const int8_t gaussianLUT[2048] =
@@ -948,8 +950,7 @@ void fg_grain_apply_pic(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain
 
                         blockAvg      = fg_compute_block_avg(srcSampleBlk8, strideComp[compCtr], &numSamples,
                                                              OVMIN(8, (heightComp[compCtr] - y - yOffset8x8)),
-                                                             OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)),
-                                                             );
+                                                             OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)));
 
                         /* Handling of non 8x8 blocks along with 8x8 blocks */
                         if (numSamples > 0) {
