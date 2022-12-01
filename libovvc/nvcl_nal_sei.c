@@ -88,31 +88,33 @@ enum SEIPayloadtype
 
 struct OVSEIPayload
 {
-    int type;
+    uint32_t type;
     uint32_t size;
 };
 
 /* FIXME find other spec */
 struct OVSEIPayload
 nvcl_sei_payload(OVNVCLReader *const rdr) {
-    int pl_type = 0;
+    struct OVSEIPayload payload;
+
+    uint32_t pl_type = 0;
+    uint32_t pl_size = 0;
+
     uint8_t val = 0;
-    do
-    {
+
+    do {
         val = nvcl_read_bits(rdr, 8);
         pl_type += val;
-    } while (val==0xFF);
+    } while (val == 0xFF);
 
-    uint32_t pl_size = 0;
-    do
-    {
+    do {
         val = nvcl_read_bits(rdr, 8);
         pl_size += val;
-    } while (val==0xFF);
+    } while (val == 0xFF);
 
-    struct OVSEIPayload payload;
     payload.type = pl_type;
     payload.size = pl_size;
+
     return payload;
 }
 
