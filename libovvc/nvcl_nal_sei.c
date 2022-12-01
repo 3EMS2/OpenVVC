@@ -168,8 +168,7 @@ void
 nvcl_slhdr_read(OVNVCLReader *const rdr, struct OVSEISLHDR* sei_slhdr, uint32_t payloadSize)
 {
     uint8_t* payload_array = sei_slhdr->payload_array;
-    for (int i = 0; i < payloadSize; i++)
-    {
+    for (int i = 0; i < payloadSize; i++) {
         payload_array[i] = nvcl_read_bits(rdr, 8);
     }
 }
@@ -188,42 +187,58 @@ nvcl_sei_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 int
 nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
 {
-    OVSEI *sei;
-    if (!*sei_p)
+    OVSEI *sei = *sei_p;
+    if (!sei) {
         sei = ov_mallocz(sizeof(struct OVSEI));
+        if (!sei) goto fail;
+    }
 
     struct OVSEIPayload payload = nvcl_sei_payload(rdr);
 
-    if (!sei) goto fail;
-
-    switch (payload.type)
-    {
+    switch (payload.type) {
         uint8_t sei_byte;
         case FILM_GRAIN_CHARACTERISTICS:
-        ov_log(NULL, OVLOG_DEBUG, "SEI: FILM_GRAIN_CHARACTERISTICS (type = %d) with size %d.\n", payload.type, payload.size);
-        if(!sei->sei_fg)
+
+        ov_log(NULL, OVLOG_DEBUG, "SEI: FILM_GRAIN_CHARACTERISTICS"
+                                  "(type = %d) with size %d.\n",
+                                  payload.type, payload.size);
+
+        if(!sei->sei_fg) {
             sei->sei_fg = ov_mallocz(sizeof(struct OVSEIFGrain));
+        }
+
         nvcl_film_grain_read(rdr, sei->sei_fg);
+
         break;
+
         case USER_DATA_REGISTERED_ITU_T_T35:
-        ov_log(NULL, OVLOG_DEBUG, "SEI: USER_DATA_REGISTERED_ITU_T_T35 (type = %d) with size %d.\n", payload.type, payload.size);
+        ov_log(NULL, OVLOG_DEBUG, "SEI: USER_DATA_REGISTERED_ITU_T_T35"
+                                  " (type = %d) with size %d.\n",
+                                  payload.type, payload.size);
+
 #if ENABLE_SLHDR
-        if(!sei->sei_slhdr){
+
+        if (!sei->sei_slhdr) {
             sei->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
             pp_init_slhdr_lib(&sei->sei_slhdr->slhdr_context);
         }
+
         nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
 #endif
         break;
+
         default:
-        for (int i = 0; i < payload.size; i++)
-        {
+
+        for (int i = 0; i < payload.size; i++) {
             sei_byte = nvcl_read_bits(rdr, 8);
             sei_byte++;
         }
+
         ov_log(NULL, OVLOG_INFO, "SEI: Unknown prefix message (type = %d) was found!\n", payload.type);
+
         break;
     }
+
     *sei_p = sei;
 
     return 0;
@@ -244,35 +259,51 @@ nvcl_decode_nalu_sei(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t
 #else
     struct OVSEI* sei = ov_mallocz(sizeof(struct OVSEI));
 #endif
-    
+
     struct OVSEIPayload payload = nvcl_sei_payload(rdr);
-     switch (payload.type)
+    switch (payload.type)
     {
         uint8_t sei_byte;
         case FILM_GRAIN_CHARACTERISTICS:
-            ov_log(NULL, OVLOG_DEBUG, "SEI: FILM_GRAIN_CHARACTERISTICS (type = %d) with size %d.\n", payload.type, payload.size);
-            if(!sei->sei_fg)
-                sei->sei_fg = ov_mallocz(sizeof(struct OVSEIFGrain));
-            nvcl_film_grain_read(rdr, sei->sei_fg);
-            break;
+
+        ov_log(NULL, OVLOG_DEBUG, "SEI: FILM_GRAIN_CHARACTERISTICS"
+                                  " (type = %d) with size %d.\n",
+                                  payload.type, payload.size);
+
+        if (!sei->sei_fg) {
+            sei->sei_fg = ov_mallocz(sizeof(struct OVSEIFGrain));
+        }
+
+        nvcl_film_grain_read(rdr, sei->sei_fg);
+
+        break;
+
         case USER_DATA_REGISTERED_ITU_T_T35:
-            ov_log(NULL, OVLOG_DEBUG, "SEI: USER_DATA_REGISTERED_ITU_T_T35 (type = %d) with size %d.\n", payload.type, payload.size);
+
+        ov_log(NULL, OVLOG_DEBUG, "SEI: USER_DATA_REGISTERED_ITU_T_T35"
+                                  " (type = %d) with size %d.\n",
+                                  payload.type, payload.size);
+
 #if HAVE_SLHDR
-            if(!sei->sei_slhdr){
-                sei->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
-                pp_init_slhdr_lib(&sei->sei_slhdr->slhdr_context);
-            }
-            nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
+        if (!sei->sei_slhdr) {
+            sei->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
+            pp_init_slhdr_lib(&sei->sei_slhdr->slhdr_context);
+        }
+
+        nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
 #endif
-            break;
+        break;
         default:
-            for (int i = 0; i < payload.size; i++)
-            {
-                sei_byte = nvcl_read_bits(rdr, 8);
-                sei_byte++;
-            }
-            ov_log(NULL, OVLOG_INFO, "SEI: Unknown prefix message (type = %d) was found!\n", payload.type);
-            break;
+
+        for (int i = 0; i < payload.size; i++) {
+            sei_byte = nvcl_read_bits(rdr, 8);
+            sei_byte++;
+        }
+
+        ov_log(NULL, OVLOG_INFO, "SEI: Unknown prefix message"
+                                 " (type = %d) was found!\n",
+                                 payload.type);
+        break;
     }
 
     return 0;
