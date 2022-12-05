@@ -36,7 +36,16 @@
 #include "ovmem.h"
 #include "ovutils.h"
 
-static void ovnalu_free(OVNALUnit **nalu_p);
+static void
+ovnalu_free(OVNALUnit **nalu_p)
+{
+    OVNALUnit *nalu = *nalu_p;
+    ov_freep(&nalu->rbsp_data);
+    if (nalu->epb_pos) {
+        ov_freep(&nalu->epb_pos);
+    }
+    ov_freep(nalu_p);
+}
 
 int
 ov_nalu_init(OVNALUnit *nalu)
@@ -49,6 +58,7 @@ ov_nalu_init(OVNALUnit *nalu)
     nalu->release = ovnalu_free;
 
     atomic_init(&nalu->ref_count, 0);
+
     return 1;
 }
 
@@ -85,17 +95,6 @@ ov_nalu_new_ref(OVNALUnit **nalu_p, OVNALUnit *nalu)
     *nalu_p = nalu;
 
     return 0;
-}
-
-static void
-ovnalu_free(OVNALUnit **nalu_p)
-{
-    OVNALUnit *nalu = *nalu_p;
-    ov_freep(&nalu->rbsp_data);
-    if (nalu->epb_pos) {
-        ov_freep(&nalu->epb_pos);
-    }
-    ov_freep(nalu_p);
 }
 
 void
