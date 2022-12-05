@@ -141,6 +141,24 @@ ovnalu_init(OVNALUnit *nalu, const uint8_t *rbsp_data, const uint32_t *epb_offse
     return 0;
 }
 
+static void
+ovpu_free(OVPictureUnit **ovpu_p)
+{
+    OVPictureUnit *ovpu = *ovpu_p;
+
+    if (ovpu) {
+        int i;
+        for (i = 0; i < ovpu->nb_nalus; ++i) {
+            OVNALUnit *nalu = ovpu->nalus[i];
+
+            ov_nalu_unref(&nalu);
+        }
+        ov_free(ovpu->nalus);
+    }
+
+    ov_freep(ovpu_p);
+}
+
 int
 ovpu_init(OVPictureUnit **ovpu_p, uint8_t nb_nalus)
 {
@@ -164,6 +182,8 @@ ovpu_init(OVPictureUnit **ovpu_p, uint8_t nb_nalus)
 
         return 0;
     }
+
+    pu->release = ovpu_free;
 
     ov_log(NULL, OVLOG_ERROR, "Cannot create an empty Picture Unit\n");
 
@@ -207,7 +227,7 @@ ovpu_unref(OVPictureUnit **ovpu_p)
     unsigned ref_count = atomic_fetch_add_explicit(&ovpu->ref_count, -1, memory_order_acq_rel);
 
     if (!ref_count) {
-        ov_free_pu(ovpu_p);
+        ovpu->release(ovpu_p);
     }
 
     *ovpu_p = NULL;

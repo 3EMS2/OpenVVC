@@ -178,7 +178,7 @@ typedef struct OVPictureUnit
      * Callback function which will be called once OpenVVC does not need
      * a reference to this OVPictureUnit anymore.
      */
-    void (*release)(struct OVNALUnit **nalu_p);
+    void (*release)(struct OVPictureUnit **ovpu_p);
 } OVPictureUnit;
 
 /* Reference an OVNALUnit pointer
