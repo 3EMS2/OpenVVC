@@ -163,7 +163,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
     }
 
     //Temporary: copy active parameters
-    slicedec_copy_params(sldec, &dec->active_params);
+    slicedec_ref_params(sldec, &dec->active_params);
 
     ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &sldec->active_params, nalu->type, sldec, dec);
     if (ret < 0) {

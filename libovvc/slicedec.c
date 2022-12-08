@@ -284,7 +284,7 @@ slicedec_unref_params(OVSliceDec *sldec)
 }
 
 void
-slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
+slicedec_ref_params(OVSliceDec *sldec, struct OVPS* dec_params)
 {
     struct OVPS* slice_params = &sldec->active_params;
     slicedec_unref_params(sldec);

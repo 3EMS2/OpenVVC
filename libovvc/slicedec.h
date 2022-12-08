@@ -174,7 +174,7 @@ typedef struct OVSliceDec
 
 } OVSliceDec;
 
-void slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params);
+void slicedec_ref_params(OVSliceDec *sldec, struct OVPS* dec_params);
 
 int slicedec_update_entry_decoder(OVSliceDec *sldec, OVCTUDec *ctudec);
 
