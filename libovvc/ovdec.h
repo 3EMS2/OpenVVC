@@ -125,8 +125,30 @@ int ovdec_drain_picture(OVDec *ovdec, OVFrame **frame_p);
  */
 int ovdec_init(OVDec **ovdec_p);
 
+/**
+ * Tunes OpenVVC decoder threading configuration.
+ *
+ *     nb_entry_th correspond to the number of sub decoding threads you wish to use
+ *     Using 0 OpenVVC will try to match the number of cores available on
+ *     your machine.
+ *
+ *     max_nb_pic_th correspond to the maximum number of pictures being decoded
+ *     in parallel, It shall be inferior to the nb_entry_th. Using 0 default
+ *     to the same number of entry threads specified
+ *
+ * return 0 on success,
+ *        a negative number on failure.
+ *
+ */
 int ovdec_config_threads(OVDec *ovdec, int nb_entry_th, int max_nb_frame_th);
 
+/**
+ * Allocate OpenVVC sub decoders according to configuration
+ * and initialize decoding threads.
+ *
+ * return 0 on success,
+ *        a negative number on failure.
+ */
 int ovdec_start(OVDec *ovdec);
 
 /**
@@ -140,6 +162,17 @@ int ovdec_start(OVDec *ovdec);
  */
 int ovdec_close(OVDec *ovdec);
 
+/**
+ * Remove all non already started decoding tasks.
+ * Waits for all running decoder threads to end their current tasks and
+ * remove all pending pictures from the DPB.
+ * Mark all xPSs as unactive.
+ *
+ * return 0
+ *
+ * Note: references to xPSs are kept in the decoder so there is no need to submit
+ * them again if you you are using this to navigate the same stream.
+ */
 int ovdec_flush(OVVCDec *dec);
 
 /**
