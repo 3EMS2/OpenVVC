@@ -542,6 +542,9 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
     struct PictureSynchro* sync = &ref_pic->sync;
 
     atomic_init(sync->nb_slices, 1);
+
+            ovdpb_new_ref_pic(ref_pic, OV_ST_REF_PIC_FLAG);
+
             ovdpb_report_decoded_frame(ref_pic);
 
             ref_pic->poc    = ref_poc;
@@ -550,7 +553,6 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
 
             ref_pic->flags  = 0;
 
-            ovdpb_new_ref_pic(ref_pic, OV_ST_REF_PIC_FLAG);
 
             /*FIXME  Set output / corrupt flag ? */
             dst_rpl[i] = ref_pic; 
