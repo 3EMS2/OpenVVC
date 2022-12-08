@@ -138,12 +138,14 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
     if (!dec->dpb) {
          ret = ovdpb_init(&dec->dpb, &dec->active_params);
          if (ret < 0) {
+             ov_log(NULL, OVLOG_ERROR, "Failed DPB init\n");
              return ret;
          }
     } else if (dec->active_params.sps_info.req_dpb_realloc) {
          dpbpriv_uninit_framepool(&dec->dpb->internal);
          ret = dpbpriv_init_framepool(&dec->dpb->internal, dec->active_params.sps);
          if (ret < 0) {
+             ov_log(NULL, OVLOG_ERROR, "Failed frame pool init\n");
              return ret;
          }
          dec->active_params.sps_info.req_dpb_realloc = 0;
@@ -157,6 +159,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
         set_max_pic_part_info(&pic_info_max, dec->active_params.sps, dec->active_params.pps);
         ret = mvpool_init(&dec->mv_pool, &pic_info_max);
         if (ret < 0) {
+            ov_log(NULL, OVLOG_ERROR, "Failed pool TMVP buffer pool init\n");
             return ret;
         }
         dec->active_params.sps_info.req_mvpool_realloc = 0;
@@ -167,6 +170,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 
     ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &sldec->active_params, nalu->type, sldec, dec);
     if (ret < 0) {
+        ov_log(NULL, OVLOG_ERROR, "Failed picture init\n");
         return ret;
     }
 
@@ -174,11 +178,13 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 
     ret = slicedec_init_lines(sldec, &sldec->active_params);
     if (ret < 0) {
+        ov_log(NULL, OVLOG_ERROR, "Failed line init\n");
         return ret;
     }
 
     ret = decinit_set_entry_points(&sldec->active_params, nalu, nb_sh_bytes);
     if (ret < 0) {
+        ov_log(NULL, OVLOG_ERROR, "Failed entry points init\n");
         return ret;
     }
 
