@@ -499,7 +499,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
 {
     int i, j;
     uint8_t found, flag;
-    int16_t ref_poc, ref_type;
+    int32_t ref_poc, ref_type;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
 
     struct RPLInfo rpl_info;
