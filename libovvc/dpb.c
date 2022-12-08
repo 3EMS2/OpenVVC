@@ -583,6 +583,32 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
 
         if (!found){
             ov_log(NULL, OVLOG_TRACE, "Not found non active reference %d for picture %d\n", ref_poc, dpb->poc);
+            /* If reference picture is not in the DPB we try create a new
+             * Picture with requested POC ID in the DPB
+             */
+            ov_log(NULL, OVLOG_ERROR, "Generating missing na reference %d for picture %d\n", ref_poc, dpb->poc);
+            ref_pic = alloc_frame(dpb, ref_poc);
+
+            if (ref_pic == NULL){
+                return OVVC_ENOMEM;
+            }
+
+    struct PictureSynchro* sync = &ref_pic->sync;
+
+    atomic_init(sync->nb_slices, 1);
+
+            ovdpb_new_ref_pic(ref_pic, OV_ST_REF_PIC_FLAG);
+
+            ovdpb_report_decoded_frame(ref_pic);
+
+            ref_pic->poc    = ref_poc;
+            ref_pic->cvs_id = dpb->cvs_id;
+            ref_pic->frame->poc = ref_poc;
+
+            ref_pic->flags  = 0;
+
+
+            dst_rpl[i] = ref_pic;
         }
     }
 
