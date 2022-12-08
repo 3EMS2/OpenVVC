@@ -373,6 +373,7 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
 
     /* Note this is so we can retrieve entry end by using rbsp_entry [i + 1] */
     sh_info->rbsp_entry[i] = rbsp_end;
+    sh_info->nb_entries = nb_entries;
 
     /*FIXME check entries do not exceed rpbs size */
     return 0;
