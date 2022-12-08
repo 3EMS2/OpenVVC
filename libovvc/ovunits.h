@@ -204,7 +204,8 @@ void ov_nalu_unref(OVNALUnit **nalu_p);
 int ov_nalu_init(OVNALUnit *nalu);
 
 
-int ovnalu_init2(OVNALUnit **nalu);
+/* Allocate a new OVNAUnit and set all its parameters to default */
+int ovnalu_create(OVNALUnit **nalu_p);
 
 /* Reference an OVPictureUnit pointer
  *

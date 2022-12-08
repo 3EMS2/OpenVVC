@@ -63,7 +63,7 @@ ov_nalu_init(OVNALUnit *nalu)
 }
 
 int
-ovnalu_init2(OVNALUnit **nalu_p)
+ovnalu_create(OVNALUnit **nalu_p)
 {
     OVNALUnit *nalu = ov_mallocz(sizeof(*nalu));
     *nalu_p = nalu;

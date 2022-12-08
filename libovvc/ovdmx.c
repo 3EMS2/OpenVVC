@@ -610,7 +610,7 @@ create_nalu_elem(OVDemux *const dmx)
     nalu_elem = elem->data;
     nalu_elem->private.pool_ref = elem;
 
-    ret = ovnalu_init2(&nalu_elem->nalu);
+    ret = ovnalu_create(&nalu_elem->nalu);
     if (ret < 0) {
         ovmempool_pushelem(nalu_elem->private.pool_ref);
         return NULL;
