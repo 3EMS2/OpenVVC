@@ -140,6 +140,8 @@ int ovdec_start(OVDec *ovdec);
  */
 int ovdec_close(OVDec *ovdec);
 
+int ovdec_flush(OVVCDec *dec);
+
 /**
  * Attempt to set a decoder options
  *

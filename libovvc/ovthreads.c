@@ -124,6 +124,18 @@ ovthread_decode_entry(struct EntryJob *entry_job, struct EntryThread *entry_th)
     return nb_entries_decoded == nb_entries - 1 ;
 }
 
+void
+fifo_flush(struct MainThread* main_thread)
+{
+    struct EntriesFIFO *fifo = &main_thread->entries_fifo;
+    struct EntryJob *entry_job = NULL;
+    pthread_mutex_lock(&main_thread->io_mtx);
+
+    fifo->first = fifo->last;
+
+    pthread_mutex_unlock(&main_thread->io_mtx);
+}
+
 static struct EntryJob *
 fifo_pop_entry(struct EntriesFIFO *fifo)
 {

@@ -555,6 +555,33 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
     return ret;
 }
 
+int
+ovdec_flush(OVVCDec *dec)
+{
+    //ovdec_wait_entry_threads(dec);
+    struct OVPictureUnit *punit;
+    OVFrame *frame;
+    OVDPB *dpb = dec->dpb;
+
+    fifo_flush(&dec->main_thread);
+
+    ovdec_wait_entry_threads(dec);
+    if (dpb) {
+        while (ovdpb_drain_frame(dpb, &frame, &punit)) {
+            if (frame) {
+                ovpu_unref(&punit);
+                ovframe_unref(&frame);
+            }
+        }
+        ovdpb_uninit(&dec->dpb);
+    }
+
+    decinit_unref_params(&dec->active_params);
+
+
+    return 0;
+}
+
 static int
 set_nb_entry_threads(OVVCDec *ovdec, int nb_threads)
 {
