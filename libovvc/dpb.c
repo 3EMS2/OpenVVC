@@ -129,9 +129,9 @@ dpbpriv_release_pic(OVPicture *pic)
         }
 
         pic->frame = NULL;
-
-        ovpu_unref(&pic->pu);
     }
+
+    ovpu_unref(&pic->pu);
 }
 
 struct Rational {
