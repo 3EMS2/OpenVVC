@@ -84,9 +84,10 @@ ovnalu_create(OVNALUnit **nalu_p)
 }
 
 int
-ov_nalu_new_ref(OVNALUnit **nalu_p, OVNALUnit *nalu)
+ovnalu_ref(OVNALUnit **nalu_p, OVNALUnit *nalu)
 {
     if (!nalu) {
+        ov_log(NULL, OVLOG_ERROR, "Trying to reference a NULL OVNALUnit\n");
         return -1;
     }
 
@@ -98,7 +99,7 @@ ov_nalu_new_ref(OVNALUnit **nalu_p, OVNALUnit *nalu)
 }
 
 void
-ov_nalu_unref(OVNALUnit **nalu_p)
+ovnalu_unref(OVNALUnit **nalu_p)
 {
     OVNALUnit *nalu = *nalu_p;
 
@@ -118,6 +119,12 @@ ov_nalu_unref(OVNALUnit **nalu_p)
 
     *nalu_p = NULL;
 }
+
+void
+ov_nalu_unref(OVNALUnit **nalu_p) {
+    ovnalu_unref(nalu_p);
+}
+
 
 int
 ovnalu_init(OVNALUnit *nalu, const uint8_t *rbsp_data, const uint32_t *epb_offset, size_t rbsp_size,
@@ -234,10 +241,10 @@ ovpu_unref(OVPictureUnit **ovpu_p)
 }
 
 int
-ovpu_new_ref(OVPictureUnit **ovpu_p, OVPictureUnit *ovpu)
+ovpu_ref(OVPictureUnit **ovpu_p, OVPictureUnit *ovpu)
 {
     if (!ovpu) {
-        return -1;
+        return OVVC_EINDATA;
     }
 
     atomic_fetch_add_explicit(&ovpu->ref_count, 1, memory_order_acq_rel);
@@ -245,4 +252,15 @@ ovpu_new_ref(OVPictureUnit **ovpu_p, OVPictureUnit *ovpu)
     *ovpu_p = ovpu;
 
     return 0;
+}
+
+int
+ovpu_new_ref(OVPictureUnit **ovpu_p, OVPictureUnit *ovpu) {
+    ovpu_ref(ovpu_p, ovpu);
+}
+
+int
+ov_nalu_new_ref(OVNALUnit **nalu_p, OVNALUnit *nalu)
+{
+    return ovnalu_ref(nalu_p, nalu);
 }

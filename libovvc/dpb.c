@@ -652,7 +652,7 @@ dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst, struct OVPictureUnit **punit
        *dst = NULL;
     }
 
-    ovpu_new_ref(punit_p, pic->pu);
+    ovpu_ref(punit_p, pic->pu);
 
     ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
 }
@@ -1044,7 +1044,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         if (ps->sps->sps_temporal_mvp_enabled_flag) {
             ret = init_tmvp_info(*pic_p, ps, ovdec);
         }
-        ovpu_new_ref(&(*pic_p)->pu, ovdec->pu);
+        ovpu_ref(&(*pic_p)->pu, ovdec->pu);
 
         init_nb_slices(*pic_p, ovdec->pu);
     }

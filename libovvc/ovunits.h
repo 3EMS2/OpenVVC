@@ -193,6 +193,9 @@ typedef struct OVPictureUnit
  */
 int ov_nalu_new_ref(OVNALUnit **dst_p, OVNALUnit *src);
 
+/* Alias for ov_nalu_new_ref */
+int ovnalu_ref(OVNALUnit **dst_p, OVNALUnit *src);
+
 /* Dereference an OVNALUnit pointer
  *
  * Decrements reference counter of the OVNALUnit pointed by ovnalu_p
@@ -203,6 +206,8 @@ void ov_nalu_unref(OVNALUnit **nalu_p);
 
 int ov_nalu_init(OVNALUnit *nalu);
 
+/* Alias ov_nalu_unref */
+void ovnalu_unref(OVNALUnit **nalu_p);
 
 /* Allocate a new OVNAUnit and set all its parameters to default */
 int ovnalu_create(OVNALUnit **nalu_p);
@@ -218,6 +223,9 @@ int ovnalu_create(OVNALUnit **nalu_p);
  *     - src must be a valid OVPictureUnit (i.e. from the decoder output)
  */
 int ovpu_new_ref(OVPictureUnit **dst_p, OVPictureUnit *src);
+
+/* Aliases ovpu_new_ref */
+int ovpu_ref(OVPictureUnit **dst_p, OVPictureUnit *src);
 
 /* Dereference an OVPictureUnit pointer
  *
