@@ -1282,13 +1282,11 @@ intra_angular_v_cubic_mref_avx2(const OVSample* const ref_abv, OVSample* const d
                            int8_t log2_pb_h, int angle_val,
                            uint8_t mrl_idx)
 {
-    if (log2_pb_w >=4){
+    if (log2_pb_w >= 4) {
         intra_angular_v_cubic_mref_avx2_16(ref_abv, dst, dst_stride, log2_pb_w, log2_pb_h,angle_val, mrl_idx);
-    }
-    else if (log2_pb_w ==3){
+    } else if (log2_pb_w == 3) {
         intra_angular_v_cubic_mref_avx2_8(ref_abv, dst, dst_stride, log2_pb_w, log2_pb_h,angle_val, mrl_idx);
-    }
-    else{
+    } else {
         intra_angular_v_cubic_mref_avx2_4(ref_abv, dst, dst_stride, log2_pb_w, log2_pb_h,angle_val, mrl_idx);
     }
     
