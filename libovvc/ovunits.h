@@ -191,9 +191,6 @@ typedef struct OVPictureUnit
  *     references an OVNALUnit
  *     - src must be a valid OVNALUnit (i.e. from the decoder output)
  */
-int ov_nalu_new_ref(OVNALUnit **dst_p, OVNALUnit *src);
-
-/* Alias for ov_nalu_new_ref */
 int ovnalu_ref(OVNALUnit **dst_p, OVNALUnit *src);
 
 /* Dereference an OVNALUnit pointer
@@ -202,11 +199,6 @@ int ovnalu_ref(OVNALUnit **dst_p, OVNALUnit *src);
  * and set ovnalu_p to NULL. If the OVNALUnit reference counter drops down
  * to zero OpenVVC will call the function pointed by release.
  */
-void ov_nalu_unref(OVNALUnit **nalu_p);
-
-int ov_nalu_init(OVNALUnit *nalu);
-
-/* Alias ov_nalu_unref */
 void ovnalu_unref(OVNALUnit **nalu_p);
 
 /* Allocate a new OVNAUnit and set all its parameters to default */
@@ -222,9 +214,6 @@ int ovnalu_create(OVNALUnit **nalu_p);
  *     references an OVPictureUnit
  *     - src must be a valid OVPictureUnit (i.e. from the decoder output)
  */
-int ovpu_new_ref(OVPictureUnit **dst_p, OVPictureUnit *src);
-
-/* Aliases ovpu_new_ref */
 int ovpu_ref(OVPictureUnit **dst_p, OVPictureUnit *src);
 
 /* Dereference an OVPictureUnit pointer
@@ -242,4 +231,16 @@ int ovnalu_init(OVNALUnit *nalu, const uint8_t *rbsp_data, const uint32_t *epb_o
 
 int ovpu_init(OVPictureUnit **pu, uint8_t nb_nalus);
 
+#ifdef OLD_API
+/* Aliases for ovnalu_ref */
+int ov_nalu_new_ref(OVNALUnit **dst_p, OVNALUnit *src);
+
+/* Aliases ovnalu_unref */
+void ov_nalu_unref(OVNALUnit **nalu_p);
+
+int ov_nalu_init(OVNALUnit *nalu);
+
+/* Aliases ovpu_ref */
+int ovpu_new_ref(OVPictureUnit **dst_p, OVPictureUnit *src);
+#endif
 #endif
