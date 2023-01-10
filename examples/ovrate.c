@@ -52,6 +52,7 @@
 #include "decinit.h"
 #include "nvcl_structures.h"
 #include "hls_structures.h"
+
 typedef struct OVVCHdl
 {
     OVVCDmx *dmx;
@@ -75,11 +76,9 @@ static void print_usage(void);
 int
 main(int argc, char** argv)
 {
-    /* basic options parser and assign
-       filenames into a functions*/
+    OVVCHdl ovvc_hdl;
     const char *ifile = NULL;
     int log_lvl = OVLOG_INFO;
-    OVVCHdl ovvc_hdl;
     int ret = 0;
 
     while (1) {
@@ -101,7 +100,6 @@ main(int argc, char** argv)
             break;
         }
 
-
         switch (c)
         {
             case 'v':
@@ -109,7 +107,6 @@ main(int argc, char** argv)
                 return 0;
 
             case 'h':
-            case '?':
                 print_usage();
                 return 0;
 
