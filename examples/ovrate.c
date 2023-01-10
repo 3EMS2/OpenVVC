@@ -79,9 +79,6 @@ main(int argc, char** argv)
        filenames into a functions*/
     const char *ifile = NULL;
     int log_lvl = OVLOG_INFO;
-
-    uint8_t options_flag = 0;
-
     OVVCHdl ovvc_hdl;
     int ret = 0;
 
@@ -108,19 +105,16 @@ main(int argc, char** argv)
         switch (c)
         {
             case 'v':
-                options_flag += 0x01;
-                break;
+                print_version();
+                return 0;
 
             case 'h':
-                options_flag += 0x10;
-                break;
+            case '?':
+                print_usage();
+                return 0;
 
             case 'l':
                 log_lvl = optarg[0]-'0';
-                break;
-
-            case '?':
-                options_flag += 0x10;
                 break;
 
             case 1 :
@@ -128,29 +122,13 @@ main(int argc, char** argv)
                 break;
 
             default:
-                if (c == 1) {
-                    ifile = optarg;
-                } else {
-                    abort();
-                }
+                print_usage();
+                return -1;
         }
     }
 
     if (OVLOG_ERROR <= log_lvl && log_lvl <= OVLOG_DEBUG) {
         ovlog_set_log_level(log_lvl);
-    }
-
-    if (options_flag) {
-
-        if (options_flag & 0x01) {
-            print_version();
-        }
-
-        if (options_flag & 0x10) {
-            print_usage();
-        }
-
-        return 0;
     }
 
     ret = init_openvvc_hdl(&ovvc_hdl);
