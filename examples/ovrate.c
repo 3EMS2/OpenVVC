@@ -93,14 +93,14 @@ main(int argc, char** argv)
             {"version",   no_argument,       0, 'v'},
             {"help",      no_argument,       0, 'h'},
             {"log-level", required_argument, 0, 'l'},
-            {"outfile",   required_argument, 0, 'o'},
         };
 
         int option_index = 0;
 
-        c = getopt_long(argc, argv, "-vhl:o", long_options,
+        c = getopt_long(argc, argv, "-vhl:", long_options,
                         &option_index);
-        if (c == -1){
+
+        if (c == -1) {
             break;
         }
 
@@ -123,6 +123,10 @@ main(int argc, char** argv)
                 options_flag += 0x10;
                 break;
 
+            case 1 :
+                ifile = optarg;
+                break;
+
             default:
                 if (c == 1) {
                     ifile = optarg;
@@ -132,11 +136,11 @@ main(int argc, char** argv)
         }
     }
 
-    if (OVLOG_ERROR <= log_lvl && log_lvl <= OVLOG_DEBUG){
+    if (OVLOG_ERROR <= log_lvl && log_lvl <= OVLOG_DEBUG) {
         ovlog_set_log_level(log_lvl);
     }
 
-    if (options_flag){
+    if (options_flag) {
 
         if (options_flag & 0x01) {
             print_version();
@@ -439,8 +443,4 @@ static void print_usage(){
   printf("\t-h, --help\t\t\t\tShow this message.\n");
   printf("\t-v, --version\t\t\t\tShow version information.\n");
   printf("\t-l <level>, --log-level=<level>\t\tDefine the level of verbosity. Value between 0 and 6. (Default: 2)\n");
-  printf("\t-i <file>, --infile=<file>\t\tPath to the file to be decoded (Default: test.266).\n");
-  printf("\t-o <file>, --outfile=<file>\t\tPath to the output file (Default: test.yuv).\n");
-  printf("\t-t <nbthreads>, --framethr=<nbthreads>\t\tNumber of simultaneous frames decoded (Default: 0).\n");
-  printf("\t-e <nbthreads>, --entrythr=<nbthreads>\t\tNumber of simultaneous entries decoded per frame (Default: 0).\n");
 }
