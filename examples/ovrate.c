@@ -280,15 +280,6 @@ is_vcl(const struct OVNALUnit *const nalu) {
 }
 
 static int
-analyze_pu(struct PUSummary *pu_summary, const OVPictureUnit *const pu)
-{
-    struct OVPS const ps = {0};
-    for (int i = 0; i < pu->nb_nalus; ++i) {
-        const OVNALUnit *const nalu = pu->nalus[i];
-    }
-}
-
-static int
 decode_nal_unit(struct OVPS *ps, OVNVCLCtx *const nvcl_ctx, OVNALUnit * nalu)
 {
     int ret = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
@@ -387,9 +378,7 @@ probe_stream(OVVCHdl *const hdl)
 #if 1
             struct PUSummary pu_summary = {{0}};
 
-            analyze_pu(&pu_summary, pu);
-
-            hls(&ps, &nvcl_ctx, pu, poc);
+	    hls(&ps, &nvcl_ctx, pu, poc);
 
             poc = pu->dts;
             fprintf(stdout, "Picture Unit %ld: \n", pu->dts);
