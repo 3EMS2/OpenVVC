@@ -92,55 +92,6 @@ struct OVSEIPayload
     uint32_t size;
 };
 
-void
-copy_sei_params(OVSEI **dst_p, OVSEI *src)
-{   
-    if(src){
-        if(!(*dst_p))
-            *dst_p = ov_mallocz(sizeof(struct OVSEI));
-        OVSEI *dst = *dst_p; 
-
-        if(src->sei_fg){
-            if(!dst->sei_fg){
-                dst->sei_fg = ov_mallocz(sizeof(struct OVSEIFGrain));
-            }
-            *(dst->sei_fg) =  *(src->sei_fg);
-        }
-
-#if HAVE_SLHDR
-        if(src->sei_slhdr){
-            if(!dst->sei_slhdr){
-                dst->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
-            }
-            *(dst->sei_slhdr) =  *(src->sei_slhdr);
-        }
-#endif
-    }
-    else{
-        if(!(*dst_p))
-            *dst_p = ov_mallocz(sizeof(struct OVSEI));
-    }
-}
-
-void
-nvcl_free_sei_params(OVSEI *sei)
-{   
-    if(sei){
-
-        if(sei->sei_fg)
-            ov_freep(&sei->sei_fg);
-
-#if HAVE_SLHDR
-        if(sei->sei_slhdr){
-            pp_uninit_slhdr_lib(sei->sei_slhdr->slhdr_context);
-            ov_freep(&sei->sei_slhdr);
-        }
-
-#endif
-        ov_freep(&sei);
-    }
-}
-
 /* FIXME find other spec */
 struct OVSEIPayload
 nvcl_sei_payload(OVNVCLReader *const rdr) {
