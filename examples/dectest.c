@@ -104,10 +104,10 @@ main(int argc, char** argv)
 
         c = getopt_long(argc, argv, "-vhl:o:t:e:u:", long_options,
                         &option_index);
-        if (c == -1){
+
+        if (c == -1) {
             break;
         }
-
 
         switch (c)
         {
@@ -124,7 +124,6 @@ main(int argc, char** argv)
                 break;
 
             case 'o':
-                /*TODO: Sanitize filename*/
                 output_file_name = optarg;
                 break;
 
@@ -157,11 +156,11 @@ main(int argc, char** argv)
         ovlog_set_log_level(ov_log_level);
     }
 
-    if (output_file_name == NULL){
+    if (output_file_name == NULL) {
         output_file_name ="test.yuv";
     }
 
-    if (options_flag){
+    if (options_flag) {
 
         if (options_flag & 0x01) {
             print_version();
@@ -240,7 +239,6 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_f
     ret = ovdec_start(*vvcdec);
 
     if (ret < 0) goto failstart;
-
 
     ov_log(vvcdec, OVLOG_TRACE, "Decoder init.\n");
 
