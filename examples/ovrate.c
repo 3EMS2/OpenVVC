@@ -404,9 +404,9 @@ print_version(){
 }
 
 static void print_usage(){
-  printf("usage: ovrate [options]\n");
+  printf("usage: ovrate [options] <VVCSTREAM>\n");
   printf("options:\n");
   printf("\t-h, --help\t\t\t\tShow this message.\n");
-  printf("\t-v, --version\t\t\t\tShow version information.\n");
-  printf("\t-l <level>, --log-level=<level>\t\tDefine the level of verbosity. Value between 0 and 6. (Default: 2)\n");
+  printf("\t-v, --version\t\t\t\tShow OpenVVC version information.\n");
+  printf("\t-l <level>, --log-level=<level>\t \tDefine the level of verbosity. Value between 0 and 6. (Default: 2)\n");
 }
