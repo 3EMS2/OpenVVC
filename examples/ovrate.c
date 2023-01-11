@@ -354,7 +354,7 @@ slice_type(const OVNALUnit *const nalu)
     if (sh->sh_slice_type == 1) return 'P';
 
 end:
-    return 'N';
+    return '\0';
 }
 
 static int
