@@ -304,31 +304,31 @@ hls(struct OVPS *const ps, OVNVCLCtx *const nvcl_ctx, OVPictureUnit *pu, int32_t
     int i;
     int ret;
 
-    uint8_t pu_type;
-
     for (i = 0; i < pu->nb_nalus; ++i) {
+
         ret = decode_nal_unit(ps, nvcl_ctx, pu->nalus[i]);
 
-        if (is_vcl(pu->nalus[i])) pu_type = pu->nalus[i]->type;
-    }
-
-    if (!ps->sh->sh_slice_address) {
-        if (pu_type == OVNALU_IDR_W_RADL || pu_type == OVNALU_IDR_N_LP) {
-            /* New IDR involves a POC refresh and mark the start of
-             * a new coded video sequence
-             */
-            if (ps->ph->ph_poc_msb_cycle_present_flag) {
-                uint8_t log2_max_poc_lsb = ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
-                poc = ps->ph->ph_poc_msb_cycle_val << log2_max_poc_lsb;
-            } else {
-                poc = 0;
+        if (is_vcl(pu->nalus[i])) {
+            uint8_t pu_type = pu->nalus[i]->type;
+            if (!ps->sh->sh_slice_address) {
+                if (pu_type == OVNALU_IDR_W_RADL || pu_type == OVNALU_IDR_N_LP) {
+                    /* New IDR involves a POC refresh and mark the start of
+                     * a new coded video sequence
+                     */
+                    if (ps->ph->ph_poc_msb_cycle_present_flag) {
+                        uint8_t log2_max_poc_lsb = ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
+                        poc = ps->ph->ph_poc_msb_cycle_val << log2_max_poc_lsb;
+                    } else {
+                        poc = 0;
+                    }
+                    poc += ps->ph->ph_pic_order_cnt_lsb;
+                } else {
+                    int32_t last_poc = poc;
+                    poc = derive_poc(ps->ph->ph_pic_order_cnt_lsb,
+                                     ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
+                                     last_poc);
+                }
             }
-            poc += ps->ph->ph_pic_order_cnt_lsb;
-        } else {
-            int32_t last_poc = poc;
-            poc = derive_poc(ps->ph->ph_pic_order_cnt_lsb,
-                             ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
-                             last_poc);
         }
     }
 
