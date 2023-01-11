@@ -285,8 +285,11 @@ decode_nal_unit(struct OVPS *ps, OVNVCLCtx *const nvcl_ctx, OVNALUnit * nalu)
     }
 
     printf("%d\n", ret);
+
     if (is_vcl(nalu)) {
+        int nb_sh_bytes = ret;
         ret = decinit_update_params(ps, nvcl_ctx);
+        decinit_set_entry_points(ps, nalu, nb_sh_bytes);
     }
 
     return 0;
