@@ -381,7 +381,7 @@ probe_stream(OVVCHdl *const hdl)
 
             poc = pu->dts;
 
-	    fprintf(stdout, "Picture Unit %ld: \n", pu->dts);
+	    fprintf(stdout, "Picture Unit %ld: %dx%d %d bits\n", pu->dts, ps.pps->pps_pic_width_in_luma_samples, ps.pps->pps_pic_height_in_luma_samples, ps.sps->sps_bitdepth_minus8 + 8);
             for (int i = 0; i < pu->nb_nalus; ++i) {
 		const OVNALUnit *const nalu = pu->nalus[i];
 		fprintf(stdout, "NAL Unit %.12s (%ld) bytes, %c\n", nalutype2str[nalu->type & 0x1F], nalu->rbsp_size, slice_type(nalu));
