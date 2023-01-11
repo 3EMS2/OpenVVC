@@ -375,18 +375,17 @@ probe_stream(OVVCHdl *const hdl)
         }
 
         if (pu) {
-#if 1
-            struct PUSummary pu_summary = {{0}};
+	    struct PUSummary pu_summary = {{0}};
 
 	    hls(&ps, &nvcl_ctx, pu, poc);
 
             poc = pu->dts;
-            fprintf(stdout, "Picture Unit %ld: \n", pu->dts);
+
+	    fprintf(stdout, "Picture Unit %ld: \n", pu->dts);
             for (int i = 0; i < pu->nb_nalus; ++i) {
-                const OVNALUnit *const nalu = pu->nalus[i];
-                fprintf(stdout, "NAL Unit %.12s (%ld) bytes, %c\n", nalutype2str[nalu->type & 0x1F], nalu->rbsp_size, slice_type(nalu));
-            }
-#endif
+		const OVNALUnit *const nalu = pu->nalus[i];
+		fprintf(stdout, "NAL Unit %.12s (%ld) bytes, %c\n", nalutype2str[nalu->type & 0x1F], nalu->rbsp_size, slice_type(nalu));
+	    }
 
             ovpu_unref(&pu);
 
