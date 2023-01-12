@@ -380,11 +380,20 @@ probe_stream(OVVCHdl *const hdl)
 	    hls(&ps, &nvcl_ctx, pu, poc);
 
             poc = pu->dts;
+            const OVSPS *const sps = ps.sps;
+            const OVPPS *const pps = ps.pps;
+            const OVSH *const sh = ps.sh;
+            const OVPH *const ph = ps.ph;
 
-	    fprintf(stdout, "Picture Unit %ld: %dx%d %d bits\n", pu->dts, ps.pps->pps_pic_width_in_luma_samples, ps.pps->pps_pic_height_in_luma_samples, ps.sps->sps_bitdepth_minus8 + 8);
+            int8_t pic_base_qp = pps->pps_init_qp_minus26 + 26;
+            int8_t pic_qp = pic_base_qp + ph->ph_qp_delta;
+
+
+	    fprintf(stdout, "Picture Unit %ld: %dx%d %d bits, QP : %d\n", pu->dts, ps.pps->pps_pic_width_in_luma_samples, ps.pps->pps_pic_height_in_luma_samples, ps.sps->sps_bitdepth_minus8 + 8, pic_qp);
             for (int i = 0; i < pu->nb_nalus; ++i) {
 		const OVNALUnit *const nalu = pu->nalus[i];
-		fprintf(stdout, "NAL Unit %.12s (%ld) bytes, %c\n", nalutype2str[nalu->type & 0x1F], nalu->rbsp_size, slice_type(nalu));
+                int8_t slice_qp = pic_qp + sh->sh_qp_delta;
+		fprintf(stdout, "NAL Unit %.12s (%ld) bytes, %c, tid: %d, slice_qp: %d\n", nalutype2str[nalu->type & 0x1F], nalu->rbsp_size, slice_type(nalu), (nalu->rbsp_data[1] & 0x7) - 1, slice_qp);
 	    }
 
             ovpu_unref(&pu);
