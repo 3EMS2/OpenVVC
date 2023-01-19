@@ -81,7 +81,7 @@ int nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const pps,
                   const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
 int nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
-                  OVNVCLCtx *const nvcl_ctx);
+                  const OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const ph,
                  const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);

@@ -987,7 +987,7 @@ derive_scaling_tb_luts(struct TBScalingLUTs *const sl_luts, const OVAPS *const a
 
 int
 nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
-              OVNVCLCtx *const nvcl_ctx)
+              const OVNVCLCtx *const nvcl_ctx)
 {
     aps->aps_params_type                    = nvcl_read_bits(rdr, 3);
     aps->aps_adaptation_parameter_set_id    = nvcl_read_bits(rdr, 5);

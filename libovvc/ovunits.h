@@ -137,6 +137,8 @@ typedef struct OVNALUnit
   void (*release)(struct OVNALUnit **nalu_p);
 
   void *release_opaque;
+
+  void *hls_data;
 } OVNALUnit;
 
 /* Picture Unit */

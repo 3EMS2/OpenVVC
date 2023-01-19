@@ -111,6 +111,10 @@ ov_nalu_unref(OVNALUnit **nalu_p)
     unsigned ref_count = atomic_fetch_add_explicit(&nalu->ref_count, -1, memory_order_acq_rel);
 
     if (!ref_count) {
+        if (nalu->hls_data) {
+            hlsdata_unref(&nalu->hls_data);
+            ov_log(NULL, OVLOG_ERROR, "UNREF create an empty Picture Unit\n");
+        }
         nalu->release(nalu_p);
     }
 

@@ -47,6 +47,7 @@
 typedef int (*NALUnitAction)(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
                              uint8_t nalu_type);
 
+typedef int (*NALUnitAction2)(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu);
 static const char *nalu_name[32] =
 {
     "TRAIL",
@@ -251,10 +252,9 @@ hls_replace_ref(const struct HLSReader *const hls_hdl, struct HLSDataRef **stora
 }
 
 static int
-decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
+decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, struct HLSDataRef **storage, OVNVCLReader *const rdr,
                      const struct HLSReader *const hls_hdl, uint8_t nalu_type)
 {
-    struct HLSDataRef **storage = hls_hdl->find_storage(rdr, nvcl_ctx);
     union HLSData data;
     int ret;
 
@@ -307,37 +307,74 @@ duplicated:
 
 }
 
-static int warn_unsupported(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
-                            uint8_t nalu_type)
+static int warn_unsupported(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
 {
-    ov_log(NULL, OVLOG_WARNING, "Unsupported %s NAL unit.\n", nalu_name[nalu_type]);
+    ov_log(NULL, OVLOG_WARNING, "Unsupported %s NAL unit.\n", nalu_name[nalu->type & 0x1F]);
     return 0;
 }
 
-static int warn_unspec(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
-                       uint8_t nalu_type)
+static int warn_unspec(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
 {
-    ov_log(NULL, OVLOG_WARNING, "Unspec %s NAL unit.\n", nalu_name[nalu_type]);
+    ov_log(NULL, OVLOG_WARNING, "Unspec %s NAL unit.\n", nalu_name[nalu->type & 0x1F]);
     return 0;
 }
 
-static int log_ignored(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
-                       uint8_t nalu_type)
+static int log_ignored(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
 {
-    ov_log(NULL, OVLOG_TRACE, "Ignored %s NAL unit.\n", nalu_name[nalu_type]);
+    ov_log(NULL, OVLOG_TRACE, "Ignored %s NAL unit.\n", nalu_name[nalu->type & 0x1F]);
     return 0;
 }
 
-static int decode_nvcl_hls(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
-                           uint8_t nalu_type)
+static int decode_nvcl_hls(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
 {
+    uint8_t nalu_type = nalu->type & 0x1F;
     const struct HLSReader *const hls_reader = nalu_reader[nalu_type];
-    if (hls_reader != &todo)
-        return decode_nalu_hls_data(nvcl_ctx, rdr, hls_reader, nalu_type);
+    OVNVCLReader rdr;
+
+    nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
+
+    nvcl_skip_bits(&rdr, 16);
+
+    if (hls_reader != &todo) {
+        struct HLSDataRef **storage = hls_reader->find_storage(&rdr, nvcl_ctx);
+        int ret =  decode_nalu_hls_data(nvcl_ctx, storage, &rdr, hls_reader, nalu_type);
+        if (*storage) {
+            hlsdata_newref((struct HLSDataRef **)&nalu->hls_data, *storage);
+        }
+
+        return ret;
+    }
+
     return 0;
 }
 
-static const NALUnitAction nalu_action[32] =
+static int tmp_aps_wrap(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
+{
+    uint8_t nalu_type = nalu->type & 0x1F;
+    const struct HLSReader *const hls_reader = nalu_reader[nalu_type];
+    OVNVCLReader rdr;
+
+    nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
+
+    nvcl_skip_bits(&rdr, 16);
+
+    return nvcl_decode_nalu_aps(nvcl_ctx, &rdr, nalu_type);
+}
+
+static int tmp_sei_wrap(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
+{
+    uint8_t nalu_type = nalu->type & 0x1F;
+    const struct HLSReader *const hls_reader = nalu_reader[nalu->type & 0x1F];
+    OVNVCLReader rdr;
+
+    nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
+
+    nvcl_skip_bits(&rdr, 16);
+
+    return nvcl_decode_nalu_sei(nvcl_ctx, &rdr, nalu_type);
+}
+
+static const NALUnitAction2 nalu_action[32] =
 {
     &log_ignored                , /* TRAIL */
     &log_ignored                , /* STSA */
@@ -356,14 +393,14 @@ static const NALUnitAction nalu_action[32] =
     &decode_nvcl_hls            , /* VPS */
     &decode_nvcl_hls            , /* SPS */
     &decode_nvcl_hls            , /* PPS */
-    &nvcl_decode_nalu_aps       , /* PREFIX_APS */
-    &nvcl_decode_nalu_aps       , /* SUFFIX_APS */
+    &tmp_aps_wrap       , /* PREFIX_APS */
+    &tmp_aps_wrap       , /* SUFFIX_APS */
     &decode_nvcl_hls            , /* PH */
     &log_ignored                , /* AUD */
     &log_ignored                , /* EOS */
     &log_ignored                , /* EOB */
-    &nvcl_decode_nalu_sei       , /* PREFIX_SEI */
-    &nvcl_decode_nalu_sei       , /* SUFFIX_SEI */
+    &tmp_sei_wrap       , /* PREFIX_SEI */
+    &tmp_sei_wrap       , /* SUFFIX_SEI */
     &log_ignored                , /* FD */
     &warn_unspec                , /* RSVD_NVCL */
     &warn_unspec                , /* RSVD_NVCL */
@@ -376,15 +413,11 @@ static const NALUnitAction nalu_action[32] =
 int
 nvcl_decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
 {
-    OVNVCLReader rdr;
-
-    nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
-
-    /* FIXME properly read NAL Unit header */
-    nvcl_skip_bits(&rdr, 16);
-
     uint8_t nalu_type = nalu->type & 0x1F;
+
     ov_log(NULL, OVLOG_TRACE, "Received new %s NAL unit.\n", nalu_name[nalu_type]);
 
-    return nalu_action[nalu_type](nvcl_ctx, &rdr, nalu_type);
+    int ret = nalu_action[nalu_type](nvcl_ctx, nalu);
+
+    return ret;
 }
