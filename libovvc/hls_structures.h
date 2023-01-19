@@ -60,8 +60,6 @@ struct HLSReader
     const char *name;
     const size_t data_size;
 
-    uint8_t (*probe_id)(OVNVCLReader *const rdr);
-
     struct HLSDataRef **(*find_storage)(OVNVCLReader *const rdr,
                                              OVNVCLCtx *const nvcl_ctx);
 

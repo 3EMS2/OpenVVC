@@ -96,7 +96,6 @@ const struct HLSReader sh_manager =
 {
     .name = "Slice Header",
     .data_size    = sizeof(struct OVSH),
-    .probe_id     = NULL,
     .find_storage = &storage_in_nvcl_ctx,
     .read         = &nvcl_sh_read,
     .validate     = &validate_sh,

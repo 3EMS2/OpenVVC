@@ -508,7 +508,6 @@ const struct HLSReader vps_manager =
 {
     .name = "VPS",
     .data_size    = sizeof(struct OVVPS),
-    .probe_id     = &probe_vps_id,
     .find_storage = &storage_in_nvcl_ctx,
     .read         = &nvcl_vps_read,
     .validate     = &validate_vps,

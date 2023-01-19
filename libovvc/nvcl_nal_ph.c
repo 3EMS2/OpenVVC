@@ -487,7 +487,6 @@ const struct HLSReader ph_manager =
 {
     .name = "PH",
     .data_size = sizeof(struct OVPH),
-    .probe_id     = &probe_ph_id,
     .find_storage = &storage_in_nvcl_ctx,
     .read         = &nvcl_ph_read,
     .validate     = &validate_ph,

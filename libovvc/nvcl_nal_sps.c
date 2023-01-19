@@ -735,7 +735,6 @@ const struct HLSReader sps_manager =
 {
     .name = "SPS",
     .data_size    = sizeof(struct OVSPS),
-    .probe_id     = &probe_sps_id,
     .find_storage = &storage_in_nvcl_ctx,
     .read         = &nvcl_sps_read,
     .validate     = &validate_sps,
