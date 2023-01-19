@@ -68,10 +68,6 @@ struct HLSReader
 
     int (*validate)(OVNVCLReader *rdr, const union HLSData *const hls_data);
 
-    int (*replace)(const struct HLSReader *const manager,
-                   struct HLSDataRef **storage,
-                   const OVHLSData *const hls_data);
-
     void (*free)(const union HLSData *const hls_data);
 };
 

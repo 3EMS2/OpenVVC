@@ -99,7 +99,6 @@ const struct HLSReader sh_manager =
     .find_storage = &storage_in_nvcl_ctx,
     .read         = &nvcl_sh_read,
     .validate     = &validate_sh,
-    .replace      = NULL,
     .free         = &free_sh
 };
 
@@ -160,17 +159,8 @@ cleanup:
     ret = sh_manager.read(rdr, &data, nvcl_ctx, nalu_type);
     if (ret < 0)  goto failread;
 
-    #if 0
-    ov_log(NULL, OVLOG_TRACE, "Checking %s\n", sh_manager.name);
-    ret = sh_manager->validate(rdr, &data);
-    if (ret < 0)  goto invalid;
-
-    ov_log(NULL, OVLOG_TRACE, "Replacing new %s\n", sh_manager.name);
-    ret = hls_hdl->replace(hls_hdl, storage, &data);
-    #else
     ov_log(NULL, OVLOG_TRACE, "Replacing new %s\n", sh_manager.name);
     hls_replace_ref(&sh_manager, storage, &data);
-    #endif
 
     return ret;
 
@@ -215,11 +205,7 @@ nvcl_decode_ph(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx,
     ret = hls_hdl->validate(rdr, &data);
     if (ret < 0)  goto invalid;
 
-    #if 0
-    ret = hls_hdl->replace(hls_hdl, storage, &data);
-    #else
     hls_replace_ref(hls_hdl, storage, &data);
-    #endif
 
     return ret;
 
