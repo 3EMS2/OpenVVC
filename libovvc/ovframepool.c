@@ -193,7 +193,7 @@ ovframepool_release_planes(OVFrame *const frame)
 static int
 ovframepool_request_planes(OVFrame *const frame, struct FramePool *const fpool)
 {
-    const int nb_comp = fpool->fmt_info->nb_comp;
+    const int nb_comp = 3;//fpool->fmt_info->nb_comp;
     int i;
 
     frame->internal.frame_pool = fpool;

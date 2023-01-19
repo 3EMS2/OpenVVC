@@ -32,6 +32,7 @@
  **/
 
 #include "ovmem.h"
+#include "pthread.h"
 
 #include "mempool_internal.h"
 #include "mempool.h"
@@ -49,6 +50,7 @@ ovmempool_init(size_t elem_size)
     }
 
     mpool->elem_size = elem_size;
+    pthread_mutex_init(&mpool->pool_mtx, NULL);
 
     /* The pool keeps a ref to itself so we avoid freeing it
        while some of its elements can still point to it

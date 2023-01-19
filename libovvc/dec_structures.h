@@ -251,6 +251,7 @@ struct OVVCDec
     uint8_t upscale_flag;
     struct PostProcessCtx {
         uint8_t upscale_flag;
+        int brightness;
 
     } ppctx;
     

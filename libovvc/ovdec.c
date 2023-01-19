@@ -66,7 +66,8 @@ static const char *option_names[OVDEC_NB_OPTIONS] =
 {
     "frame threads",
     "entry threads",
-    "upscale_rpr"
+    "upscale_rpr",
+    "brightness"
 };
 
 static void ovdec_uninit_subdec_list(OVVCDec *vvcdec);
@@ -137,6 +138,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 
     if (!dec->dpb) {
          ret = ovdpb_init(&dec->dpb, &dec->active_params);
+         dec->active_params.sps_info.req_dpb_realloc = 0;
          if (ret < 0) {
              ov_log(NULL, OVLOG_ERROR, "Failed DPB init\n");
              return ret;
@@ -460,6 +462,7 @@ vvc_decode_picture_unit(OVVCDec *dec, const OVPictureUnit *pu)
     int i;
     int ret;
     ovpu_new_ref(&dec->pu, pu);
+    ov_log(NULL, OVLOG_ERROR, "Picture Unit.\n");
     for (i = 0; i < pu->nb_nalus; ++i) {
         ret = decode_nal_unit(dec, pu->nalus[i]);
         if (ret < 0) {
@@ -503,15 +506,15 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
     ret = ovdpb_output_pic(dpb, frame_p, &punit);
 
     if (*frame_p) {
-        pp_process_frame(&dec->ppctx, punit, frame_p);
-        ovpu_unref(&punit);
-    }
-
-    if (*frame_p) {
         (*frame_p)->frame_info.color_desc.colour_primaries = dec->active_params.sps_info.color_desc.colour_primaries;
         (*frame_p)->frame_info.color_desc.transfer_characteristics = dec->active_params.sps_info.color_desc.transfer_characteristics;
         (*frame_p)->frame_info.color_desc.matrix_coeffs = dec->active_params.sps_info.color_desc.matrix_coeffs;
         (*frame_p)->frame_info.color_desc.full_range = dec->active_params.sps_info.color_desc.full_range;
+    }
+
+    if (*frame_p) {
+        pp_process_frame(&dec->ppctx, punit, frame_p);
+        ovpu_unref(&punit);
     }
 
     return ret;
@@ -612,6 +615,9 @@ ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
         case OVDEC_NB_FRAME_THREADS:
             set_nb_frame_threads(ovdec, value);
             break;
+        case OVDEC_BRIGHTNESS:
+            ovdec->ppctx.brightness = ov_clip(value, 100, 1000);
+            break;
         default :
             if (opt_id < OVDEC_NB_OPTIONS) {
                 ov_log(ovdec, OVLOG_ERROR, "Invalid option id %d.", opt_id);
@@ -672,6 +678,7 @@ ovdec_start(OVDec *ovdec)
     if (ret < 0) {
         return ret;
     }
+    ovdec->ppctx.brightness = 100;
 
     return 0;
 }

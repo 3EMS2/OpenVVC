@@ -59,6 +59,8 @@ enum OVOptions {
 
    OVDEC_RPR_UPSCALE = 2,
 
+   OVDEC_BRIGHTNESS = 3,
+
    OVDEC_NB_OPTIONS,
 };
 

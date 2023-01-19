@@ -175,6 +175,7 @@ struct OVSEI
 
     uint8_t upscale_flag;
     struct ScalingInfo scaling_info;
+    int brightness;
 };
 
 struct OVVUI
