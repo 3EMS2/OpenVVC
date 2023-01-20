@@ -77,6 +77,88 @@ init_pic_border_info(struct RectEntryInfo *einfo, const OVPS *const prms, int en
     return 0;
 }
 
+struct SliceInfo
+{
+    uint16_t tile_idx;
+    uint16_t nb_tiles;
+
+    uint16_t ctb_x;
+    uint16_t ctb_y;
+    uint16_t w;
+    uint16_t h;
+};
+
+/* FIXME only once */
+static void
+setup_slice_prms(OVPPS *const pps, struct PicPartitionInfo *const part_info)
+{
+    int tile_id = 0;
+    int i;
+    struct SliceInfo slice_info[300];
+
+    for (i = 0; i < pps->pps_num_slices_in_pic_minus1; i++) {
+        struct SliceInfo *sl = &slice_info[i];
+
+        int tile_x = tile_id % part_info->nb_tile_w;
+        int tile_y = tile_id / part_info->nb_tile_w;
+
+        sl->tile_idx = tile_id;
+
+        /* Each new tile column read slice width exept for implicit last column */
+        if (tile_x != part_info->nb_tile_w - 1) {
+            int sl_w = 0;
+            int sl_h = part_info->tile_row_h[tile_y];
+            for (int k = 0; k <= pps->pps_slice_width_in_tiles_minus1[i]; ++k) {
+                sl_w += part_info->tile_col_w[tile_x + k];
+            }
+        }
+
+        /* Each new tile row read slice height except for implicit last row */
+        if (tile_y !=  part_info->nb_tile_h - 1) {
+            if (pps->pps_tile_idx_delta_present_flag || tile_x == 0) {
+                int sl_h = 0;
+                for (int k = 0; k <= pps->pps_slice_height_in_tiles_minus1[i]; ++k) {
+                    sl_h += part_info->tile_row_h[tile_y + k];
+                }
+            }
+        }
+
+        /* Multiple slices in tiles */
+        if (!pps->pps_slice_width_in_tiles_minus1[i] && !pps->pps_slice_height_in_tiles_minus1[i]) {
+
+            if (part_info->tile_row_h[tile_y] > 1) {
+                int sum = 0;
+                int j;
+                for (j = 0; j < pps->pps_num_exp_slices_in_tile[i]; j++) {
+                    sum += pps->pps_exp_slice_height_in_ctus_minus1[i][j] + 1;
+                    /* store height , w = tile_w*/
+                }
+
+                for ( ; sum < part_info->tile_row_h[i]; ++i) {
+                    int last_read = pps->pps_exp_slice_height_in_ctus_minus1[i][j - 1] + 1;
+                    j += (part_info->tile_row_h[i] - sum) / last_read;
+                    j += !!((part_info->tile_row_h[i] - sum) % last_read);
+                    /* store height , w = tile_w*/
+                }
+
+                i += (j - 1);
+            } else {
+                 /* height = 1 */
+            }
+        }
+
+        if (pps->pps_tile_idx_delta_present_flag && i < pps->pps_num_slices_in_pic_minus1) {
+            tile_id += pps->pps_tile_idx_delta_val[i];
+        } else {
+            int offset_y;
+            tile_id  += pps->pps_slice_width_in_tiles_minus1[i] + 1;
+            if (tile_id % part_info->nb_tile_w == 0) {
+                tile_id += pps->pps_slice_height_in_tiles_minus1[i] * part_info->nb_tile_w;
+            }
+        }
+    }
+}
+
 static void
 slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
 {
