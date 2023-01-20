@@ -272,8 +272,9 @@ rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_
 
     if (chroma_flag) {
         const struct OVALFData* alf_data_c = ctudec->alf_info.aps_alf_data_c;
-        if (alf_data_c)
-        alf_init_filter_c(alf, alf_data_c);
+        if (alf_data_c) {
+            alf_init_filter_c(alf, alf_data_c);
+        }
     }
 }
 
