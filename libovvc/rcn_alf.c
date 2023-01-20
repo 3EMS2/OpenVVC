@@ -815,7 +815,7 @@ cc_alf_filterBlkVB(OVSample * chroma_dst, OVSample * luma_src, const int chr_str
 {
     const int clsSizeY           = 4;
     const int clsSizeX           = 4;
-    //ATTENTION: scaleX et Y fixed to 1 (en 4 2 0)
+
     const int scaleX             = 1;
     const int scaleY             = 1;
 
