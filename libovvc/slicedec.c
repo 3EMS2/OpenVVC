@@ -1240,6 +1240,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     /*FIXME handle cabac alloc or keep it on the stack ? */
     OVCABACCtx cabac_ctx;
     slicedec_init_rect_entry(&einfo, prms, entry_idx);
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     struct DRVLines drv_lines;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
@@ -1248,6 +1249,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     const int nb_ctu_h = einfo.nb_ctu_h;
     
     ctudec->cabac_ctx = &cabac_ctx;
+    uint8_t nb_active_refs0 = sldec->nb_active_refs0;
+    uint8_t nb_active_refs1 = sldec->nb_active_refs1;
 
     ctudec->qp_ctx.current_qp = ctudec->slice_qp;
 
@@ -1257,49 +1260,49 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     ctudec->nb_ctb_pic_w = einfo.nb_ctb_pic_w;
 
     tmvp_entry_init(ctudec, sldec, prms);
-    ctudec->drv_ctx.inter_ctx.poc = sldec->pic->poc;
+    inter_ctx->poc = sldec->pic->poc;
     /* FIXME tmp Reset DBF */
-    memcpy(ctudec->drv_ctx.inter_ctx.rpl0, sldec->rpl0, sizeof(sldec->rpl0));
-    memcpy(ctudec->drv_ctx.inter_ctx.rpl1, sldec->rpl1, sizeof(sldec->rpl1));
+    memcpy(inter_ctx->rpl0, sldec->rpl0, sizeof(sldec->rpl0));
+    memcpy(inter_ctx->rpl1, sldec->rpl1, sizeof(sldec->rpl1));
 
-    ctudec->drv_ctx.inter_ctx.nb_active_ref0 = sldec->nb_active_refs0;
-    ctudec->drv_ctx.inter_ctx.nb_active_ref1 = sldec->nb_active_refs1;
+    inter_ctx->nb_active_ref0 = nb_active_refs0;
+    inter_ctx->nb_active_ref1 = nb_active_refs1;
 
     ctudec_compute_refs_scaling(ctudec, sldec->pic);
 
     derive_ref_weights(ctudec, &sldec->active_params);
 
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 1;
-    for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ++i) {
+    inter_ctx->tmvp_ctx.ldc = 1;
+    for (int i = 0; i < nb_active_refs0; ++i) {
         uint8_t opp_ref_idx0 = 0xFF;
 
         if (sldec->dist_ref_0[i] < 0) {
-            ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 0;
+            inter_ctx->tmvp_ctx.ldc = 0;
         }
 
-        for (int j = 0; j < ctudec->drv_ctx.inter_ctx.nb_active_ref1; j ++) {
-            if (ctudec->drv_ctx.inter_ctx.rpl0[i] == ctudec->drv_ctx.inter_ctx.rpl1[j]) {
+        for (int j = 0; j < nb_active_refs1; j ++) {
+            if (inter_ctx->rpl0[i] == inter_ctx->rpl1[j]) {
                 opp_ref_idx0 = j;
                 break;
             }
         }
-        ctudec->drv_ctx.inter_ctx.rpl0_opp[i] = opp_ref_idx0;
+        inter_ctx->rpl0_opp[i] = opp_ref_idx0;
     }
 
-    for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref1; ++i) {
+    for (int i = 0; i < nb_active_refs1; ++i) {
         uint8_t opp_ref_idx1 = 0xFF;
 
         if (sldec->dist_ref_1[i] < 0) {
-            ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 0;
+            inter_ctx->tmvp_ctx.ldc = 0;
         }
 
-        for (int j = 0; j < ctudec->drv_ctx.inter_ctx.nb_active_ref0; j ++) {
-            if (ctudec->drv_ctx.inter_ctx.rpl1[i] == ctudec->drv_ctx.inter_ctx.rpl0[j]) {
+        for (int j = 0; j < nb_active_refs0; j ++) {
+            if (inter_ctx->rpl1[i] == inter_ctx->rpl0[j]) {
                 opp_ref_idx1 = j;
                 break;
             }
         }
-        ctudec->drv_ctx.inter_ctx.rpl1_opp[i] = opp_ref_idx1;
+        inter_ctx->rpl1_opp[i] = opp_ref_idx1;
     }
 
     /* FIXME Bidir only */
