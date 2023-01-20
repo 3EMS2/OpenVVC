@@ -156,7 +156,8 @@ int
 pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame **frame_p)
 {
     int i;
-    int ret;
+    int ret = 0;
+#if 0
     OVSEI *sei = NULL;
 
     for (i = 0; i < pu->nb_nalus; ++i) {
@@ -186,5 +187,7 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
     ov_free(sei);
 
 fail:
+#endif
+
 return ret;
 }
