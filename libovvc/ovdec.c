@@ -461,7 +461,7 @@ vvc_decode_picture_unit(OVVCDec *dec, const OVPictureUnit *pu)
     for (i = 0; i < pu->nb_nalus; ++i) {
         ret = decode_nal_unit(dec, pu->nalus[i]);
         if (ret < 0) {
-            goto fail;
+            //goto fail;
         }
     }
     dec->dpb->active_pic = NULL;
