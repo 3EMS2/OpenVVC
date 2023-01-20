@@ -979,12 +979,10 @@ static void
 tmvp_entry_init(OVCTUDec *ctudec, const OVSliceDec *const sldec, const OVPS *const ps)
 {
     struct VVCTMVP *tmvp_ctx = &ctudec->drv_ctx.inter_ctx.tmvp_ctx;
-    struct InterDRVCtx *inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     const OVPicture *const col_ref = find_tmvp_collocated_ref(sldec, ps);
     const OVPicture *const active_pic = sldec->pic;
 
-    ctudec->rcn_ctx.ctudec = ctudec;
     tmvp_ctx->col_ref = col_ref;
 
     /* FIXME try to remove ctu decoder reference from inter context */
@@ -995,10 +993,6 @@ tmvp_entry_init(OVCTUDec *ctudec, const OVSliceDec *const sldec, const OVPS *con
 
     tmvp_ctx->col_plane0 = col_ref ? &col_ref->mv_plane0 : NULL;
     tmvp_ctx->col_plane1 = col_ref ? &col_ref->mv_plane1 : NULL;
-
-    /* FIXME used by other tools */
-    memcpy(inter_ctx->dist_ref_0, sldec->dist_ref_0, sizeof(inter_ctx->dist_ref_0));
-    memcpy(inter_ctx->dist_ref_1, sldec->dist_ref_1, sizeof(inter_ctx->dist_ref_1));
 
     memset(tmvp_ctx->dir_map_v0, 0, 34 * sizeof(uint64_t));
     memset(tmvp_ctx->dir_map_v1, 0, 34 * sizeof(uint64_t));
@@ -1260,6 +1254,9 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     ctudec->nb_ctb_pic_w = einfo.nb_ctb_pic_w;
 
     tmvp_entry_init(ctudec, sldec, prms);
+
+    ctudec->rcn_ctx.ctudec = ctudec;
+
     inter_ctx->poc = sldec->pic->poc;
     /* FIXME tmp Reset DBF */
     memcpy(inter_ctx->rpl0, sldec->rpl0, sizeof(sldec->rpl0));
@@ -1267,6 +1264,9 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
     inter_ctx->nb_active_ref0 = nb_active_refs0;
     inter_ctx->nb_active_ref1 = nb_active_refs1;
+
+    memcpy(inter_ctx->dist_ref_0, sldec->dist_ref_0, sizeof(inter_ctx->dist_ref_0));
+    memcpy(inter_ctx->dist_ref_1, sldec->dist_ref_1, sizeof(inter_ctx->dist_ref_1));
 
     ctudec_compute_refs_scaling(ctudec, sldec->pic);
 
