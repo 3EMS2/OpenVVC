@@ -552,9 +552,9 @@ rcn_attach_ctu_buff(struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s, uint8_t 
      uint16_t stride_c = stride >> 1;
      uint8_t ctb_addr_msk = (256 * 128 >> (2 * log2_ctb_s)) - 1;
 
-     ctu_binfo->y  = (OVSample *)rcn_data->y_buff  + stride + ((ctb_x&ctb_addr_msk) << log2_ctb_s);
-     ctu_binfo->cb = (OVSample *)rcn_data->cb_buff + stride_c + ((ctb_x&ctb_addr_msk) << (log2_ctb_s - 1));
-     ctu_binfo->cr = (OVSample *)rcn_data->cr_buff + stride_c + ((ctb_x&ctb_addr_msk) << (log2_ctb_s - 1));
+     ctu_binfo->y  = (OVSample *)rcn_data->y_buff  + stride + ((ctb_x & ctb_addr_msk) << log2_ctb_s);
+     ctu_binfo->cb = (OVSample *)rcn_data->cb_buff + stride_c + ((ctb_x & ctb_addr_msk) << (log2_ctb_s - 1));
+     ctu_binfo->cr = (OVSample *)rcn_data->cr_buff + stride_c + ((ctb_x & ctb_addr_msk) << (log2_ctb_s - 1));
 
      ctu_binfo->stride   = stride;
      ctu_binfo->stride_c = stride_c;//RCN_CTB_STRIDE;
