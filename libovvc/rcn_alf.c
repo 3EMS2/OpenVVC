@@ -59,7 +59,7 @@ struct ALFilterIdx
     uint8_t tr_idx;
 };
 
-static const int16_t fixed_filter_coeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF] =
+static const int8_t fixed_filter_coeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF] =
 {
     { 0,   0,   2,  -3,   1,  -4,   1,   7,  -1,   1,  -1,   5, 0 },
     { 0,   0,   0,   0,   0,  -1,   0,   1,   0,   0,  -1,   2, 0 },
