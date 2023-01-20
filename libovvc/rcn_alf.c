@@ -171,24 +171,19 @@ alf_clip(const int clip, const int32_t ref, const int32_t val0, const int32_t va
     return clip1 + clip2;
 }
 
-
 static void
 rcn_alf_init_fixed_filter_sets(RCNALF* alf)
 {
-
     for (int i = 0; i < NUM_FIXED_FILTER_SETS; i++) {
         for (int j = 0; j < MAX_NUM_ALF_CLASSES; j++) {
             for (int t = 0; t < ALF_CTB_MAX_NUM_TRANSPOSE; t++) {
+                int tmp_offset = t * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF + j * MAX_NUM_ALF_LUMA_COEFF;
                 for (int k = 0; k < MAX_NUM_ALF_LUMA_COEFF - 1; k++) {
-                    alf->filter_coeff_dec[i][t*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF+j*MAX_NUM_ALF_LUMA_COEFF+k] =
-                        fixed_filter_coeff[class_to_filter_mapping[i][j]][shuffle_lut[t][k]];
-                    alf->filter_clip_dec[i][t*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF+j*MAX_NUM_ALF_LUMA_COEFF+k] =
-                        alf_clip_lut[0];
+                    alf->filter_coeff_dec[i][tmp_offset + k] = fixed_filter_coeff[class_to_filter_mapping[i][j]][shuffle_lut[t][k]];
+                    alf->filter_clip_dec[i][tmp_offset+ k] = alf_clip_lut[0];
                 }
-                alf->filter_coeff_dec[i][t*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF+j*MAX_NUM_ALF_LUMA_COEFF+MAX_NUM_ALF_LUMA_COEFF-1] =
-                    (1 << (NUM_BITS - 1));
-                alf->filter_clip_dec[i][t*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF+j*MAX_NUM_ALF_LUMA_COEFF+MAX_NUM_ALF_LUMA_COEFF-1] =
-                    alf_clip_lut[0];
+                alf->filter_coeff_dec[i][tmp_offset + MAX_NUM_ALF_LUMA_COEFF - 1] = (1 << (NUM_BITS - 1));
+                alf->filter_clip_dec[i][tmp_offset + MAX_NUM_ALF_LUMA_COEFF - 1] = alf_clip_lut[0];
             }
         }
     }
