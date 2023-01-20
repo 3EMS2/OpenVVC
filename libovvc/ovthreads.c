@@ -86,6 +86,7 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
 
     int tile_x = (entry_idx + prms->sh->sh_slice_address) % tile_info->nb_tile_cols;
     int tile_y = (entry_idx + prms->sh->sh_slice_address) / tile_info->nb_tile_cols;
+    tile_y = OVMIN(tile_info->nb_tile_rows - 1, tile_y);
 
     einfo->tile_x = tile_x;
     einfo->tile_y = tile_y;
