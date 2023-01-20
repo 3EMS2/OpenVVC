@@ -263,7 +263,7 @@ init_cabac_lines(OVCTUDec *const ctudec, const OVPartInfo *const pinfo, uint16_t
 }
 
 static void
-slicedec_free_params(OVSliceDec *sldec)
+slicedec_unref_params(OVSliceDec *sldec)
 {   
     struct OVPS* slice_params = &sldec->active_params;
 
@@ -287,7 +287,7 @@ void
 slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
 {
     struct OVPS* slice_params = &sldec->active_params;
-    slicedec_free_params(sldec);
+    slicedec_unref_params(sldec);
 
     hlsdata_newref(&slice_params->sps_ref, dec_params->sps_ref);
     hlsdata_newref(&slice_params->pps_ref, dec_params->pps_ref);
@@ -345,9 +345,8 @@ void
 slicedec_finish_decoding(OVSliceDec *sldec)
 {
     struct SliceSynchro *slice_sync = &sldec->slice_sync;
-    OVPS *slice_params = &sldec->active_params;
 
-    slicedec_free_params(sldec);
+    slicedec_unref_params(sldec);
 
     /* There might be no NAL Unit attached to slicedec if
      * we failed before attaching NALU
@@ -1543,7 +1542,7 @@ slicedec_uninit(OVSliceDec **sldec_p)
         drv_lines_uninit(sldec);
     }
 
-    slicedec_free_params(sldec);
+    slicedec_unref_params(sldec);
 
     ov_freep(sldec_p);
 
