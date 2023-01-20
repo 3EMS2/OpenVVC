@@ -377,16 +377,11 @@ ovdec_uninit_main_thread(OVVCDec *vvcdec)
 static int
 decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
 {
-    OVNVCLReader rdr;
     OVNVCLCtx *const nvcl_ctx = &vvcdec->nvcl_ctx;
     enum OVNALUType nalu_type = nalu->type;
+    OVNVCLReader rdr;
 
     int ret;
-
-    nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
-
-    /* FIXME properly read NAL Unit header */
-    nvcl_skip_bits(&rdr, 16);
 
     switch (nalu_type) {
     case OVNALU_TRAIL:
@@ -397,6 +392,10 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
     case OVNALU_IDR_N_LP:
     case OVNALU_CRA:
     case OVNALU_GDR:
+        nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
+
+        /* FIXME properly read NAL Unit header */
+        nvcl_skip_bits(&rdr, 16);
 
         ret = nvcl_decode_nalu_sh(&rdr, nvcl_ctx, nalu_type);
 
