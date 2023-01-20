@@ -175,7 +175,7 @@ derive_poc(int poc_lsb, int log2_max_poc_lsb, int prev_poc)
     return poc_msb + poc_lsb;
 }
 
-void
+static void
 ovdpb_unref_pic(OVPicture *pic, int flags)
 {
     /* pic->frame can be NULL if context init failed */
@@ -190,7 +190,7 @@ ovdpb_unref_pic(OVPicture *pic, int flags)
     atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
 }
 
-void
+static void
 ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
 {
     /* pic->frame can be NULL if context init failed */

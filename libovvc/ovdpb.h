@@ -182,10 +182,6 @@ int ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_
 
 void ovdpb_flush_dpb(OVDPB *dpb);
 
-void ovdpb_unref_pic(OVPicture *pic, int flags);
-
-void ovdpb_release_pic(OVDPB *dpb, OVPicture *pic);
-
 int ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, struct OVPictureUnit **punit_p);
 
 int ovdpb_output_pic(OVDPB *dpb, OVFrame **out, struct OVPictureUnit **punit_p);
