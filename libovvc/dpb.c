@@ -988,11 +988,10 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         goto fail;
     }
 
-
-    /* Init picture TMVP info */
     if (!ps->sh->sh_slice_address) {
         update_pic_params(*pic_p, ps);
 
+        /* Init picture TMVP info */
         if (ps->sps->sps_temporal_mvp_enabled_flag) {
             ret = init_tmvp_info(*pic_p, ps, ovdec);
         }
