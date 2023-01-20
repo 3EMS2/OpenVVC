@@ -1308,9 +1308,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     /* FIXME Bidir only */
     slicedec_smvd_params(ctudec, prms, sldec->pic->poc);
 
-    /* FIXME entry might be check before attaching entry to CABAC so there
-     * is no need for this check
-     */
     ret = ovcabac_attach_entry(ctudec->cabac_ctx, einfo.entry_start, einfo.entry_end);
     if (ret < 0) {
         return OVVC_EINDATA;
