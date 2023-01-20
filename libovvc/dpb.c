@@ -996,9 +996,9 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         if (ps->sps->sps_temporal_mvp_enabled_flag) {
             ret = init_tmvp_info(*pic_p, ps, ovdec);
         }
+        ovpu_new_ref(&(*pic_p)->pu, ovdec->pu);
     }
 
-    ovpu_new_ref(&(*pic_p)->pu, ovdec->pu);
 
     ov_log(NULL, OVLOG_TRACE, "DPB start new picture POC: %d\n", (*pic_p)->poc);
 
