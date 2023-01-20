@@ -1461,7 +1461,6 @@ slicedec_uninit(OVSliceDec **sldec_p)
 
     ovthread_slice_sync_uninit(&sldec->slice_sync);
 
-    /*FIXME is init test */
     if (sldec->drv_lines.intra_luma_x) {
         drv_lines_uninit(sldec);
     }

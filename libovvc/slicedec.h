@@ -135,7 +135,6 @@ struct DRVLines
         IBCMV *mv;
         uint32_t *map;
     }ibc_lines;
-    /*FIXME used */
     void *inter_data;
 };
 
