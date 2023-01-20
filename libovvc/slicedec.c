@@ -1220,37 +1220,17 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
     }
 }
 
-static int
-slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms,
-                           uint16_t entry_idx)
+static void
+copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVPS *const prms)
 {
-    int ctb_addr_rs = 0;
-    int ctb_y = 0;
-    int ret;
-
-    struct RectEntryInfo einfo;
-    struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
-
-    /*FIXME handle cabac alloc or keep it on the stack ? */
-    OVCABACCtx cabac_ctx;
-    slicedec_init_rect_entry(&einfo, prms, entry_idx);
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
-    struct DRVLines drv_lines;
-    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-
-    const int nb_ctu_w = einfo.nb_ctu_w;
-    const int nb_ctu_h = einfo.nb_ctu_h;
-    
-    ctudec->cabac_ctx = &cabac_ctx;
     uint8_t nb_active_refs0 = sldec->nb_active_refs0;
     uint8_t nb_active_refs1 = sldec->nb_active_refs1;
 
     ctudec->qp_ctx.current_qp = ctudec->slice_qp;
 
     derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);
-
-    ctudec->nb_ctb_pic_w = einfo.nb_ctb_pic_w;
 
     tmvp_entry_init(ctudec, sldec, prms);
 
@@ -1305,6 +1285,33 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
     /* FIXME Bidir only */
     slicedec_smvd_params(ctudec, prms, sldec->pic->poc);
+}
+
+static int
+slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms,
+                           uint16_t entry_idx)
+{
+    int ctb_addr_rs = 0;
+    int ctb_y = 0;
+    int ret;
+
+    /*FIXME handle cabac alloc or keep it on the stack ? */
+    OVCABACCtx cabac_ctx;
+    struct DRVLines drv_lines;
+    struct RectEntryInfo einfo;
+    struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
+
+    slicedec_init_rect_entry(&einfo, prms, entry_idx);
+
+    const int nb_ctu_w = einfo.nb_ctu_w;
+    const int nb_ctu_h = einfo.nb_ctu_h;
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+
+    ctudec->nb_ctb_pic_w = einfo.nb_ctb_pic_w;
+
+    copy_init_stuff(sldec, ctudec, prms);
+
+    ctudec->cabac_ctx = &cabac_ctx;
 
     ret = ovcabac_attach_entry(ctudec->cabac_ctx, einfo.entry_start, einfo.entry_end);
     if (ret < 0) {
