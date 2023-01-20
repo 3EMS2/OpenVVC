@@ -71,9 +71,6 @@ static void ovdpb_uninit_decoded_ctus(OVPicture *const pic);
 int
 ovdpb_init(OVDPB **dpb_p, const OVPS *ps)
 {
-    #if 0
-    OVDPB *dpb = *dpb_p;
-    #endif
     int ret;
 
     *dpb_p = ov_mallocz(sizeof(**dpb_p));
@@ -96,7 +93,6 @@ ovdpb_init(OVDPB **dpb_p, const OVPS *ps)
         pic = &(*dpb_p)->pictures[j];
         ovdpb_init_decoded_ctus(pic, ps);
     }
-
 
     return 0;
 
