@@ -131,7 +131,7 @@ struct PPSInfo
 struct SHInfo
 {
     /* Entries points in  RBSP */
-    const uint8_t *rbsp_entry[256];
+    const uint8_t *rbsp_entry[257];
     uint16_t nb_entries;
 };
 

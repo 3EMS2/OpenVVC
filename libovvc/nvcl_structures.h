@@ -714,7 +714,7 @@ struct OVSH
     uint8_t sh_slice_header_extension_data_byte[8];
     uint8_t sh_entry_offset_len_minus1;
     /* FIXME find bounds on number of entry points */
-    uint32_t sh_entry_point_offset_minus1[64];
+    uint32_t sh_entry_point_offset_minus1[256];
     /* Ref pic list info */
     struct OVHRPL hrpl;
     struct RPLWeightInfo wgt_info;

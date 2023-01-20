@@ -340,7 +340,7 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
     }
 
     int nb_entries = nb_entry_points_minus1 + 1;
-    uint32_t rbsp_offset[256];
+    uint32_t rbsp_offset[257];
     const int nb_rbsp_epb = nal->nb_epb;
     const uint32_t *rbsp_epb_pos = nal->epb_pos;
     const uint8_t *const rbsp_end = nal->rbsp_data + nal->rbsp_size;

@@ -731,7 +731,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     }
 
     if (nb_entry_points_minus1) {
-        if (nb_entry_points_minus1 > 64) return -1;
+        if (nb_entry_points_minus1 > 255) return -1;
         sh->sh_entry_offset_len_minus1 = nvcl_read_u_expgolomb(rdr);
         for (i = 0; i < nb_entry_points_minus1; i++) {
             sh->sh_entry_point_offset_minus1[i] = nvcl_read_bits(rdr, sh->sh_entry_offset_len_minus1 + 1);
