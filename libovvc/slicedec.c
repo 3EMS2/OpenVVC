@@ -1242,7 +1242,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     slicedec_init_rect_entry(&einfo, prms, entry_idx);
 
     struct DRVLines drv_lines;
-    struct CCLines cc_lines[2] = {sldec->cabac_lines[0], sldec->cabac_lines[1]};
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
     const int nb_ctu_w = einfo.nb_ctu_w;
@@ -1322,7 +1321,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
                                      ctudec->slice_qp);
 
     init_lines(ctudec, sldec, &einfo, prms, ctudec->part_ctx,
-               &drv_lines, cc_lines);
+               &drv_lines, sldec->cabac_lines);
 
     ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx, log2_ctb_s, 0);
 
@@ -1341,7 +1340,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         /* New ctu line */
         ret = decode_ctu_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
 
-        cabac_line_next_line(ctudec, cc_lines);
+        cabac_line_next_line(ctudec, sldec->cabac_lines);
 
         drv_line_next_line(ctudec, &drv_lines);
 
