@@ -46,6 +46,7 @@
 #include "overror.h"
 #include "slicedec.h"
 #include "ovdec_internal.h"
+#include "ovtime.h"
 
 /* FIXME More global scope for this enum
  */
@@ -689,6 +690,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
          */
         if (nb_output) {
             OVPicture *pic = &dpb->pictures[min_idx];
+            pic->time_info.out = ovtime_ns();
             dpb->pts += dpb->nb_units_in_ticks;
             pic->frame->pts = dpb->pts;
             dpb_pic_to_frame_ref(pic, out, punit_p);
@@ -754,6 +756,7 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
 
     if (min_idx < nb_dpb_pic) {
         OVPicture *pic = &dpb->pictures[min_idx];
+        pic->time_info.out = ovtime_ns();
         dpb->pts += dpb->nb_units_in_ticks;
         pic->frame->pts = dpb->pts;
         dpb_pic_to_frame_ref(pic, out, punit_p);
@@ -949,6 +952,7 @@ update_rpl(const OVPPS *const pps,
 void
 update_pic_params(OVPicture *pic, const OVPS *const ps)
 {
+    pic->time_info.start = ovtime_ns();
     pic->frame->width  = ps->pps->pps_pic_width_in_luma_samples;
     pic->frame->height = ps->pps->pps_pic_height_in_luma_samples;
 
@@ -1224,6 +1228,9 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
         for(int i = 0; i < sync->nb_ctu_h + 1; i++){
             memset(sync->decoded_ctus_map[i], 0xFF, sync->map_w * sizeof(int64_t));
         }
+
+        pic->time_info.end = ovtime_ns();
+
         pthread_cond_broadcast(sync->ref_cnd);
         pthread_mutex_unlock(sync->ref_mtx);
     } else {

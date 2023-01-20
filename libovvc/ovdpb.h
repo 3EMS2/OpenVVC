@@ -121,6 +121,12 @@ struct OVPicture
         } internal;
     } sync;
 
+    struct {
+        uint64_t start;
+        uint64_t end;
+        uint64_t out;
+    } time_info;
+
     struct MVPlane mv_plane0;
     struct MVPlane mv_plane1;
 
