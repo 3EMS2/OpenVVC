@@ -140,6 +140,7 @@ struct OVPicture
 struct DPB
 {
    OVPicture pictures[64];
+   OVPicture *active_pic;
 
    /* FIXME new struct cvs_info
     * could permit keeping track

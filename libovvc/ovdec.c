@@ -461,11 +461,13 @@ vvc_decode_picture_unit(OVVCDec *dec, const OVPictureUnit *pu)
             goto fail;
         }
     }
+    dec->dpb->active_pic = NULL;
     ovpu_unref(&dec->pu);
     return 0;
 
 fail:
     /* Error processing if needed */
+    dec->dpb->active_pic = NULL;
     ovpu_unref(&dec->pu);
     return ret;
 }
