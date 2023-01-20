@@ -1259,12 +1259,12 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
     inter_ctx->poc = sldec->pic->poc;
     /* FIXME tmp Reset DBF */
-    memcpy(inter_ctx->rpl0, sldec->rpl0, sizeof(sldec->rpl0));
-    memcpy(inter_ctx->rpl1, sldec->rpl1, sizeof(sldec->rpl1));
 
     inter_ctx->nb_active_ref0 = nb_active_refs0;
     inter_ctx->nb_active_ref1 = nb_active_refs1;
 
+    memcpy(inter_ctx->rpl0, sldec->rpl0, sizeof(sldec->rpl0));
+    memcpy(inter_ctx->rpl1, sldec->rpl1, sizeof(sldec->rpl1));
     memcpy(inter_ctx->dist_ref_0, sldec->dist_ref_0, sizeof(inter_ctx->dist_ref_0));
     memcpy(inter_ctx->dist_ref_1, sldec->dist_ref_1, sizeof(inter_ctx->dist_ref_1));
 
