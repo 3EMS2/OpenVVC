@@ -73,7 +73,7 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
         uint8_t chroma_flag = tools->alf_cb_enabled_flag || tools->alf_cr_enabled_flag;
 
         for (int i = 0; i < tools->num_alf_aps_ids_luma; i++) {
-            alf_info->aps_alf_data[i] = &prms->aps_alf[i]->aps_alf_data;
+            alf_info->aps_alf_data[i] = prms->aps_alf[i] ? &prms->aps_alf[i]->aps_alf_data : NULL;
         }
 
         alf_info->aps_alf_data_c = prms->aps_alf_c ? &prms->aps_alf_c->aps_alf_data : NULL;
@@ -84,14 +84,18 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
             memset(alf_info->ctb_alf_params, 0, sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
         }
 
-        ctudec->rcn_funcs.alf.rcn_alf_reconstruct_coeff_APS(alf, ctudec, luma_flag, chroma_flag);
+        ctudec->rcn_funcs.alf.rcn_alf_reconstruct_coeff_APS(alf, ctudec, prms);
     }
 
+#if 0
     if (tools->cc_alf_cb_enabled_flag || tools->cc_alf_cr_enabled_flag) {
         struct ALFInfo* alf_info  = &ctudec->alf_info;
-        alf_info->aps_cc_alf_data_cb = &prms->aps_cc_alf_cb->aps_alf_data;
-        alf_info->aps_cc_alf_data_cr = &prms->aps_cc_alf_cr->aps_alf_data;
+        const OVALFData *const ccalf_data_cb = &prms->aps_cc_alf_cb->aps_alf_data;
+        const OVALFData *const ccalf_data_cr = &prms->aps_cc_alf_cr->aps_alf_data;
+        alf_info->nb_ccalf_alt_cb = ccalf_data_cb ? ccalf_data_cb->alf_cc_cb_filters_signalled_minus1 + 1 : 1;
+        alf_info->nb_ccalf_alt_cr = ccalf_data_cr ? ccalf_data_cr->alf_cc_cr_filters_signalled_minus1 + 1 : 1;
     }
+#endif
 
     struct LMCSInfo* lmcs_info   = &ctudec->lmcs_info;
     lmcs_info->lmcs_enabled_flag = ph->ph_lmcs_enabled_flag;

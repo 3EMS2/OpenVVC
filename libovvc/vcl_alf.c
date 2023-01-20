@@ -178,13 +178,12 @@ ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_
     ALFParamsCtu* alf_params_ctu = &alf_info->ctb_alf_params[ctb_rs];
 
     if (ccalf_enabled_cb) {
-        const OVALFData* alf_data = alf_info->aps_cc_alf_data_cb;
 
         int ctb_col = ctb_rs % nb_ctu_w;
         const uint8_t ctb_alf_abv = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_alf_flag_line[ctb_col] : 0;
         const uint8_t ctb_alf_lft = alf_info->left_ctb_alf_flag;
 
-        const int nb_ccalf_alt = alf_data->alf_cc_cb_filters_signalled_minus1 + 1;
+        const int nb_ccalf_alt = alf_info->nb_ccalf_alt_cb;
 
         uint8_t ctx  = (ctu_ngh_ctx & CTU_LFT_FLG) && (ctb_alf_lft & 0x8);
                 ctx += (ctu_ngh_ctx & CTU_UP_FLG ) && (ctb_alf_abv & 0x8);
@@ -202,13 +201,11 @@ ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_
     }
 
     if (ccalf_enabled_cr) {
-        const OVALFData* alf_data = alf_info->aps_cc_alf_data_cr;
-
         int ctb_col = ctb_rs % nb_ctu_w;
         const uint8_t ctb_alf_abv = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_alf_flag_line[ctb_col] : 0;
         const uint8_t ctb_alf_lft = alf_info->left_ctb_alf_flag;
 
-        const int nb_ccalf_alt = alf_data->alf_cc_cr_filters_signalled_minus1 + 1;
+        const int nb_ccalf_alt = alf_info->nb_ccalf_alt_cr;
 
         uint8_t ctx  = (ctu_ngh_ctx & CTU_LFT_FLG) && (ctb_alf_lft & 0x10);
                 ctx += (ctu_ngh_ctx & CTU_UP_FLG ) && (ctb_alf_abv & 0x10);

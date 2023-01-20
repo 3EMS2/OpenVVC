@@ -196,6 +196,7 @@ alf_init_filter_l(const struct OVALFData* alf_data, int16_t *dst_coeff, int16_t 
     int16_t tmp_clip[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
 
     int nb_coeff_min1 = 13 - 1;
+    if (!alf_data) return;
 
     int nb_filters = alf_data->alf_luma_num_filters_signalled_minus1 + 1;
     const int8_t* coeff = alf_data->alf_luma_coeff;
@@ -246,8 +247,56 @@ alf_init_filter_c(RCNALF* alf, const struct OVALFData* alf_data)
 }
 
 static void
-rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag)
+ccalf_init_filter_cb(RCNALF* alf, const struct OVALFData* alf_data)
 {
+    int nb_coeffs_min1 = 8 - 1;
+    const int nb_alternatives = alf_data->alf_cc_cb_filters_signalled_minus1 + 1;
+
+    for (int alt_idx = 0; alt_idx < nb_alternatives; ++alt_idx) {
+        const int8_t *coeff = alf_data->alf_cc_mapped_coeff[0][alt_idx];
+        const uint8_t *clip  = alf_data->alf_chroma_clip_idx[alt_idx];
+        for (int coeff_idx = 0; coeff_idx < nb_coeffs_min1; ++coeff_idx) {
+            int clip_idx = alf_data->alf_chroma_clip_flag ? clip[coeff_idx] : 0;
+            //alf->coeff_c[alt_idx][coeff_idx] = coeff[coeff_idx];
+            //alf->clip_c [alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
+
+            alf->ccalf_coef_cb[alt_idx][coeff_idx] = coeff[coeff_idx];
+            alf->ccalf_clip_cb[alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
+        }
+        alf->ccalf_coef_cb[alt_idx][nb_coeffs_min1] = 1 << (NUM_BITS - 1);
+        alf->ccalf_clip_cb[alt_idx][nb_coeffs_min1] = 1 << BITDEPTH;
+    }
+}
+
+static void
+ccalf_init_filter_cr(RCNALF* alf, const struct OVALFData* alf_data)
+{
+    int nb_coeffs_min1 = 8 - 1;
+    const int nb_alternatives = alf_data->alf_cc_cr_filters_signalled_minus1 + 1;
+
+    for (int alt_idx = 0; alt_idx < nb_alternatives; ++alt_idx) {
+        const int8_t *coeff = alf_data->alf_cc_mapped_coeff[1][alt_idx];
+        const uint8_t *clip  = alf_data->alf_chroma_clip_idx[alt_idx];
+        for (int coeff_idx = 0; coeff_idx < nb_coeffs_min1; ++coeff_idx) {
+            int clip_idx = alf_data->alf_chroma_clip_flag ? clip[coeff_idx] : 0;
+            //alf->coeff_c[alt_idx][coeff_idx] = coeff[coeff_idx];
+            //alf->clip_c [alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
+
+            alf->ccalf_coef_cr[alt_idx][coeff_idx] = coeff[coeff_idx];
+            alf->ccalf_clip_cr[alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
+        }
+        alf->ccalf_coef_cr[alt_idx][nb_coeffs_min1] = 1 << (NUM_BITS - 1);
+        alf->ccalf_clip_cr[alt_idx][nb_coeffs_min1] = 1 << BITDEPTH;
+    }
+}
+
+static void
+rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, const OVPS *const prms)
+{
+    struct ToolsInfo *tools = &ctudec->tools;
+    uint8_t luma_flag   = tools->alf_luma_enabled_flag;
+    uint8_t chroma_flag = tools->alf_cb_enabled_flag || tools->alf_cr_enabled_flag;
+
     if (luma_flag) {
         rcn_alf_init_fixed_filter_sets(alf);
         for (int i = 0; i < ctudec->tools.num_alf_aps_ids_luma; i++) {
@@ -262,6 +311,20 @@ rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_
         const struct OVALFData* alf_data_c = ctudec->alf_info.aps_alf_data_c;
         if (alf_data_c) {
             alf_init_filter_c(alf, alf_data_c);
+        }
+    }
+
+    if (tools->cc_alf_cb_enabled_flag || tools->cc_alf_cr_enabled_flag) {
+        const OVALFData *const ccalf_data_cb = prms->aps_cc_alf_cb ? &prms->aps_cc_alf_cb->aps_alf_data : NULL;
+        const OVALFData *const ccalf_data_cr = prms->aps_cc_alf_cr ? &prms->aps_cc_alf_cr->aps_alf_data : NULL;
+        if (ccalf_data_cb) {
+            ctudec->alf_info.nb_ccalf_alt_cb = ccalf_data_cb->alf_cc_cb_filters_signalled_minus1 + 1;
+            ccalf_init_filter_cb(alf, ccalf_data_cb);
+        }
+
+        if (ccalf_data_cr) {
+            ctudec->alf_info.nb_ccalf_alt_cr = ccalf_data_cr->alf_cc_cr_filters_signalled_minus1 + 1;
+            ccalf_init_filter_cr(alf, ccalf_data_cr);
         }
     }
 }
@@ -1578,7 +1641,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             }
 
             if (alf_params_ctu->ctb_alf_flag & 0x8) {
-                const OVALFData* alf_data = alf_info->aps_cc_alf_data_cb;
+                //const OVALFData* alf_data = alf_info->aps_cc_alf_data_cb;
 
                 const uint8_t filt_idx = alf_params_ctu->cb_ccalf;
 
@@ -1586,7 +1649,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                 OVSample*  src_luma = &src[0][fb.filter_region_offset[0]];
                 OVSample*  dst_chroma = (OVSample*) frame->data[1] + pos_offset;
 
-                const int8_t *filt_coeff = alf_data->alf_cc_mapped_coeff[0][filt_idx];
+                //const int8_t *filt_coeff = alf_data->alf_cc_mapped_coeff[0][filt_idx];
+                const int8_t *filt_coeff = alf_info->rcn_alf.ccalf_coef_cb[filt_idx];
 
                 ctudec->rcn_funcs.alf.ccalf[req_vb](dst_chroma, src_luma, stride_dst,
                                                     stride_src, blk_dst, filt_coeff,
@@ -1612,7 +1676,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
 
             if (alf_params_ctu->ctb_alf_flag & 0x10) {
-                const OVALFData* alf_data = alf_info->aps_cc_alf_data_cr;
+                //const OVALFData* alf_data = alf_info->aps_cc_alf_data_cr;
 
                 const uint8_t filt_idx = alf_params_ctu->cr_ccalf;
 
@@ -1621,7 +1685,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                 OVSample*  src_luma = &src[0][fb.filter_region_offset[0]];
                 OVSample*  dst_chroma = (OVSample*) frame->data[2] + pos_offset;
 
-                const int8_t *filt_coeff = alf_data->alf_cc_mapped_coeff[1][filt_idx];
+                //const int8_t *filt_coeff = alf_data->alf_cc_mapped_coeff[1][filt_idx];
+                const int8_t *filt_coeff = alf_info->rcn_alf.ccalf_coef_cr[filt_idx];
 
                 ctudec->rcn_funcs.alf.ccalf[req_vb](dst_chroma, src_luma, stride_dst,
                                                     stride_src, blk_dst, filt_coeff,

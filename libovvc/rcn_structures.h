@@ -57,6 +57,7 @@ struct OVLMCSData;
 struct LMCSInfo;
 struct ISPTUInfo;
 struct TUInfo;
+struct OVPS;
 
 
 enum RCNSizes
@@ -334,7 +335,7 @@ struct ALFFunctions{
     CCALFFilterBlkFunc ccalf[2];
     void (*rcn_alf_filter_line)(struct OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y);
 
-    void (*rcn_alf_reconstruct_coeff_APS)(struct RCNALF* alf, struct OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag);
+    void (*rcn_alf_reconstruct_coeff_APS)(struct RCNALF* alf, struct OVCTUDec *const ctudec, const struct OVPS *const prms);
 
 };
 

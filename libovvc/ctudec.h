@@ -190,8 +190,8 @@ struct ALFInfo
 {
     const struct OVALFData* aps_alf_data[8];
     const struct OVALFData* aps_alf_data_c;
-    const struct OVALFData* aps_cc_alf_data_cb;
-    const struct OVALFData* aps_cc_alf_data_cr;
+    uint8_t nb_ccalf_alt_cb;
+    uint8_t nb_ccalf_alt_cr;
 
     //TODO: use width in ctu of image (or tile) instead of max value 32.
     uint8_t ctb_alf_flag_line[256];
