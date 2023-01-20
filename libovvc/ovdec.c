@@ -400,6 +400,9 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         ret = nvcl_decode_nalu_sh(&rdr, nvcl_ctx, nalu_type);
 
         if (ret < 0) {
+            if (vvcdec->dpb->active_pic) {
+                ovdpb_report_decoded_frame(vvcdec->dpb->active_pic);
+            }
             return ret;
         } else {
             /* Select the first available slice decoder, or wait until one is available */

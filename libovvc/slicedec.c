@@ -362,18 +362,8 @@ slicedec_finish_decoding(OVSliceDec *sldec)
 
     pthread_mutex_lock(&slice_sync->gnrl_mtx);
 
-    OVPicture *slice_pic = sldec->pic;
-
-    /* FIXME do we need general mutex for those ? */
-    if (slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)) {
-        ov_log(NULL, OVLOG_TRACE, "Subdec Remove DECODING_PIC_FLAG POC: %d\n", slice_pic->poc);
-        ovdpb_unref_pic(slice_pic, OV_IN_DECODING_PIC_FLAG);
-    } else {
-        ov_log(NULL, OVLOG_ERROR, "Sub-decoder finished but no corresponding picture where to "
-               "be found.\n");
-    }
-
     ovdpb_unmark_ref_pic_lists(sldec->slice_type, sldec);
+
     slice_sync->active_state = IDLE;
 
     sldec->nb_refs0 = 0;

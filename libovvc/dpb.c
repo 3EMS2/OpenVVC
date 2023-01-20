@@ -1178,14 +1178,22 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
 {
     struct PictureSynchro* sync = &pic->sync;
 
-    atomic_store(sync->func, (uintptr_t) NULL);
+    uint16_t nb_slices = atomic_fetch_add_explicit(sync->nb_slices, -1, memory_order_acq_rel);
 
-    pthread_mutex_lock(sync->ref_mtx);
-    for(int i = 0; i < sync->nb_ctu_h; i++){
-        memset(sync->decoded_ctus_map[i], 0xFF, sync->map_w * sizeof(int64_t));
+    if (!nb_slices) {
+        ovdpb_unref_pic(pic, OV_IN_DECODING_PIC_FLAG);
+
+        atomic_store(sync->func, (uintptr_t) NULL);
+
+        pthread_mutex_lock(sync->ref_mtx);
+        for(int i = 0; i < sync->nb_ctu_h; i++){
+            memset(sync->decoded_ctus_map[i], 0xFF, sync->map_w * sizeof(int64_t));
+        }
+        pthread_cond_broadcast(sync->ref_cnd);
+        pthread_mutex_unlock(sync->ref_mtx);
+    } else {
+        ovdpb_unref_pic(pic, 0);
     }
-    pthread_cond_broadcast(sync->ref_cnd);
-    pthread_mutex_unlock(sync->ref_mtx);
 }
 
 static void
