@@ -1048,7 +1048,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
             int ref_poc = inter_ctx->rpl0[ref]->poc;
             int ref_type = ST_REF;
             uint8_t is_lterm = (ref_type == LT_REF);
-            if(ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx0 == -1)  && !is_lterm) {
+            if (ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx0 == -1)  && !is_lterm) {
                 forw_poc = ref_poc;
                 ref_idx0 = ref;
             }
@@ -1059,7 +1059,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
             int ref_poc = inter_ctx->rpl1[ref]->poc;
             int ref_type = ST_REF;
             uint8_t is_lterm = (ref_type == LT_REF);
-            if(ref_poc > cur_poc && (ref_poc < back_poc || ref_idx1 == -1)  && !is_lterm) {
+            if (ref_poc > cur_poc && (ref_poc < back_poc || ref_idx1 == -1)  && !is_lterm) {
                 back_poc = ref_poc;
                 ref_idx1 = ref;
             }
@@ -1076,7 +1076,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
                 int ref_poc = inter_ctx->rpl0[ref]->poc;
                 int ref_type = ST_REF;
                 uint8_t is_lterm = (ref_type == LT_REF);
-                if(ref_poc > cur_poc && (ref_poc < back_poc || ref_idx0 == -1)  && !is_lterm) {
+                if (ref_poc > cur_poc && (ref_poc < back_poc || ref_idx0 == -1)  && !is_lterm) {
                     back_poc = ref_poc;
                     ref_idx0 = ref;
                 }
@@ -1087,14 +1087,14 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
                 int ref_poc = inter_ctx->rpl1[ref]->poc;
                 int ref_type = ST_REF;
                 uint8_t is_lterm = (ref_type == LT_REF);
-                if(ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx1 == -1)  && !is_lterm) {
+                if (ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx1 == -1)  && !is_lterm) {
                     forw_poc = ref_poc;
                     ref_idx1 = ref;
                 }
             }
         }
 
-        if (forw_poc < cur_poc && back_poc > cur_poc){
+        if (forw_poc < cur_poc && back_poc > cur_poc) {
             ctudec->smvd_enabled = 1;
             ctudec->drv_ctx.inter_ctx.ref_smvd_idx0 = ref_idx0;
             ctudec->drv_ctx.inter_ctx.ref_smvd_idx1 = ref_idx1;
