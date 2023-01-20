@@ -418,7 +418,8 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc, uint8_t ph_pic_ou
     pic->cvs_id = dpb->cvs_id;
     pic->frame->poc = poc;
 
-    ovdpb_reset_decoded_ctus(pic);
+    if (pic != dpb->active_pic)
+        ovdpb_reset_decoded_ctus(pic);
 
 end:
     *pic_p = pic;
@@ -1179,13 +1180,13 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
 
     uint16_t nb_slices = atomic_fetch_add_explicit(sync->nb_slices, -1, memory_order_acq_rel);
 
-    if (!nb_slices) {
+    if (!(nb_slices - 1)) {
         ovdpb_unref_pic(pic, OV_IN_DECODING_PIC_FLAG);
 
         atomic_store(sync->func, (uintptr_t) NULL);
 
         pthread_mutex_lock(sync->ref_mtx);
-        for(int i = 0; i < sync->nb_ctu_h; i++){
+        for(int i = 0; i < sync->nb_ctu_h + 1; i++){
             memset(sync->decoded_ctus_map[i], 0xFF, sync->map_w * sizeof(int64_t));
         }
         pthread_cond_broadcast(sync->ref_cnd);
