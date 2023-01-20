@@ -539,8 +539,6 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
 
     struct PictureSynchro* sync = &ref_pic->sync;
 
-    sync->nb_slices = &sync->internal.nb_slices;
-
     atomic_init(sync->nb_slices, 1);
             ovdpb_report_decoded_frame(ref_pic);
 
@@ -1004,7 +1002,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
      */
     ret = ovdpb_init_current_pic(dpb, pic_p, poc, ps->ph->ph_pic_output_flag);
     if (ret < 0) {
-        goto fail;
+        goto failnoclear;
     }
 
     if (!ps->sh->sh_slice_address) {
@@ -1082,6 +1080,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         }
     }
 
+    return ret;
 fail:
     ovdpb_clear_refs(dpb);
 
@@ -1149,6 +1148,7 @@ ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
     sync->func = &sync->internal.sync_function;
     sync->ref_mtx = &sync->internal.ref_mtx;
     sync->ref_cnd = &sync->internal.ref_cnd;
+    sync->nb_slices = &sync->internal.nb_slices;
 
     atomic_init(sync->func, (uintptr_t)&ovdpb_synchro_ref_decoded_ctus);
 }

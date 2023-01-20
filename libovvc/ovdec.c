@@ -415,6 +415,9 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
 
             if (ret < 0) {
                 ov_log(NULL, OVLOG_ERROR, "Error in slice init.\n");
+                if (!sldec->pic && vvcdec->dpb->active_pic) {
+                    ovdpb_report_decoded_frame(vvcdec->dpb->active_pic);
+                }
                 slicedec_finish_decoding(sldec);
                 goto failvcl;
             }
