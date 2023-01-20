@@ -978,7 +978,6 @@ find_tmvp_collocated_ref(const OVSliceDec *const sldec, const OVPS *const ps)
 static void
 tmvp_entry_init(OVCTUDec *ctudec, const OVSliceDec *const sldec, const OVPS *const ps)
 {
-    /* FIXME try to remove ctu decoder reference from inter context */
     struct VVCTMVP *tmvp_ctx = &ctudec->drv_ctx.inter_ctx.tmvp_ctx;
     struct InterDRVCtx *inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
@@ -988,6 +987,7 @@ tmvp_entry_init(OVCTUDec *ctudec, const OVSliceDec *const sldec, const OVPS *con
     ctudec->rcn_ctx.ctudec = ctudec;
     tmvp_ctx->col_ref = col_ref;
 
+    /* FIXME try to remove ctu decoder reference from inter context */
     tmvp_ctx->ctudec = ctudec;
 
     tmvp_ctx->plane0 = &active_pic->mv_plane0;
