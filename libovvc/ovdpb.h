@@ -112,8 +112,10 @@ struct OVPicture
         pthread_mutex_t *ref_mtx;
         pthread_cond_t  *ref_cnd;
         atomic_uintptr_t *func;
+        atomic_uint *nb_slices;
         struct {
             atomic_uintptr_t sync_function;
+            atomic_uint nb_slices;
             pthread_mutex_t ref_mtx;
             pthread_cond_t  ref_cnd;
         } internal;

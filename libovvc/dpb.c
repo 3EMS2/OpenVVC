@@ -939,6 +939,22 @@ update_pic_params(OVPicture *pic, const OVPS *const ps)
     pic->scale_info.chroma_ver_col_flag = ps->sps->sps_chroma_vertical_collocated_flag;
 }
 
+void
+init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu)
+{
+
+    struct PictureSynchro* sync = &pic->sync;
+
+    uint16_t nb_slices = 0;
+    for (int i = 0; i < pu->nb_nalus; ++i) {
+        nb_slices += pu->nalus[i]->type < OVNALU_OPI;
+    }
+
+    sync->nb_slices = &sync->internal.nb_slices;
+
+    atomic_init(sync->nb_slices, nb_slices);
+}
+
 int
 ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t nalu_type,
                    OVSliceDec *const sldec, const OVVCDec *ovdec)
@@ -997,6 +1013,8 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
             ret = init_tmvp_info(*pic_p, ps, ovdec);
         }
         ovpu_new_ref(&(*pic_p)->pu, ovdec->pu);
+
+        init_nb_slices(*pic_p, ovdec->pu);
     }
 
 
