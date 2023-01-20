@@ -666,7 +666,7 @@ static void print_pic_time(const OVPicture *const pic)
     uint64_t out = pic->time_info.out;
     int dec_time = NS_TO_US((int64_t)end - start);
 
-    printf("POC : %d  dec_time : %d us\n", pic->poc, dec_time);
+    //printf("POC : %d  dec_time : %d us\n", pic->poc, dec_time);
 }
 
 int
