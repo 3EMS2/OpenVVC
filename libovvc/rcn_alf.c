@@ -236,24 +236,19 @@ alf_init_filter_l(const struct OVALFData* alf_data, int16_t *dst_coeff, int16_t 
 static void
 alf_init_filter_c(RCNALF* alf, const struct OVALFData* alf_data)
 {
-    int factor = 1 << (NUM_BITS - 1);
-    int num_coeff = 7 ;
-    int num_coeff_minus1 = num_coeff - 1;
-    const int num_alts = alf_data->alf_chroma_num_alt_filters_minus1 + 1;
+    int nb_coeffs_min1 = 7 - 1;
+    const int nb_alternatives = alf_data->alf_chroma_num_alt_filters_minus1 + 1;
 
-    int16_t* coeff;
-    int16_t* clip;
-
-    for (int alt_idx = 0; alt_idx < num_alts; ++ alt_idx) {
-        coeff = (int16_t*) alf_data->alf_chroma_coeff[alt_idx];
-        clip = (int16_t*) alf_data->alf_chroma_clip_idx[alt_idx];
-        for (int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx) {
-            int clipIdx = alf_data->alf_chroma_clip_flag ? clip[coeffIdx] : 0;
-            alf->chroma_coeff_final[alt_idx][coeffIdx] = coeff[coeffIdx];
-            alf->chroma_clip_final[alt_idx][coeffIdx] = alf_clip_lut[clipIdx];
+    for (int alt_idx = 0; alt_idx < nb_alternatives; ++alt_idx) {
+        int16_t *coeff = (int16_t*) alf_data->alf_chroma_coeff[alt_idx];
+        int16_t *clip  = (int16_t*) alf_data->alf_chroma_clip_idx[alt_idx];
+        for (int coeff_idx = 0; coeff_idx < nb_coeffs_min1; ++coeff_idx) {
+            int clip_idx = alf_data->alf_chroma_clip_flag ? clip[coeff_idx] : 0;
+            alf->chroma_coeff_final[alt_idx][coeff_idx] = coeff[coeff_idx];
+            alf->chroma_clip_final[alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
         }
-        alf->chroma_coeff_final[alt_idx][num_coeff_minus1] = factor;
-        alf->chroma_clip_final[alt_idx][num_coeff_minus1] = alf_clip_lut[0];
+        alf->chroma_coeff_final[alt_idx][nb_coeffs_min1] = 1 << (NUM_BITS - 1);
+        alf->chroma_clip_final[alt_idx][nb_coeffs_min1] = 1 << BITDEPTH;
     }
 }
 
