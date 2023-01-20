@@ -423,7 +423,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     int nb_slices_subpic = 1;
     if (sps->sps_subpic_info_present_flag) {
         sh->sh_subpic_id = nvcl_read_bits(rdr, sps->sps_subpic_id_len_minus1 + 1);
-        nb_slices_subpic = 0;//pps->pps_num_slices_in_pic_minus1 + 1;
+        nb_slices_subpic = pps->pps_num_slices_in_pic_minus1 + 1;
     } else {
         nb_slices_subpic = pps->pps_num_slices_in_pic_minus1 + 1;
     }

@@ -1015,6 +1015,7 @@ init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu)
     sync->nb_slices = &sync->internal.nb_slices;
 
     atomic_init(sync->nb_slices, nb_slices);
+    ov_log(NULL, OVLOG_WARNING, "BEGIN pic : %d, nb slices : %d\n", pic->poc, nb_slices);
 }
 
 int
@@ -1242,8 +1243,11 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
     struct PictureSynchro* sync = &pic->sync;
 
     uint16_t nb_slices = atomic_fetch_add_explicit(sync->nb_slices, -1, memory_order_acq_rel);
+         ov_log(NULL, OVLOG_TRACE, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
 
     if (!(nb_slices - 1)) {
+         ov_log(NULL, OVLOG_WARNING, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
+        //printf( "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
         ovdpb_unref_pic(pic, OV_IN_DECODING_PIC_FLAG);
         pic->flags &= OV_OUTPUT_PIC_FLAG;
 
@@ -1259,6 +1263,7 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
         pthread_cond_broadcast(sync->ref_cnd);
         pthread_mutex_unlock(sync->ref_mtx);
     } else {
+         ov_log(NULL, OVLOG_WARNING, "END2 pic : %d, nb slices : %d\n", pic->poc, nb_slices);
         ovdpb_unref_pic(pic, 0);
     }
 }
