@@ -746,7 +746,7 @@ typedef struct OVALFData
 
     uint8_t alf_cc_cb_filters_signalled_minus1;
     uint8_t alf_cc_cr_filters_signalled_minus1;
-    int16_t alf_cc_mapped_coeff[2][MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
+    int8_t alf_cc_mapped_coeff[2][MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
 } OVALFData;
 
 typedef struct OVLMCSData

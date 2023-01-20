@@ -744,7 +744,7 @@ rcn_alf_derive_classification(RCNALF *alf, OVSample *const rcn_img, const int st
 
 static void
 cc_alf_filterBlk(OVSample * chroma_dst, OVSample * luma_src, const int chr_stride, const int luma_stride,
-                 const Area blk_dst, const int16_t *filt_coeff,
+                 const Area blk_dst, const int8_t *filt_coeff,
                  const int vbCTUHeight, int vbPos)
 {
     const int clsSizeY           = 4;
@@ -810,7 +810,7 @@ cc_alf_filterBlk(OVSample * chroma_dst, OVSample * luma_src, const int chr_strid
 
 static void
 cc_alf_filterBlkVB(OVSample * chroma_dst, OVSample * luma_src, const int chr_stride, const int luma_stride,
-                   const Area blk_dst, const int16_t *filt_coeff,
+                   const Area blk_dst, const int8_t *filt_coeff,
                    const int vbCTUHeight, int vbPos)
 {
     const int clsSizeY           = 4;
@@ -1586,7 +1586,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                 OVSample*  src_luma = &src[0][fb.filter_region_offset[0]];
                 OVSample*  dst_chroma = (OVSample*) frame->data[1] + pos_offset;
 
-                const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[0][filt_idx];
+                const int8_t *filt_coeff = alf_data->alf_cc_mapped_coeff[0][filt_idx];
 
                 ctudec->rcn_funcs.alf.ccalf[req_vb](dst_chroma, src_luma, stride_dst,
                                                     stride_src, blk_dst, filt_coeff,
@@ -1621,7 +1621,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                 OVSample*  src_luma = &src[0][fb.filter_region_offset[0]];
                 OVSample*  dst_chroma = (OVSample*) frame->data[2] + pos_offset;
 
-                const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[1][filt_idx];
+                const int8_t *filt_coeff = alf_data->alf_cc_mapped_coeff[1][filt_idx];
 
                 ctudec->rcn_funcs.alf.ccalf[req_vb](dst_chroma, src_luma, stride_dst,
                                                     stride_src, blk_dst, filt_coeff,
