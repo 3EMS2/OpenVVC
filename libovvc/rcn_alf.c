@@ -192,42 +192,35 @@ rcn_alf_init_fixed_filter_sets(RCNALF* alf)
 static void
 alf_init_filter_l(const struct OVALFData* alf_data, int16_t *dst_coeff, int16_t *dst_clip)
 {
-    int16_t coeff_final[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
-    int16_t clip_final[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
-    int factor = 1 << (NUM_BITS - 1);
-    int num_coeff = 13;
-    int num_coeff_minus1 = num_coeff - 1;
+    int16_t tmp_coeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+    int16_t tmp_clip[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
 
-    int num_filters = alf_data->alf_luma_num_filters_signalled_minus1 + 1 ;
-    int16_t* coeff ;
-    int16_t* clip;
+    int nb_coeff_min1 = 13 - 1;
 
-    coeff = (int16_t*) alf_data->alf_luma_coeff;
-    clip = (int16_t*) alf_data->alf_luma_clip_idx;
-
-    for (int filter_idx = 0; filter_idx < num_filters; filter_idx++) {
-        coeff[filter_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
-    }
+    int nb_filters = alf_data->alf_luma_num_filters_signalled_minus1 + 1;
+    int16_t* coeff = (int16_t*) alf_data->alf_luma_coeff;
+    int16_t* clip = (int16_t*) alf_data->alf_luma_clip_idx;
 
     for (int class_idx = 0; class_idx < MAX_NUM_ALF_CLASSES; class_idx++) {
         int filter_idx = alf_data->alf_luma_coeff_delta_idx[class_idx];
-        for (int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx) {
-            coeff_final[class_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = coeff[filter_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx];
+        int filter_offset = filter_idx * MAX_NUM_ALF_LUMA_COEFF;
+        int class_offset  = class_idx  * MAX_NUM_ALF_LUMA_COEFF;
+        for (int coeff_idx = 0; coeff_idx < nb_coeff_min1; ++coeff_idx) {
+            int clip_idx = alf_data->alf_luma_clip_flag ? clip[filter_offset + coeff_idx] : 0;
+            tmp_coeff[class_offset + coeff_idx] = coeff[filter_offset + coeff_idx];
+            tmp_clip[class_offset + coeff_idx] = alf_clip_lut[clip_idx];
         }
-        coeff_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
-        clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf_clip_lut[0];
-        for (int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx) {
-            int clipIdx = alf_data->alf_luma_clip_flag ? clip [filter_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] : 0;
-            clip_final[class_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = alf_clip_lut[clipIdx];
-        }
-        clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf_clip_lut[0];
+        tmp_coeff[class_offset + nb_coeff_min1] = 1 << (NUM_BITS - 1);
+        tmp_clip[class_offset + nb_coeff_min1] = 1 << BITDEPTH;
     }
 
     for (int j = 0; j < MAX_NUM_ALF_CLASSES; j++) {
+        int class_offset = j * MAX_NUM_ALF_LUMA_COEFF;
         for (int k = 0; k < MAX_NUM_ALF_LUMA_COEFF; k++) {
             for (int t = 0; t < ALF_CTB_MAX_NUM_TRANSPOSE; t++) {
-                dst_coeff[t*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF+j*MAX_NUM_ALF_LUMA_COEFF+k] = coeff_final[j*MAX_NUM_ALF_LUMA_COEFF+shuffle_lut[t][k]];
-                dst_clip[t*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF+j*MAX_NUM_ALF_LUMA_COEFF+k] = clip_final[j*MAX_NUM_ALF_LUMA_COEFF+shuffle_lut[t][k]];
+                int tr_offset = t * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF;
+                dst_coeff[tr_offset + class_offset + k] = tmp_coeff[class_offset + shuffle_lut[t][k]];
+                dst_clip[tr_offset + class_offset + k] = tmp_clip[class_offset + shuffle_lut[t][k]];
             }
         }
     }
