@@ -982,18 +982,19 @@ tmvp_entry_init(OVCTUDec *ctudec, const OVSliceDec *const sldec, const OVPS *con
     struct VVCTMVP *tmvp_ctx = &ctudec->drv_ctx.inter_ctx.tmvp_ctx;
     struct InterDRVCtx *inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
+    const OVPicture *const col_ref = find_tmvp_collocated_ref(sldec, ps);
     const OVPicture *const active_pic = sldec->pic;
-    const OVPicture *const collocated_ref = find_tmvp_collocated_ref(sldec, ps);
-    tmvp_ctx->col_ref = collocated_ref;
 
     ctudec->rcn_ctx.ctudec = ctudec;
+    tmvp_ctx->col_ref = col_ref;
+
     tmvp_ctx->ctudec = ctudec;
 
     tmvp_ctx->plane0 = &active_pic->mv_plane0;
     tmvp_ctx->plane1 = &active_pic->mv_plane1;
 
-    tmvp_ctx->col_plane0 = collocated_ref ? &collocated_ref->mv_plane0 : NULL;
-    tmvp_ctx->col_plane1 = collocated_ref ? &collocated_ref->mv_plane1 : NULL;
+    tmvp_ctx->col_plane0 = col_ref ? &col_ref->mv_plane0 : NULL;
+    tmvp_ctx->col_plane1 = col_ref ? &col_ref->mv_plane1 : NULL;
 
     /* FIXME used by other tools */
     memcpy(inter_ctx->dist_ref_0, sldec->dist_ref_0, sizeof(inter_ctx->dist_ref_0));
