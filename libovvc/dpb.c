@@ -752,7 +752,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
                    const struct OVRPL *const rpl1, OVSliceDec *const sldec)
 {
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    uint32_t poc = dpb->poc;
+    int32_t poc = dpb->poc;
     int i, ret;
     OVPicture *current_pic = NULL;
 
@@ -965,7 +965,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     const OVSH  *const sh  = ps->sh;
     const OVPH  *const ph  = ps->ph;
     int ret = 0;
-    uint32_t poc = dpb->poc;
+    int32_t poc = dpb->poc;
     uint8_t cra_flag = 0;
     uint8_t idr_flag = 0;
 
@@ -990,7 +990,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
             }
             poc += ps->ph->ph_pic_order_cnt_lsb;
         } else {
-            uint32_t last_poc = dpb->poc;
+            int32_t last_poc = dpb->poc;
             poc = derive_poc(ps->ph->ph_pic_order_cnt_lsb,
                              ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
                              last_poc);

@@ -134,7 +134,7 @@ struct OVPicture
     * Associated : this avoid confusing ref with same POC
     * when the refresh period is shorter than DPB
     */
-    uint16_t cvs_id;
+    int16_t cvs_id;
 };
 
 /* Decoded Picture Buffer
@@ -156,8 +156,8 @@ struct DPB
     * It enables to reset the POC of pictures
     * when encountering IDR Picture Units
     */
-   uint16_t cvs_id;
-   uint32_t poc;
+   int16_t cvs_id;
+   int32_t poc;
 
    /* DPB status info
     * to be used to determine whether the decoder is waiting
