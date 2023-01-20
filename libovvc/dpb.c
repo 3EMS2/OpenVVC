@@ -105,10 +105,10 @@ void
 ovdpb_uninit(OVDPB **dpb_p)
 {
     if (*dpb_p) {
-        /* TODO
-         * release all pics
-         */
+
+        /* FIXME wait for picture to be released by decoder */
         ovdpb_flush_dpb(*dpb_p);
+
         dpbpriv_uninit_framepool(&(*dpb_p)->internal);
 
         ov_freep(dpb_p);

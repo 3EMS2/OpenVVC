@@ -1264,7 +1264,6 @@ sbt_tree(OVCTUDec *const ctu_dec,
          unsigned int log2_tb_w, unsigned int log2_tb_h,
          uint8_t sbt_type, CUFlags cu_flags, struct TUInfo *tu_info)
 {
-    /* FIXME remove this if zeroing is done by transform */
     uint8_t sbt_pos = !!(sbt_type & 0x80);
 
     uint8_t sbt_mode = sbt_type & 0x7F;

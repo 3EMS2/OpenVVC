@@ -2755,7 +2755,6 @@ mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int rpr_scale_h1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][0];
     int rpr_scale_v1 = inter_ctx->inter_params.scale_fact_rpl1[ref_idx1][1];
 
-
     int type0 = 0;
     int type1 = 1;
     if (gpm_ctx) {
