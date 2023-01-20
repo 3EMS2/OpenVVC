@@ -659,6 +659,16 @@ dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst, struct OVPictureUnit **punit
     ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
 }
 
+static void print_pic_time(const OVPicture *const pic)
+{
+    uint64_t start = pic->time_info.start;
+    uint64_t end = pic->time_info.end;
+    uint64_t out = pic->time_info.out;
+    int dec_time = NS_TO_US((int64_t)end - start);
+
+    printf("POC : %d  dec_time : %d us\n", pic->poc, dec_time);
+}
+
 int
 ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
 {
@@ -691,6 +701,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
         if (nb_output) {
             OVPicture *pic = &dpb->pictures[min_idx];
             pic->time_info.out = ovtime_ns();
+            print_pic_time(pic);
             dpb->pts += dpb->nb_units_in_ticks;
             pic->frame->pts = dpb->pts;
             dpb_pic_to_frame_ref(pic, out, punit_p);
@@ -757,6 +768,7 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
     if (min_idx < nb_dpb_pic) {
         OVPicture *pic = &dpb->pictures[min_idx];
         pic->time_info.out = ovtime_ns();
+        print_pic_time(pic);
         dpb->pts += dpb->nb_units_in_ticks;
         pic->frame->pts = dpb->pts;
         dpb_pic_to_frame_ref(pic, out, punit_p);

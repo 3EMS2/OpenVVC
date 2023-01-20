@@ -125,6 +125,7 @@ struct OVPicture
         uint64_t start;
         uint64_t end;
         uint64_t out;
+        //uint64_t release;
     } time_info;
 
     struct MVPlane mv_plane0;
