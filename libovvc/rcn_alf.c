@@ -190,7 +190,7 @@ rcn_alf_init_fixed_filter_sets(RCNALF* alf)
 }
 
 static void
-alf_init_filter_l(RCNALF* alf, const struct OVALFData* alf_data, int16_t *dst_coeff, int16_t *dst_clip)
+alf_init_filter_l(const struct OVALFData* alf_data, int16_t *dst_coeff, int16_t *dst_clip)
 {
     int16_t coeff_final[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
     int16_t clip_final[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
@@ -265,7 +265,7 @@ rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_
         for (int i = 0; i < ctudec->tools.num_alf_aps_ids_luma; i++) {
             const struct OVALFData* alf_data = ctudec->alf_info.aps_alf_data[i];
 
-            alf_init_filter_l(alf, alf_data, alf->filter_coeff_dec[NUM_FIXED_FILTER_SETS + i], 
+            alf_init_filter_l(alf_data, alf->filter_coeff_dec[NUM_FIXED_FILTER_SETS + i],
                               alf->filter_clip_dec[NUM_FIXED_FILTER_SETS + i]);
         }
     }
