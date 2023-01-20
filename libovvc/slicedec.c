@@ -1025,7 +1025,7 @@ init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo
 static void
 slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc)
 {
-    const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     ctudec->smvd_enabled = 0;
 
     if (prms->sps->sps_smvd_enabled_flag && !inter_ctx->tmvp_ctx.ldc
@@ -1090,9 +1090,9 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
         }
 
         if (forw_poc < cur_poc && back_poc > cur_poc) {
+            inter_ctx->ref_smvd_idx0 = ref_idx0;
+            inter_ctx->ref_smvd_idx1 = ref_idx1;
             ctudec->smvd_enabled = 1;
-            ctudec->drv_ctx.inter_ctx.ref_smvd_idx0 = ref_idx0;
-            ctudec->drv_ctx.inter_ctx.ref_smvd_idx1 = ref_idx1;
         }
     }
 }
