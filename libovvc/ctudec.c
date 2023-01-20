@@ -65,11 +65,12 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
         }
     }
 
-    //Init ALF info and ctu params
-    struct ALFInfo* alf_info  = &ctudec->alf_info;
+    if (tools->alf_luma_enabled_flag || tools->alf_cb_enabled_flag || tools->alf_cr_enabled_flag) {
 
-    if(tools->alf_luma_enabled_flag || tools->alf_cb_enabled_flag || tools->alf_cr_enabled_flag){
-
+        struct ALFInfo* alf_info  = &ctudec->alf_info;
+        RCNALF* alf = &alf_info->rcn_alf;
+        uint8_t luma_flag   = tools->alf_luma_enabled_flag;
+        uint8_t chroma_flag = tools->alf_cb_enabled_flag || tools->alf_cr_enabled_flag;
 
         for (int i = 0; i < tools->num_alf_aps_ids_luma; i++) {
             alf_info->aps_alf_data[i] = &prms->aps_alf[i]->aps_alf_data;
@@ -83,24 +84,20 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
             memset(alf_info->ctb_alf_params, 0, sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
         }
 
-        //Initialization of ALF reconstruction structures
-        RCNALF* alf = &alf_info->rcn_alf;
-        uint8_t luma_flag = tools->alf_luma_enabled_flag;
-        uint8_t chroma_flag = tools->alf_cb_enabled_flag || tools->alf_cr_enabled_flag;
         ctudec->rcn_funcs.alf.rcn_alf_reconstruct_coeff_APS(alf, ctudec, luma_flag, chroma_flag);
     }
 
-    //Init CC ALF ctu params
-    if(tools->cc_alf_cb_enabled_flag || tools->cc_alf_cr_enabled_flag){
-        alf_info->aps_cc_alf_data_cb   = &prms->aps_cc_alf_cb->aps_alf_data;
+    if (tools->cc_alf_cb_enabled_flag || tools->cc_alf_cr_enabled_flag) {
+        struct ALFInfo* alf_info  = &ctudec->alf_info;
+        alf_info->aps_cc_alf_data_cb = &prms->aps_cc_alf_cb->aps_alf_data;
         alf_info->aps_cc_alf_data_cr = &prms->aps_cc_alf_cr->aps_alf_data;
     }
 
-    //Init LMCS info and output pivots
     struct LMCSInfo* lmcs_info   = &ctudec->lmcs_info;
     lmcs_info->lmcs_enabled_flag = ph->ph_lmcs_enabled_flag;
     lmcs_info->scale_c_flag      = ph->ph_chroma_residual_scale_flag;
-    if(sh->sh_lmcs_used_flag || lmcs_info->lmcs_enabled_flag || lmcs_info->scale_c_flag){
+
+    if (sh->sh_lmcs_used_flag || lmcs_info->lmcs_enabled_flag || lmcs_info->scale_c_flag) {
         const struct OVLMCSData* lmcs_data = &prms->aps_lmcs->aps_lmcs_data;
         ctudec->rcn_funcs.rcn_init_lmcs(lmcs_info, lmcs_data);
     }
