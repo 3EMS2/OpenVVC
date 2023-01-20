@@ -540,6 +540,11 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
                 return OVVC_ENOMEM;
             }
 
+    struct PictureSynchro* sync = &ref_pic->sync;
+
+    sync->nb_slices = &sync->internal.nb_slices;
+
+    atomic_init(sync->nb_slices, 1);
             ovdpb_report_decoded_frame(ref_pic);
 
             ref_pic->poc    = ref_poc;
