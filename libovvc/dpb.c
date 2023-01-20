@@ -1116,20 +1116,23 @@ ovdpb_synchro_ref_decoded_ctus(const OVPicture *const ref_pic, int tl_ctu_x, int
         pthread_mutex_lock(sync->ref_mtx);
 
         all_ctus_available = 1;
+
         for (int ctu_y = tl_ctu_y; ctu_y <= br_ctu_y; ctu_y++ ) {
             const uint64_t *ctu_col = sync->decoded_ctus_map[ctu_y];
             for (int i = 0; i < mask_w; i++)
                 all_ctus_available = all_ctus_available && ((ctu_col[i] & wanted_mask[i]) == wanted_mask[i]);
         }
+
         if (!all_ctus_available) {
             pthread_cond_wait(sync->ref_cnd, sync->ref_mtx);
         }
+
         pthread_mutex_unlock(sync->ref_mtx);
 
     } while (!all_ctus_available);
 }
 
-void
+static void
 ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
 {   
     int pic_w = ps->sps->sps_pic_width_max_in_luma_samples;
