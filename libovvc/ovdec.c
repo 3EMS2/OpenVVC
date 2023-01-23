@@ -400,7 +400,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         ret = nvcl_decode_nalu_sh(&rdr, nvcl_ctx, nalu_type);
 
         if (ret < 0) {
-            if (vvcdec->dpb->active_pic) {
+            if (vvcdec->dpb && vvcdec->dpb->active_pic) {
                 ovdpb_report_decoded_frame(vvcdec->dpb->active_pic);
             }
             return ret;
@@ -415,7 +415,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
 
             if (ret < 0) {
                 ov_log(NULL, OVLOG_ERROR, "Error in slice init.\n");
-                if (!sldec->pic && vvcdec->dpb->active_pic) {
+                if (!sldec->pic && vvcdec->dpb && vvcdec->dpb->active_pic) {
                     ovdpb_report_decoded_frame(vvcdec->dpb->active_pic);
                 }
                 slicedec_finish_decoding(sldec);
@@ -467,7 +467,8 @@ vvc_decode_picture_unit(OVVCDec *dec, const OVPictureUnit *pu)
             //goto fail;
         }
     }
-    dec->dpb->active_pic = NULL;
+    if (dec->dpb)
+        dec->dpb->active_pic = NULL;
     ovpu_unref(&dec->pu);
     return 0;
 
