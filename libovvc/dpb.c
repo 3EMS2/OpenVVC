@@ -203,7 +203,7 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
      * returned to the DPB;
      */
     pthread_mutex_lock(&pic->pic_mtx);
-    if (!pic->flags && !ref_count) {
+    if (/*!pic->flags &&*/ !ref_count) {
         /* Release TMVP  MV maps */
         ptrdiff_t idx = pic - dpb->pictures;
 
@@ -593,7 +593,7 @@ vvc_unmark_refs(OVPicture * current_pic, OVPicture **dst_rpl, uint8_t nb_active_
         if (ref_pic) {
             int16_t ref_poc  = ref_pic->poc;
             int16_t ref_type = ST_REF;
-            uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
+            uint8_t flag = 0;//ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
             ov_log(NULL, OVLOG_TRACE, "Unmark active reference %d from picture %d RPL\n", ref_poc, current_pic->poc);
             ovdpb_unref_pic(ref_pic, flag);
         }
@@ -604,7 +604,7 @@ vvc_unmark_refs(OVPicture * current_pic, OVPicture **dst_rpl, uint8_t nb_active_
         if(ref_pic){
             int16_t ref_poc  = ref_pic->poc;
             int16_t ref_type = ST_REF;
-            uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
+            uint8_t flag = 0;//ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
             ov_log(NULL, OVLOG_TRACE, "Unmark non active reference %d from picture %d RPL\n", ref_poc, current_pic->poc);
             ovdpb_unref_pic(ref_pic, flag);
             dst_rpl[i] = NULL;
