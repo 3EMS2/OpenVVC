@@ -787,7 +787,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     }
 
     if ((slice_type != SLICE_I && !sldec->inter_ctx.nb_active_refs0) || (!sldec->inter_ctx.nb_active_refs1 && slice_type == SLICE_B)) {
-         ret = OVVC_EINDATA;
+         ret |= OVVC_EINDATA;
     }
 
     if (ret < 0) {
@@ -1084,11 +1084,12 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         }
     }
 
-    return ret;
+    //return ret;
 fail:
     ovdpb_clear_refs(dpb);
 
 failnoclear:
+    //atomic_init((*pic_p)->sync->nb_slices, 1);
     return ret;
 }
 
@@ -1186,6 +1187,7 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
 
     if (!(nb_slices - 1)) {
         ovdpb_unref_pic(pic, OV_IN_DECODING_PIC_FLAG);
+        pic->flags &= OV_OUTPUT_PIC_FLAG;
 
         atomic_store(sync->func, (uintptr_t) NULL);
 
