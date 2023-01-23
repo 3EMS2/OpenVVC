@@ -354,7 +354,7 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
 
                     if (frame->pu)  pu_size = derive_pu_size(frame->pu);
 
-                    printf("%d %d\n", dec_time, pu_size);
+                    printf("%d %ld\n", dec_time, pu_size);
 
                     ovframe_unref(&frame);
 
