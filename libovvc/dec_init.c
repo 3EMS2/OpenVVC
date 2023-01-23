@@ -672,7 +672,7 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         }
     }
 
-    for (int i=sh->sh_num_alf_aps_ids_luma; i < 8; i++){
+    for (int i = sh->sh_num_alf_aps_ids_luma; i < 8; i++) {
         hlsdata_unref(&ps->aps_alf_ref[i]);
         ps->aps_alf[i] = NULL;
     }
