@@ -131,32 +131,6 @@ free_sps(const union HLSData *const data)
     ov_free((void *)sps);
 }
 
-#if 0
-static int
-replace_sps(const struct HLSReader *const manager,
-            struct HLSDataRef **storage,
-            const OVHLSData *const hls_data)
-{
-    /* TODO unref and/or free dynamic structure */
-    const union HLSData *to_free = *storage;
-    union HLSData *new = ov_malloc(manager->data_size);
-
-    if (!new) {
-        return OVVC_ENOMEM;
-    }
-
-    memcpy(new, hls_data, manager->data_size);
-
-    *storage = new;
-
-    if (to_free) {
-        manager->free(to_free);
-    }
-
-    return 0;
-}
-#endif
-
 static void
 subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
 {
@@ -736,6 +710,5 @@ const struct HLSReader sps_manager =
     .find_storage = &storage_in_nvcl_ctx,
     .read         = &nvcl_sps_read,
     .validate     = &validate_sps,
-    //.replace      = &replace_sps,
     .free         = &free_sps
 };
