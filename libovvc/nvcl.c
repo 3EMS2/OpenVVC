@@ -278,7 +278,7 @@ decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, struct HLSDataRef **storage, OVN
     ret = hls_replace_ref(hls_hdl, storage, &data);
     if (ret < 0)  goto reffail;
 
-    return ret;
+    return nvcl_nb_bytes_read(rdr);
 
 invalid:
     ov_log(NULL, OVLOG_ERROR, "Invalid %s\n", hls_hdl->name);
@@ -354,17 +354,17 @@ static int tmp_sei_wrap(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
 
 static const NALUnitAction nalu_action[32] =
 {
-    &log_ignored                , /* TRAIL */
-    &log_ignored                , /* STSA */
-    &log_ignored                , /* RADL */
-    &log_ignored                , /* RASL */
+    &decode_nvcl_hls                , /* TRAIL */
+    &decode_nvcl_hls                , /* STSA */
+    &decode_nvcl_hls                , /* RADL */
+    &decode_nvcl_hls                , /* RASL */
     &warn_unspec                , /* RSVD_VCL */
     &warn_unspec                , /* RSVD_VCL */
     &warn_unspec                , /* RSVD_VCL */
-    &log_ignored                , /* IDR_W_RADL */
-    &log_ignored                , /* IDR_N_LP */
-    &log_ignored                , /* CRA */
-    &log_ignored                , /* GDR */
+    &decode_nvcl_hls                , /* IDR_W_RADL */
+    &decode_nvcl_hls                , /* IDR_N_LP */
+    &decode_nvcl_hls                , /* CRA */
+    &decode_nvcl_hls                , /* GDR */
     &warn_unspec                , /* RSVD_IRAP_VCL */
     &warn_unsupported           , /* OPI */
     &warn_unsupported           , /* DCI */

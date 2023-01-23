@@ -387,7 +387,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
     enum OVNALUType nalu_type = nalu->type;
     OVNVCLReader rdr;
 
-    int ret;
+    int ret = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
 
     switch (nalu_type) {
     case OVNALU_TRAIL:
@@ -398,12 +398,6 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
     case OVNALU_IDR_N_LP:
     case OVNALU_CRA:
     case OVNALU_GDR:
-        nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
-
-        /* FIXME properly read NAL Unit header */
-        nvcl_skip_bits(&rdr, 16);
-
-        ret = nvcl_decode_nalu_sh(&rdr, nvcl_ctx, nalu_type);
 
         if (ret < 0) {
             if (vvcdec->dpb && vvcdec->dpb->active_pic) {
@@ -414,7 +408,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
             /* Select the first available slice decoder, or wait until one is available */
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
 
-            uint32_t nb_sh_bytes = nvcl_nb_bytes_read(&rdr);
+            uint32_t nb_sh_bytes = ret;
 
             /* Beyond this point unref current picture on failure */
             ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, nb_sh_bytes);
@@ -444,7 +438,6 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
     case OVNALU_EOB:
     case OVNALU_AUD:
     default:
-        ret = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
         if (ret < 0) {
             goto fail;
         }
