@@ -546,6 +546,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
 
             ref_pic->poc    = ref_poc;
             ref_pic->cvs_id = dpb->cvs_id;
+            ref_pic->frame->poc = ref_poc;
 
             ref_pic->flags  = 0;
 
