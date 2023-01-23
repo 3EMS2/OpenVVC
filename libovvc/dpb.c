@@ -1002,7 +1002,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
      */
     ret = ovdpb_init_current_pic(dpb, pic_p, poc, ps->ph->ph_pic_output_flag);
     if (ret < 0) {
-        goto failnoclear;
+        goto fail;
     }
 
     if (!ps->sh->sh_slice_address) {
@@ -1035,14 +1035,14 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         if ((rpl0.num_ref_entries | rpl1.num_ref_entries) & ~0xF) {
             ov_log(NULL, OVLOG_ERROR, "Too many pictures in RPL for picture POC: %d\n", (*pic_p)->poc);
             ret = OVVC_EINDATA;
-            goto failnoclear;
+            goto fail;
         }
 
         if ((rpl0.num_ref_active_entries > rpl0.num_ref_entries) ||
             (rpl1.num_ref_active_entries > rpl1.num_ref_entries)) {
             ret = OVVC_EINDATA;
             ov_log(NULL, OVLOG_ERROR, "Too many active pictures in RPL for picture POC: %d\n", (*pic_p)->poc);
-            goto failnoclear;
+            goto fail;
         }
 
         ret = mark_ref_pic_lists(dpb, slice_type, &rpl0, &rpl1, sldec);
