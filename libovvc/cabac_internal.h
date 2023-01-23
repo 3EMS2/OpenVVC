@@ -157,6 +157,48 @@ ovcabac_bypass_read(OVCABACCtx *const cabac_ctx)
 }
 #endif
 
+static inline uint8_t
+ovcabac_bypass2_read(OVCABACCtx *const cabac_ctx, uint8_t nb_bits)
+{
+  int32_t lps_mask;
+
+  int32_t range = cabac_ctx->range << (NB_CABAC_BITS + 1);
+  int nb_cbits = ov_ctz(cabac_ctx->low_b) - NB_CABAC_BITS;
+
+  if (nb_cbits <= nb_bits) {
+
+      cabac_ctx->low_b <<= nb_bits;
+  } else {
+      cabac_ctx->low_b <<= nb_cbits;
+
+  }
+
+  if (!(cabac_ctx->low_b & CABAC_MASK)){
+      uint32_t tmp_fill = -CABAC_MASK;
+      tmp_fill += cabac_ctx->bytestream[0] << 9;
+      tmp_fill += cabac_ctx->bytestream[1] << 1;
+      cabac_ctx->low_b += tmp_fill << nb_bits;
+      if (cabac_ctx->bytestream <= cabac_ctx->bytestream_end){
+          cabac_ctx->bytestream += NB_CABAC_BITS >> 3;
+      } else {
+          /* FIXME this permits to check if we needed to refill
+           *  after end of entry
+           */
+#if 1
+          cabac_ctx->bytestream = cabac_ctx->bytestream_end + 2;
+          //printf("CABAC_EMPTY\n");
+#endif
+      }
+  }
+
+
+  lps_mask = range - cabac_ctx->low_b - 1;
+  lps_mask >>= 31;
+
+  cabac_ctx->low_b -= range & lps_mask;
+
+  return lps_mask & 0x1;
+}
 
 
 /* FIXME only used by mip_idx */
