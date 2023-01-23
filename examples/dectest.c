@@ -94,7 +94,6 @@ main(int argc, char** argv)
             {"version",   no_argument,       0, 'v'},
             {"help",      no_argument,       0, 'h'},
             {"log-level", required_argument, 0, 'l'},
-            {"infile",    required_argument, 0, 'i'},
             {"outfile",   required_argument, 0, 'o'},
             {"framethr",  required_argument, 0, 't'},
             {"entrythr",  required_argument, 0, 'e'},
@@ -103,11 +102,12 @@ main(int argc, char** argv)
 
         int option_index = 0;
 
-        c = getopt_long(argc, argv, "vhl:i:o:t:e:u:", long_options,
+        c = getopt_long(argc, argv, "-vhl:o:t:e:u:", long_options,
                         &option_index);
         if (c == -1){
             break;
         }
+
 
         switch (c)
         {
@@ -121,11 +121,6 @@ main(int argc, char** argv)
 
             case 'l':
                 ov_log_level = optarg[0]-'0';
-                break;
-
-            case 'i':
-                /*TODO: Sanitize filename*/
-                input_file_name = optarg;
                 break;
 
             case 'o':
@@ -148,6 +143,11 @@ main(int argc, char** argv)
             case '?':
                 options_flag += 0x10;
                 break;
+
+            case 1:
+                input_file_name = optarg;
+                break;
+
             default:
                 abort();
         }
@@ -155,10 +155,6 @@ main(int argc, char** argv)
 
     if (OVLOG_ERROR <= ov_log_level && ov_log_level <= OVLOG_DEBUG){
         ovlog_set_log_level(ov_log_level);
-    }
-
-    if (input_file_name == NULL){
-        input_file_name ="test.266";
     }
 
     if (output_file_name == NULL){
@@ -421,7 +417,6 @@ static void print_usage(){
   printf("\t-h, --help\t\t\t\tShow this message.\n");
   printf("\t-v, --version\t\t\t\tShow version information.\n");
   printf("\t-l <level>, --log-level=<level>\t\tDefine the level of verbosity. Value between 0 and 6. (Default: 2)\n");
-  printf("\t-i <file>, --infile=<file>\t\tPath to the file to be decoded (Default: test.266).\n");
   printf("\t-o <file>, --outfile=<file>\t\tPath to the output file (Default: test.yuv).\n");
   printf("\t-t <nbthreads>, --framethr=<nbthreads>\t\tNumber of simultaneous frames decoded (Default: 0).\n");
   printf("\t-e <nbthreads>, --entrythr=<nbthreads>\t\tNumber of simultaneous entries decoded per frame (Default: 0).\n");
