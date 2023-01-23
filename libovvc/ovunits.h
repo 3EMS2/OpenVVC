@@ -138,7 +138,11 @@ typedef struct OVNALUnit
 
   void *release_opaque;
 
+  /* Associated High Level Syntax elements according to NAL Unit
+   * type if already read by decoder
+   * */
   void *hls_data;
+
 } OVNALUnit;
 
 /* Picture Unit */
@@ -179,6 +183,7 @@ typedef struct OVPictureUnit
      * a reference to this OVPictureUnit anymore.
      */
     void (*release)(struct OVPictureUnit **ovpu_p);
+
 } OVPictureUnit;
 
 /* Reference an OVNALUnit pointer
