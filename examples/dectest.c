@@ -46,6 +46,7 @@
 #include "ovutils.h"
 #include "ovversion.h"
 #include "ovmem.h"
+#include "ovtime.h"
 
 typedef struct OVVCHdl
 {
@@ -294,6 +295,24 @@ faildmxclose:
     return ret;
 }
 
+static inline uint8_t
+is_vcl(const struct OVNALUnit *const nalu) {
+    return (nalu->type < OVNALU_OPI);
+}
+
+static uint64_t
+derive_pu_size(OVPictureUnit *pu)
+{
+    uint64_t sum = 0;
+    int i;
+    for (i = 0; i < pu->nb_nalus; ++i) {
+        if (is_vcl(pu->nalus[i])) {
+            sum += pu->nalus[i]->rbsp_size;
+        }
+    }
+    return sum;
+}
+
 static int
 read_write_stream(OVVCHdl *const hdl, FILE *fout)
 {
@@ -325,6 +344,17 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
                     }
 
                     ov_log(NULL, OVLOG_DEBUG, "Got output picture with POC %d.\n", frame->poc);
+                    uint64_t start = frame->time_info.start;
+                    uint64_t end = frame->time_info.end;
+                    uint64_t out = frame->time_info.out;
+
+                    int dec_time = NS_TO_US((int64_t)end - start);
+
+                    uint64_t pu_size = 0;
+
+                    if (frame->pu)  pu_size = derive_pu_size(frame->pu);
+
+                    printf("%d %d\n", dec_time, pu_size);
 
                     ovframe_unref(&frame);
 
@@ -335,7 +365,6 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
         } else {
             break;
         }
-
 
     } while (ret >= 0);
 
