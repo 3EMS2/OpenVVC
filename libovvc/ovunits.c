@@ -199,25 +199,6 @@ fail:
     return ret;
 }
 
-/*FIXME Add and reference counting */
-void
-ov_free_pu(OVPictureUnit **ovpu_p)
-{
-    OVPictureUnit *ovpu = *ovpu_p;
-
-    if (ovpu) {
-        int i;
-        for (i = 0; i < ovpu->nb_nalus; ++i) {
-            OVNALUnit *nalu = ovpu->nalus[i];
-
-            ov_nalu_unref(&nalu);
-        }
-        ov_free(ovpu->nalus);
-    }
-
-    ov_freep(ovpu_p);
-}
-
 void
 ovpu_unref(OVPictureUnit **ovpu_p)
 {
