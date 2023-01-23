@@ -142,14 +142,15 @@ pps_read_slices_in_subpic(OVNVCLReader *const rdr, OVPPS *const pps,
                     int j;
                     int sum = 0;
                     for (j = 0; j < pps->pps_num_exp_slices_in_tile[tile_id]; j++) {
-                        pps->pps_exp_slice_height_in_ctus_minus1[i][j] = nvcl_read_u_expgolomb(rdr);
-                        sum += pps->pps_exp_slice_height_in_ctus_minus1[i][j] + 1;
+                        pps->pps_exp_slice_height_in_ctus_minus1[i + j] = nvcl_read_u_expgolomb(rdr);
+                        sum += pps->pps_exp_slice_height_in_ctus_minus1[i + j] + 1;
                     }
 
                     if (sum < part_info->tile_row_h[tile_y]) {
-                        int last_read = pps->pps_exp_slice_height_in_ctus_minus1[i][j - 1] + 1;
-                        j += (part_info->tile_row_h[tile_y] - sum) / last_read;
-                        j += !!((part_info->tile_row_h[tile_y] - sum) % last_read);
+                        int last_read = pps->pps_exp_slice_height_in_ctus_minus1[i + j - 1] + 1;
+                        int rem_ctu_h = part_info->tile_row_h[tile_y] - sum;
+                        int nb_implicit_slices = rem_ctu_h / last_read + !!(rem_ctu_h % last_read);
+                        j += nb_implicit_slices;
                     }
 
                     i += (j - 1);

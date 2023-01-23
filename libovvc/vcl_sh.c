@@ -309,7 +309,7 @@ bal()
                     int16_t rem_ctb_h = tile_ctb_h[tile_idx / nb_tile_cols];
 
                     for (j = 0; j < pps->pps_num_exp_slices_in_tile[i]; j++) {
-                        slice_ctb_h[i + j] = pps->pps_exp_slice_height_in_ctus_minus1[i][j] + 1;
+                        slice_ctb_h[i + j] = pps->pps_exp_slice_height_in_ctus_minus1[i + j] + 1;
                         rem_ctb_h -= slice_ctb_h[i + j];
                     }
 
