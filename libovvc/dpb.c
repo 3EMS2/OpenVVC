@@ -783,6 +783,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
         sldec->inter_ctx.nb_active_refs1 = rpl1->num_ref_active_entries;
     } else {
         sldec->inter_ctx.nb_active_refs1 = 0;
+        sldec->nb_refs1 = 0;
     }
 
     if ((slice_type != SLICE_I && !sldec->inter_ctx.nb_active_refs0) || (!sldec->inter_ctx.nb_active_refs1 && slice_type == SLICE_B)) {
