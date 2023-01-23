@@ -213,6 +213,16 @@ nvcl_slhdr_read(OVNVCLReader *const rdr, struct OVSEISLHDR* sei_slhdr, uint32_t 
 }
 #endif
 
+#if 0
+int
+nvcl_sei_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
+              const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type)
+{
+    int ret = 0;
+    return ret;
+}
+#endif
+
 int
 nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
 {
@@ -260,6 +270,7 @@ fail:
     return OVVC_ENOMEM;
 }
 
+#if 1
 int 
 nvcl_decode_nalu_sei(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t nalu_type)
 {   
@@ -304,3 +315,16 @@ nvcl_decode_nalu_sei(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t
 
     return 0;
 }
+#endif
+
+#if 0
+const struct HLSReader sei_manager =
+{
+    .name = "SEI",
+    .data_size    = sizeof(struct OVSPS),
+    .find_storage = &storage_in_nvcl_ctx,
+    .read         = &nvcl_sei_read,
+    .validate     = &validate_sps,
+    .free         = &free_sps
+};
+#endif
