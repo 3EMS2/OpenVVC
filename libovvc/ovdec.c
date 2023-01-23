@@ -176,7 +176,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
         return ret;
     }
 
-    ov_nalu_new_ref(&sldec->slice_nalu, nalu);
+    ovnalu_ref(&sldec->slice_nalu, nalu);
 
     ret = slicedec_init_lines(sldec, &sldec->active_params);
     if (ret < 0) {
@@ -462,7 +462,7 @@ vvc_decode_picture_unit(OVVCDec *dec, const OVPictureUnit *pu)
 {
     int i;
     int ret;
-    ovpu_new_ref(&dec->pu, pu);
+    ovpu_ref(&dec->pu, pu);
     ov_log(NULL, OVLOG_ERROR, "Picture Unit.\n");
     for (i = 0; i < pu->nb_nalus; ++i) {
         ret = decode_nal_unit(dec, pu->nalus[i]);

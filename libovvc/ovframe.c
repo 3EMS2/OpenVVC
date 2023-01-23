@@ -36,6 +36,7 @@
 
 #include "ovframe.h"
 #include "ovframepool.h"
+#include "ovunits.h"
 
 int
 ovframe_new_ref(OVFrame **dst, OVFrame *src)

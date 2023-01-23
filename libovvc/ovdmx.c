@@ -488,7 +488,7 @@ ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUListStatus *const sta
     for (int i = 0; i < status->nb_nalus; i++) {
         //ov_log(NULL, OVLOG_ERROR, "/t %s\n", nalu_name[lelem->nalu->type]);
 
-        ov_nalu_new_ref(&ovpu->nalus[i], lelem->nalu);
+        ovnalu_ref(&ovpu->nalus[i], lelem->nalu);
 
         lelem = lelem->next_nalu;
     }
@@ -623,7 +623,7 @@ static void
 release_nalu_elem(struct NALUnitListElem *nalu_elem)
 {
     if (nalu_elem->nalu) {
-        ov_nalu_unref(&nalu_elem->nalu);
+        ovnalu_unref(&nalu_elem->nalu);
     }
     ovmempool_pushelem(nalu_elem->private.pool_ref);
 }

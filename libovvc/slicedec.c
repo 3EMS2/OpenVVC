@@ -353,7 +353,7 @@ slicedec_finish_decoding(OVSliceDec *sldec)
      * we failed before attaching NALU
      */
     if (sldec->slice_nalu) {
-        ov_nalu_unref(&sldec->slice_nalu);
+        ovnalu_unref(&sldec->slice_nalu);
     }
 
     if (sldec->pic) {
