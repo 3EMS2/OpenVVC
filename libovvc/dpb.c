@@ -337,6 +337,14 @@ ovdpb_clear_refs(OVDPB *dpb)
     }
 }
 
+static void print_dpb(OVDPB *const dpb)
+{
+    for (int i = 0; i < 64; ++i) {
+        OVPicture *pic = &dpb->pictures[i];
+        //printf("POC : %d, cvs %d nb_slices %d\n", pic->poc, pic->cvs_id, pic->nb_slices);
+        //printf("POC : %d, cvs %d nb_slices %d, nb_ref%d\n", pic->poc, pic->cvs_id, *pic->sync.nb_slices, pic->ref_count);
+    }
+}
 
 /* All pictures are removed from the DPB */
 void
@@ -382,6 +390,8 @@ alloc_frame(OVDPB *dpb, int poc)
 
 full:
     ov_log(NULL, OVLOG_ERROR, "DPB full\n");
+    print_dpb(dpb);
+
 
     return NULL;
 }
