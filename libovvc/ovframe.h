@@ -53,6 +53,7 @@ struct ColorDescription
     uint8_t full_range;
 };
 
+struct OVPictureUnit;
 /* Miscelaneous information on Picture */
 struct FrameInfo
 {
@@ -121,6 +122,8 @@ struct Frame
 
     /* Opaque Data */
     void *opaque;
+
+    struct OVPictureUnit *pu;
 };
 
 /* Reference an OVFrame pointer

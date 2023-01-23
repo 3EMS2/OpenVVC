@@ -67,6 +67,7 @@ ovframe_unref(OVFrame **frame_p)
     ov_log(NULL, OVLOG_DEBUG, "Unref Frame %p ref_count: %d\n", *frame_p, ref_count);
 
     if (!ref_count) {
+        if ((*frame_p)->pu) ovpu_unref(&(*frame_p)->pu);
         ovframepool_release_frame(frame_p);
     }
 
