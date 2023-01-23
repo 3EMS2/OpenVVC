@@ -1457,7 +1457,8 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
         uint8_t aps_id = ph->ph_scaling_list_aps_id;
 
         const OVAPS *aps = prms->aps_scaling_list;
-        derive_scaling_tb_luts(&ctudec->tb_scaling_luts, aps);
+        if (aps)
+            derive_scaling_tb_luts(&ctudec->tb_scaling_luts, aps);
     }
 
     if (sps->sps_ladf_enabled_flag) {
