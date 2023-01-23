@@ -202,6 +202,7 @@ fail:
 void
 ovpu_unref(OVPictureUnit **ovpu_p)
 {
+    /* FIXME should we assert this ?*/
     if (!ovpu_p)
         return;
 
