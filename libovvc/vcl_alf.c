@@ -38,6 +38,8 @@
 #include "nvcl.h"
 #include "rcn_alf.h"
 #include "vcl.h"
+#include <time.h>
+#include <stdlib.h>
 
 
 static uint8_t

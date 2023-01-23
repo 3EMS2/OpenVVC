@@ -298,6 +298,7 @@ slicedec_ref_params(OVSliceDec *sldec, struct OVPS* dec_params)
     if (dec_params->aps_alf_c_ref) {
         hlsdata_newref(&slice_params->aps_alf_c_ref, dec_params->aps_alf_c_ref);
     }
+
     slice_params->aps_alf_c = dec_params->aps_alf_c;
 
     if (dec_params->aps_cc_alf_cb_ref) {
