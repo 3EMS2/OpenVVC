@@ -90,55 +90,110 @@ struct SliceInfo
 
 /* FIXME only once */
 static void
-setup_slice_prms(OVPPS *const pps, struct PicPartitionInfo *const part_info)
+setup_slice_prms(OVPPS *const pps, struct PicPartitionInfo *const part_info, const struct TileInfo *const tinfo, uint8_t log2_ctb_s)
 {
+    struct SliceInfo slice_info[300];
     int tile_id = 0;
     int i;
-    struct SliceInfo slice_info[300];
+    uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
 
-    for (i = 0; i < pps->pps_num_slices_in_pic_minus1; i++) {
+    int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    int entry_idx = 0;
+
+    for (i = 0; i < pps->pps_num_slices_in_pic_minus1 + 1; i++) {
         struct SliceInfo *sl = &slice_info[i];
 
         int tile_x = tile_id % part_info->nb_tile_w;
         int tile_y = tile_id / part_info->nb_tile_w;
+        int ctu_x = tinfo->ctu_x[tile_x];
+        int ctu_y = tinfo->ctu_y[tile_y];
+
+        uint16_t tile_start = ctu_x + ctu_y * nb_ctb_pic_w;
 
         sl->tile_idx = tile_id;
 
+        int sl_w = 0;
+        int sl_h = 0;
+
+        int sl_w_tile = pps->pps_num_slices_in_pic_minus1 ? pps->pps_slice_width_in_tiles_minus1[i] + 1 : part_info->nb_tile_w;
+        int sl_h_tile = pps->pps_num_slices_in_pic_minus1 ? pps->pps_slice_height_in_tiles_minus1[i] + 1 : part_info->nb_tile_h;
+
+        //int sl_w_tile =  pps->pps_slice_width_in_tiles_minus1[i] + 1;
+        //int sl_h_tile =  pps->pps_slice_height_in_tiles_minus1[i] + 1;
+        int nb_tiles_entries = sl_w_tile * sl_h_tile;
+
+        for (int j = 0; j < sl_w_tile; ++j) {
+                for (int k = 0; k < sl_h_tile; ++k) {
+                    int tmp_tile_x = tile_x + j;
+                    int tmp_tile_y = tile_y + k;
+                    int tmp_tile_id = tile_id + j + k * part_info->nb_tile_w;
+                    int x = tinfo->ctu_x[tmp_tile_x];
+                    int y = tinfo->ctu_y[tmp_tile_y];
+                    int w = part_info->tile_col_w[tmp_tile_x];
+                    int h = part_info->tile_row_h[tmp_tile_y];
+                    if (nb_tiles_entries == 1 && pps->pps_num_exp_slices_in_tile[tmp_tile_id]) {
+                        int nb_exp_slices = pps->pps_num_exp_slices_in_tile[tmp_tile_id];
+                        int pos_y = y;
+                        for (int l = 0; l < nb_exp_slices; l++) {
+                            int tmp_h = pps->pps_exp_slice_height_in_ctus_minus1[i + l] + 1;
+                            printf("slice %d in tile %d : x %d y %d, wxh %dx%d\n", i + l, tmp_tile_id, x, pos_y, w, tmp_h);
+                            pos_y += pps->pps_exp_slice_height_in_ctus_minus1[i + l] + 1;
+                            /* store height , w = tile_w*/
+                        }
+                        int rem_h = h - (pos_y - y);
+                        if (rem_h) {
+                            int last_read = pps->pps_exp_slice_height_in_ctus_minus1[i + nb_exp_slices - 1] + 1;
+                            int nb_implicit_slices = rem_h / last_read + !!(rem_h % last_read);
+                            for (int l = 0; l < nb_implicit_slices; l++) {
+                            printf("Implicit slice %d in tile %d : x %d y %d, wxh %dx%d\n", i + nb_exp_slices + l, tmp_tile_id, x, pos_y, w, rem_h / last_read);
+                            pos_y += rem_h/last_read;
+                            }
+                        }
+
+                        //i += nb_implicit_slices + nb_exp_slices - 1;
+                    } else {
+                        //for (int l = 0; l < nb_tiles_entries; ++l) {
+                        printf("slice %d: tile : %d x %d, y %d, wxh %dx%d\n", i, tmp_tile_id, x, y, w, h);
+                        //}
+                    }
+                }
+        }
+#if 0
         /* Each new tile column read slice width exept for implicit last column */
         if (tile_x != part_info->nb_tile_w - 1) {
-            int sl_w = 0;
-            int sl_h = part_info->tile_row_h[tile_y];
             for (int k = 0; k <= pps->pps_slice_width_in_tiles_minus1[i]; ++k) {
                 sl_w += part_info->tile_col_w[tile_x + k];
             }
+            sl_h = part_info->tile_row_h[tile_y];
         }
 
         /* Each new tile row read slice height except for implicit last row */
         if (tile_y !=  part_info->nb_tile_h - 1) {
             if (pps->pps_tile_idx_delta_present_flag || tile_x == 0) {
-                int sl_h = 0;
                 for (int k = 0; k <= pps->pps_slice_height_in_tiles_minus1[i]; ++k) {
                     sl_h += part_info->tile_row_h[tile_y + k];
                 }
             }
         }
+#endif
 
         /* Multiple slices in tiles */
-        if (!pps->pps_slice_width_in_tiles_minus1[i] && !pps->pps_slice_height_in_tiles_minus1[i]) {
+        if (nb_tiles_entries == 1) {
 
             if (part_info->tile_row_h[tile_y] > 1) {
                 int sum = 0;
                 int j;
-                for (j = 0; j < pps->pps_num_exp_slices_in_tile[i]; j++) {
-                    sum += pps->pps_exp_slice_height_in_ctus_minus1[i][j] + 1;
+                for (j = 0; j < pps->pps_num_exp_slices_in_tile[tile_id]; j++) {
+                    sum += pps->pps_exp_slice_height_in_ctus_minus1[i + j] + 1;
                     /* store height , w = tile_w*/
                 }
 
-                for ( ; sum < part_info->tile_row_h[i]; ++i) {
-                    int last_read = pps->pps_exp_slice_height_in_ctus_minus1[i][j - 1] + 1;
-                    j += (part_info->tile_row_h[i] - sum) / last_read;
-                    j += !!((part_info->tile_row_h[i] - sum) % last_read);
+                if (sum < part_info->tile_row_h[tile_y]) {
+                    int last_read = pps->pps_exp_slice_height_in_ctus_minus1[i + j - 1] + 1;
+                    int rem_ctu_h = part_info->tile_row_h[tile_y] - sum;
+                    int nb_implicit_slices = rem_ctu_h / last_read + !!(rem_ctu_h % last_read);
                     /* store height , w = tile_w*/
+                    j += nb_implicit_slices;
                 }
 
                 i += (j - 1);
@@ -164,11 +219,17 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
 {
     const struct SHInfo *const sh_info     = &prms->sh_info;
     const struct PPSInfo *const pps_info   = &prms->pps_info;
+    const struct OVPPS *const pps   = prms->pps;
     const struct TileInfo *const tile_info = &pps_info->tile_info;
+
+    const OVSPS *const sps = prms->sps;
+    uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
 
     int tile_x = (entry_idx + prms->sh->sh_slice_address) % tile_info->nb_tile_cols;
     int tile_y = (entry_idx + prms->sh->sh_slice_address) / tile_info->nb_tile_cols;
     tile_y = OVMIN(tile_info->nb_tile_rows - 1, tile_y);
+
+    setup_slice_prms(pps, &pps->part_info, tile_info, log2_ctb_s);
 
     einfo->tile_x = tile_x;
     einfo->tile_y = tile_y;
