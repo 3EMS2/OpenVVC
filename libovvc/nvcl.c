@@ -222,12 +222,12 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
     }
 }
 
-static void
+static int
 hls_replace_ref(const struct HLSReader *const hls_hdl, struct HLSDataRef **storage, const union HLSData *const data)
 {
     union HLSData *tmp = ov_malloc(hls_hdl->data_size);
     if (!tmp) {
-        return;
+        return OVVC_ENOMEM;
     }
     memcpy(tmp, data, hls_hdl->data_size);
 
@@ -235,8 +235,10 @@ hls_replace_ref(const struct HLSReader *const hls_hdl, struct HLSDataRef **stora
     *storage = hlsdataref_create(tmp, NULL, NULL);
 
     if (!*storage) {
-        return;
+        ov_free(tmp);
+        return OVVC_ENOMEM;
     }
+    return 0;
 }
 
 static int
@@ -273,7 +275,8 @@ decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, struct HLSDataRef **storage, OVN
     if (ret < 0)  goto invalid;
 
     ov_log(NULL, OVLOG_TRACE, "Replacing new %s\n", hls_hdl->name);
-    hls_replace_ref(hls_hdl, storage, &data);
+    ret = hls_replace_ref(hls_hdl, storage, &data);
+    if (ret < 0)  goto reffail;
 
     return ret;
 
@@ -283,6 +286,10 @@ invalid:
 
 failread:
     ov_log(NULL, OVLOG_ERROR, "Error while reading %s\n", hls_hdl->name);
+    return ret;
+
+reffail:
+    ov_log(NULL, OVLOG_ERROR, "Error while storing %s\n", hls_hdl->name);
     return ret;
 
 duplicated:
