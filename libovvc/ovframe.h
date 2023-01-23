@@ -124,6 +124,13 @@ struct Frame
     void *opaque;
 
     struct OVPictureUnit *pu;
+
+    struct {
+        uint64_t start;
+        uint64_t end;
+        uint64_t out;
+        //uint64_t release;
+    } time_info;
 };
 
 /* Reference an OVFrame pointer

@@ -649,6 +649,9 @@ dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst, struct OVPictureUnit **punit
 {
     if (pic->flags & OV_OUTPUT_PIC_FLAG) {
         ovframe_new_ref(dst, pic->frame);
+        pic->frame->time_info.start = pic->time_info.start;
+        pic->frame->time_info.end = pic->time_info.end;
+        pic->frame->time_info.out = pic->time_info.out;
         ovpu_ref(&pic->frame->pu, pic->pu);
     } else {
        *dst = NULL;
