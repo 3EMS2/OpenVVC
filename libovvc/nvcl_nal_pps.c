@@ -129,7 +129,7 @@ pps_read_slices_in_subpic(OVNVCLReader *const rdr, OVPPS *const pps,
 
         /* Each new tile row read slice height except for implicit last row */
         if (tile_y !=  part_info->nb_tile_h - 1) {
-            if(pps->pps_tile_idx_delta_present_flag || tile_x == 0) {
+            if (pps->pps_tile_idx_delta_present_flag || tile_x == 0) {
                 pps->pps_slice_height_in_tiles_minus1[i] = nvcl_read_u_expgolomb(rdr);
             }
         }
@@ -162,11 +162,10 @@ pps_read_slices_in_subpic(OVNVCLReader *const rdr, OVPPS *const pps,
             pps->pps_tile_idx_delta_val[i] = nvcl_read_s_expgolomb(rdr);
             tile_id += pps->pps_tile_idx_delta_val[i];
         } else {
-            int offset_y;
             tile_id  += pps->pps_slice_width_in_tiles_minus1[i] + 1;
-            offset_y  = pps->pps_slice_height_in_tiles_minus1[i];
-            offset_y *= part_info->nb_tile_w;
             if (tile_id % part_info->nb_tile_w == 0) {
+                int  offset_y  = pps->pps_slice_height_in_tiles_minus1[i];
+                offset_y *= part_info->nb_tile_w;
                 tile_id += offset_y;
             }
         }
