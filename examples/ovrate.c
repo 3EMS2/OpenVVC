@@ -375,7 +375,7 @@ probe_stream(OVVCHdl *const hdl)
         }
 
         if (pu) {
-	    struct PUSummary pu_summary = {{0}};
+	    //struct PUSummary pu_summary = {{0}};
 
 	    hls(&ps, &nvcl_ctx, pu, poc);
 

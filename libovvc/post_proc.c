@@ -65,7 +65,7 @@ pp_init_functions(const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
             pp_funcs->pp_sdr_to_hdr = pp_sdr_to_hdr;
             pp_funcs->pp_apply_flag = 1;
         } else {
- printf ("NO FILTER\n");           pp_funcs->pp_sdr_to_hdr = pp_slhdr_no_filter;
+ //printf ("NO FILTER\n");           pp_funcs->pp_sdr_to_hdr = pp_slhdr_no_filter;
         }
 #endif
         if (sei->upscale_flag) {
@@ -116,13 +116,13 @@ pp_process_frame2(const OVSEI* sei, OVFrame **frame_p)
 #if HAVE_SLHDR
         if(sei->sei_slhdr){
             static const struct ColorDescription pq_bt2020 = {.colour_primaries = 9, .matrix_coeffs = 16, .transfer_characteristics=9, .full_range = 0} ;
-            printf ("display brightness %d\n", sei->brightness);
+            //printf ("display brightness %d\n", sei->brightness);
             pp_set_display_peak(sei->sei_slhdr->slhdr_context, sei->brightness);
             pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, src_planes, dst_planes,
                                    sei->sei_slhdr->payload_array, src_frm->width, src_frm->height);
 	    pp_frm->frame_info.color_desc = pq_bt2020;
         } else {
-            printf ("NO FILTER\n");
+            //printf ("NO FILTER\n");
 	}
 #endif
         if (sei->upscale_flag){
