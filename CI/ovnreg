@@ -40,7 +40,7 @@ append(){
 }
 
 decode(){
-  dec_arg="-i ${1} -o ${2} -t 2 -e 2"
+  dec_arg="${1} -o ${2} -t 2 -e 2"
   { $($DECODER ${dec_arg} 2> ${3} 1>&2); } 2> /dev/null
   return $?
 }
