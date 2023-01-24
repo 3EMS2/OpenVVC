@@ -35,6 +35,7 @@
 #include "ovunits.h"
 #include "ovmem.h"
 #include "ovutils.h"
+#include "hls_structures.h"
 
 static void
 ovnalu_free(OVNALUnit **nalu_p)
@@ -112,7 +113,7 @@ ovnalu_unref(OVNALUnit **nalu_p)
 
     if (!ref_count) {
         if (nalu->hls_data) {
-            hlsdata_unref(&nalu->hls_data);
+            hlsdata_unref((struct HLSDataRef **)&nalu->hls_data);
         }
         nalu->release(nalu_p);
     }

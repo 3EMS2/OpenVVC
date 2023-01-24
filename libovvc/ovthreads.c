@@ -90,7 +90,7 @@ struct SliceInfo
 
 /* FIXME only once */
 static void
-setup_slice_prms(OVPPS *const pps, struct PicPartitionInfo *const part_info, const struct TileInfo *const tinfo, uint8_t log2_ctb_s)
+setup_slice_prms(const OVPPS *const pps, const struct PicPartitionInfo *const part_info, const struct TileInfo *const tinfo, uint8_t log2_ctb_s)
 {
     struct SliceInfo slice_info[300];
     int tile_id = 0;

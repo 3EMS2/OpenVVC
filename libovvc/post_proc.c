@@ -201,7 +201,7 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
         if (sei->sei_slhdr) {
             ov_freep(&sei->sei_slhdr);
         }
-    } else printf ("NO FILTER\n");
+    }
 
     ov_free(sei);
 
