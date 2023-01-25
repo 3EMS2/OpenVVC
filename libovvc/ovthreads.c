@@ -88,6 +88,55 @@ struct SliceInfo
     uint16_t h;
 };
 
+static void
+setup_subpic_prms(const OVSPS *const sps, const struct PicPartitionInfo *const part_info, const struct TileInfo *const tinfo, uint8_t log2_ctb_s)
+{
+    int i;
+    int pic_w = sps->sps_pic_width_max_in_luma_samples;
+    int pic_h = sps->sps_pic_height_max_in_luma_samples;
+    int nb_ctu_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    int nb_ctu_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    int ctb_s = 1 << log2_ctb_s;
+
+    int subpic_w = sps->sps_subpic_width_minus1[0]  + 1;
+    int subpic_h = sps->sps_subpic_height_minus1[0] + 1;
+
+    if (sps->sps_subpic_same_size_flag) {
+        int nb_subpic_w = (nb_ctu_w / subpic_w) + !!(nb_ctu_w % subpic_w);
+        int nb_subpic_h = (nb_ctu_h / subpic_h) + !!(nb_ctu_h % subpic_h);
+
+        int subpic_x = sps->sps_subpic_ctu_top_left_x[0];
+        int subpic_y = sps->sps_subpic_ctu_top_left_y[0];
+
+        for (i = 0; i <= (sps->sps_num_subpics_minus1 & 0xF); i++) {
+            printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
+            subpic_x += subpic_w;
+            if (!((i + 1) % nb_subpic_w)) {
+                subpic_y += subpic_h;
+                subpic_x = 0;
+            }
+        }
+
+    } else {
+
+        for (i = 0; i < (sps->sps_num_subpics_minus1 & 0xF); i++) {
+
+            int subpic_x = sps->sps_subpic_ctu_top_left_x[i];
+            int subpic_y = sps->sps_subpic_ctu_top_left_y[i];
+
+            subpic_w = sps->sps_subpic_width_minus1[i] + 1;
+            subpic_h = sps->sps_subpic_height_minus1[i] + 1;
+            printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
+        }
+        int subpic_x = sps->sps_subpic_ctu_top_left_x[i];
+        int subpic_y = sps->sps_subpic_ctu_top_left_y[i];
+
+        subpic_w = nb_ctu_w - subpic_x;
+        subpic_h = nb_ctu_h - subpic_y;
+        printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
+    }
+
+}
 /* FIXME only once */
 static void
 setup_slice_prms(const OVPPS *const pps, const struct PicPartitionInfo *const part_info, const struct TileInfo *const tinfo, uint8_t log2_ctb_s)
@@ -208,6 +257,7 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
     int tile_y = (entry_idx + prms->sh->sh_slice_address) / tile_info->nb_tile_cols;
     tile_y = OVMIN(tile_info->nb_tile_rows - 1, tile_y);
 
+    setup_subpic_prms(prms->sps, &pps->part_info, tile_info, log2_ctb_s);
     setup_slice_prms(pps, &pps->part_info, tile_info, log2_ctb_s);
 
     einfo->tile_x = tile_x;
