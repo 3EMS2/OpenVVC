@@ -142,19 +142,18 @@ subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
         int log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
         int nb_ctu_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
         int nb_ctu_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-        int ctb_s = 1 << log2_ctb_s;
+
         sps->sps_independent_subpics_flag = nvcl_read_flag(rdr);
         sps->sps_subpic_same_size_flag = nvcl_read_flag(rdr);
+
         for (i = 0; i < 1; i++) {
 
-            /*TODO check ctb_w and ctb_h conditions once outside of loop*/
-            /*FIXME ceil_log2 */
-            if (sps->sps_pic_width_max_in_luma_samples > ctb_s) {
+            if (nb_ctu_w) {
                 int v = ov_ceil_log2(nb_ctu_w);
                 sps->sps_subpic_width_minus1[i] = nvcl_read_bits(rdr,v);
             }
 
-            if (sps->sps_pic_height_max_in_luma_samples > ctb_s) {
+            if (nb_ctu_h) {
                 int v = ov_ceil_log2(nb_ctu_h);
                 sps->sps_subpic_height_minus1[i] = nvcl_read_bits(rdr,v);
             }
@@ -166,26 +165,24 @@ subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
         }
 
         if (!sps->sps_subpic_same_size_flag) {
-            /*TODO check ctb_w and ctb_h conditions once outside of loop*/
-            /*FIXME ensure sps_subpic_ctu_top_left_*[0] are init at 0*/
             for (i = 1; i <= (sps->sps_num_subpics_minus1 & 0xF); i++) {
 
-                if (sps->sps_pic_width_max_in_luma_samples > ctb_s) {
+                if (nb_ctu_w) {
                     int v = ov_ceil_log2(nb_ctu_w);
                     sps->sps_subpic_ctu_top_left_x[i] = nvcl_read_bits(rdr, v);
                 }
 
-                if (sps->sps_pic_height_max_in_luma_samples > ctb_s) {
+                if (nb_ctu_h) {
                     int v = ov_ceil_log2(nb_ctu_h);
                     sps->sps_subpic_ctu_top_left_y[i] = nvcl_read_bits(rdr, v);
                 }
 
-                if (i < sps->sps_num_subpics_minus1 && sps->sps_pic_width_max_in_luma_samples > ctb_s) {
+                if (i < sps->sps_num_subpics_minus1 && nb_ctu_w) {
                     int v = ov_ceil_log2(nb_ctu_w);
                     sps->sps_subpic_width_minus1[i] = nvcl_read_bits(rdr, v);
                 }
 
-                if (i < sps->sps_num_subpics_minus1 && sps->sps_pic_height_max_in_luma_samples > ctb_s) {
+                if (i < sps->sps_num_subpics_minus1 && nb_ctu_h) {
                     int v = ov_ceil_log2(nb_ctu_h);
                     sps->sps_subpic_height_minus1[i] = nvcl_read_bits(rdr, v);
                 }
