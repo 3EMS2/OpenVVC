@@ -387,7 +387,6 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
 {
     OVNVCLCtx *const nvcl_ctx = &vvcdec->nvcl_ctx;
     enum OVNALUType nalu_type = nalu->type;
-    OVNVCLReader rdr;
 
     int ret = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
 
