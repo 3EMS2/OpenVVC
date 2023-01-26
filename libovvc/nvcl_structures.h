@@ -464,6 +464,25 @@ struct OVSPS
     uint8_t sps_extension_data_flag;
 };
 
+struct SubpicInfo {
+    uint8_t x;
+    uint8_t y;
+    uint8_t w;
+    uint8_t h;
+    uint16_t nb_slices;
+};
+
+struct Entry {
+    uint8_t x;
+    uint8_t y;
+    uint8_t w;
+    uint8_t h;
+};
+
+struct SliceMap {
+    uint16_t entry_idx;
+    uint16_t nb_entries;
+};
 /*FIXME check values over flow */
 struct OVPPS
 {
@@ -580,6 +599,12 @@ struct OVPPS
         uint8_t log2_ctb_s;
         uint8_t tile_col_w[256];
         uint8_t tile_row_h[256];
+        struct SubpicInfo subpictures[256];
+        struct Entry entries[256];
+        struct SliceMap slices[256];
+        uint16_t nb_subpics;
+        uint16_t nb_entries;
+        uint16_t nb_slices;
     } part_info;
 
 };

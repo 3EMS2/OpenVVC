@@ -401,7 +401,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
     case OVNALU_GDR:
 
         if (ret < 0) {
-                ov_log(NULL, OVLOG_ERROR, "Error in slice init.\n");
+            ov_log(NULL, OVLOG_ERROR, "Error in slice reading.\n");
             if (vvcdec->dpb && vvcdec->dpb->active_pic) {
                 ovdpb_report_decoded_frame(vvcdec->dpb->active_pic);
             }

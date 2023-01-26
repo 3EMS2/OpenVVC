@@ -998,7 +998,7 @@ update_pic_params(OVPicture *pic, const OVPS *const ps)
 }
 
 void
-init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu)
+init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu, const struct OVPPS *pps)
 {
 
     struct PictureSynchro* sync = &pic->sync;
@@ -1007,6 +1007,12 @@ init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu)
     for (int i = 0; i < pu->nb_nalus; ++i) {
         nb_slices += pu->nalus[i]->type < OVNALU_OPI;
     }
+
+    if (nb_slices != (pps->pps_num_slices_in_pic_minus1 + 1)) {
+        ov_log(NULL, OVLOG_ERROR, "Mismatch in PU %d slice number : %d, nb slices : %d\n", pic->poc, nb_slices, pps->pps_num_slices_in_pic_minus1 + 1);
+    }
+
+    nb_slices = pps->part_info.nb_entries;
 
     sync->nb_slices = &sync->internal.nb_slices;
 
@@ -1033,7 +1039,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     cra_flag |= nalu_type == OVNALU_GDR;
 
     /* TODO move to dec init */
-    if (!ps->sh->sh_slice_address) {
+    if (!ps->sh->sh_slice_address && !ps->sh->sh_subpic_id) {
         if (idr_flag){
             /* New IDR involves a POC refresh and mark the start of
              * a new coded video sequence
@@ -1064,7 +1070,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         goto fail;
     }
 
-    if (!ps->sh->sh_slice_address) {
+    if (!ps->sh->sh_slice_address && !ps->sh->sh_subpic_id) {
         update_pic_params(*pic_p, ps);
 
         /* Init picture TMVP info */
@@ -1073,7 +1079,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         }
         ovpu_ref(&(*pic_p)->pu, ovdec->pu);
 
-        init_nb_slices(*pic_p, ovdec->pu);
+        init_nb_slices(*pic_p, ovdec->pu, ps->pps);
     }
 
 
@@ -1185,6 +1191,11 @@ ovdpb_synchro_ref_decoded_ctus(const OVPicture *const ref_pic, int tl_ctu_x, int
 
         if (!all_ctus_available) {
             pthread_cond_wait(sync->ref_cnd, sync->ref_mtx);
+            FrameSynchroFunction sync_func = (FrameSynchroFunction)atomic_load(sync->func);
+            if (!sync_func) {
+                pthread_mutex_unlock(sync->ref_mtx);
+                return;
+            }
         }
 
         pthread_mutex_unlock(sync->ref_mtx);
@@ -1239,7 +1250,7 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
     struct PictureSynchro* sync = &pic->sync;
 
     uint16_t nb_slices = atomic_fetch_add_explicit(sync->nb_slices, -1, memory_order_acq_rel);
-         ov_log(NULL, OVLOG_TRACE, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
+    ov_log(NULL, OVLOG_TRACE, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
 
     if (!(nb_slices - 1)) {
          ov_log(NULL, OVLOG_WARNING, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);

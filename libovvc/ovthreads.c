@@ -89,9 +89,8 @@ struct SliceInfo
 };
 
 static void
-setup_subpic_prms(const OVSPS *const sps, const struct PicPartitionInfo *const part_info, const struct TileInfo *const tinfo, uint8_t log2_ctb_s)
+setup_subpic_prms(const OVSPS *const sps, struct PicPartitionInfo *const part_info, const struct TileInfo *const tinfo, uint8_t log2_ctb_s)
 {
-    int i;
     int pic_w = sps->sps_pic_width_max_in_luma_samples;
     int pic_h = sps->sps_pic_height_max_in_luma_samples;
     int nb_ctu_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
@@ -101,15 +100,22 @@ setup_subpic_prms(const OVSPS *const sps, const struct PicPartitionInfo *const p
     int subpic_w = sps->sps_subpic_width_minus1[0]  + 1;
     int subpic_h = sps->sps_subpic_height_minus1[0] + 1;
 
+    part_info->nb_subpics = sps->sps_num_subpics_minus1 + 1;
+
     if (sps->sps_subpic_same_size_flag) {
         int nb_subpic_w = (nb_ctu_w / subpic_w) + !!(nb_ctu_w % subpic_w);
         int nb_subpic_h = (nb_ctu_h / subpic_h) + !!(nb_ctu_h % subpic_h);
 
         int subpic_x = sps->sps_subpic_ctu_top_left_x[0];
         int subpic_y = sps->sps_subpic_ctu_top_left_y[0];
+        int i;
 
         for (i = 0; i <= (sps->sps_num_subpics_minus1 & 0xF); i++) {
             printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
+            part_info->subpictures[i].x = subpic_x;
+            part_info->subpictures[i].y = subpic_y;
+            part_info->subpictures[i].w = subpic_w;
+            part_info->subpictures[i].h = subpic_h;
             subpic_x += subpic_w;
             if (!((i + 1) % nb_subpic_w)) {
                 subpic_y += subpic_h;
@@ -119,20 +125,32 @@ setup_subpic_prms(const OVSPS *const sps, const struct PicPartitionInfo *const p
 
     } else {
 
+        int subpic_x = sps->sps_subpic_ctu_top_left_x[0];
+        int subpic_y = sps->sps_subpic_ctu_top_left_y[0];
+        int i;
         for (i = 0; i < (sps->sps_num_subpics_minus1 & 0xF); i++) {
-
-            int subpic_x = sps->sps_subpic_ctu_top_left_x[i];
-            int subpic_y = sps->sps_subpic_ctu_top_left_y[i];
-
+            subpic_x = sps->sps_subpic_ctu_top_left_x[i];
+            subpic_y = sps->sps_subpic_ctu_top_left_y[i];
             subpic_w = sps->sps_subpic_width_minus1[i] + 1;
             subpic_h = sps->sps_subpic_height_minus1[i] + 1;
-            printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
-        }
-        int subpic_x = sps->sps_subpic_ctu_top_left_x[i];
-        int subpic_y = sps->sps_subpic_ctu_top_left_y[i];
 
+            printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
+
+            part_info->subpictures[i].x = subpic_x;
+            part_info->subpictures[i].y = subpic_y;
+            part_info->subpictures[i].w = subpic_w;
+            part_info->subpictures[i].h = subpic_h;
+        }
+
+        subpic_x = sps->sps_subpic_ctu_top_left_x[i];
+        subpic_y = sps->sps_subpic_ctu_top_left_y[i];
         subpic_w = nb_ctu_w - subpic_x;
         subpic_h = nb_ctu_h - subpic_y;
+
+        part_info->subpictures[i].x = subpic_x;
+        part_info->subpictures[i].y = subpic_y;
+        part_info->subpictures[i].w = subpic_w;
+        part_info->subpictures[i].h = subpic_h;
         printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
     }
 

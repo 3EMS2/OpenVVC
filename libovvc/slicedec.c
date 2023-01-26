@@ -405,7 +405,6 @@ slicedec_submit_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct E
 
     int nb_entries = nb_entry_points_minus1 + 1;
 
-
     int ret = 0;
     #if USE_THREADS
     ovthread_slice_add_entry_jobs(&sldec->slice_sync, slicedec_decode_rect_entry, nb_entries);
