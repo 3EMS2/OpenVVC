@@ -1526,6 +1526,7 @@ mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
+    if (!frame0) return;
 
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
 
@@ -1697,6 +1698,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
+    if (!frame0) return;
 
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
 
@@ -1897,6 +1899,7 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
+    if (!frame0) return;
 
     const OVSample *const ref0_cb = (OVSample *) frame0->data[1];
     const OVSample *const ref0_cr = (OVSample *) frame0->data[2];

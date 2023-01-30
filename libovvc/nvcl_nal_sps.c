@@ -192,6 +192,15 @@ subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
                     sps->sps_loop_filter_across_subpic_enabled_flag[i] = nvcl_read_flag(rdr);
                 }
             }
+        } else {
+#if 1
+            for (i = 1; i <= (sps->sps_num_subpics_minus1 & 0xF); i++) {
+                if (!sps->sps_independent_subpics_flag) {
+                    sps->sps_subpic_treated_as_pic_flag[i] = nvcl_read_flag(rdr);
+                    sps->sps_loop_filter_across_subpic_enabled_flag[i] = nvcl_read_flag(rdr);
+                }
+            }
+#endif
         }
     }
 

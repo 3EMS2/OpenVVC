@@ -391,6 +391,13 @@ slicedec_submit_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct E
     const OVSH *const sh = prms->sh;
     int nb_entry_points_minus1 = 0;
 
+    uint16_t slice_address = prms->sh->sh_slice_address;
+    uint16_t subpic_id = prms->sh->sh_subpic_id;
+    struct SubpicInfo *subpic = &prms->pps->part_info.subpictures[subpic_id];
+    uint16_t slice_id =  prms->pps->part_info.slice_id[subpic->map_offset + slice_address];
+    struct SliceMap *slice = &prms->pps->part_info.slices[slice_id];
+
+    int16_t nb_tiles_pic = (uint16_t)pps->part_info.nb_tile_w * pps->part_info.nb_tile_h;
     if (pps->pps_rect_slice_flag && !pps->pps_num_slices_in_pic_minus1) {
         int16_t nb_tiles_pic = (uint16_t)pps->part_info.nb_tile_w * pps->part_info.nb_tile_h;
         nb_entry_points_minus1 = nb_tiles_pic - 1;
@@ -403,7 +410,10 @@ slicedec_submit_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct E
         nb_entry_points_minus1 = sh->sh_num_tiles_in_slice_minus1;
     }
 
-    int nb_entries = nb_entry_points_minus1 + 1;
+    int nb_entries = slice->nb_entries;
+    if (!pps->pps_rect_slice_flag && nb_tiles_pic - sh->sh_slice_address > 1) {
+        nb_entries = sh->sh_num_tiles_in_slice_minus1 + 1;
+    }
 
     int ret = 0;
     #if USE_THREADS
@@ -1195,6 +1205,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     const int nb_ctu_w = einfo->nb_ctu_w;
     const int nb_ctu_h = einfo->nb_ctu_h;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    ov_log(NULL, OVLOG_WARNING, "start (%d,%d), %dx%d\n", einfo->ctb_x, einfo->ctb_y, einfo->nb_ctu_w, einfo->nb_ctu_h);
 
     ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
 

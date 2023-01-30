@@ -418,7 +418,7 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         memset(tmvp_ctx->dir_map_v1, 0, sizeof(uint64_t) * 34);
     }
 
-    if (tmvp_ctx->col_ref)
+    if (tmvp_ctx->col_ref && tmvp_ctx->col_ref->frame)
     tmvp_inter_synchronization(tmvp_ctx->col_ref, ctb_x, ctb_y, log2_ctb_s);
 
     if (plane0 && plane0->dirs) {

@@ -339,6 +339,13 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
         nb_entry_points_minus1 = sh->sh_num_tiles_in_slice_minus1;
     }
 
+    uint16_t slice_address = sh->sh_slice_address;
+    uint16_t subpic_id = sh->sh_subpic_id;
+    struct SubpicInfo *subpic = &pps->part_info.subpictures[subpic_id];
+    uint16_t slice_id =  pps->part_info.slice_id[subpic->map_offset + slice_address];
+    struct SliceMap *slice = &pps->part_info.slices[slice_id];
+
+    nb_entry_points_minus1 = slice->nb_entries - 1;
     int nb_entries = nb_entry_points_minus1 + 1;
     uint32_t rbsp_offset[257];
     const int nb_rbsp_epb = nal->nb_epb;

@@ -274,18 +274,25 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
     int tile_x = (entry_idx + prms->sh->sh_slice_address) % tile_info->nb_tile_cols;
     int tile_y = (entry_idx + prms->sh->sh_slice_address) / tile_info->nb_tile_cols;
     tile_y = OVMIN(tile_info->nb_tile_rows - 1, tile_y);
+    tile_x = OVMIN(tile_info->nb_tile_cols - 1, tile_x);
 
-    setup_subpic_prms(prms->sps, &pps->part_info, tile_info, log2_ctb_s);
-    setup_slice_prms(pps, &pps->part_info, tile_info, log2_ctb_s);
+    //setup_subpic_prms(prms->sps, &pps->part_info, tile_info, log2_ctb_s);
+    //setup_slice_prms(pps, &pps->part_info, tile_info, log2_ctb_s);
+    uint16_t slice_address = prms->sh->sh_slice_address;
+    uint16_t subpic_id = prms->sh->sh_subpic_id;
+    struct SubpicInfo *subpic = &prms->pps->part_info.subpictures[subpic_id];
+    uint16_t slice_id =  prms->pps->part_info.slice_id[subpic->map_offset + slice_address];
+    struct SliceMap *slice = &prms->pps->part_info.slices[slice_id];
+    struct Entry *e = !pps->pps_rect_slice_flag ? &prms->pps->part_info.entries[slice_address + entry_idx] : &prms->pps->part_info.entries[slice->entry_idx + entry_idx];
 
     einfo->tile_x = tile_x;
     einfo->tile_y = tile_y;
 
-    einfo->nb_ctu_w = tile_info->nb_ctu_w[tile_x];
-    einfo->nb_ctu_h = tile_info->nb_ctu_h[tile_y];
+    einfo->nb_ctu_w = e->w;
+    einfo->nb_ctu_h = e->h;
 
-    einfo->ctb_x = tile_info->ctu_x[tile_x];
-    einfo->ctb_y = tile_info->ctu_y[tile_y];
+    einfo->ctb_x = e->x;
+    einfo->ctb_y = e->y;
 
     einfo->entry_start = sh_info->rbsp_entry[entry_idx];
     einfo->entry_end   = sh_info->rbsp_entry[entry_idx + 1];

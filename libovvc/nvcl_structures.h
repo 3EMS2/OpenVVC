@@ -469,6 +469,7 @@ struct SubpicInfo {
     uint8_t y;
     uint8_t w;
     uint8_t h;
+    uint16_t map_offset;
     uint16_t nb_slices;
 };
 
@@ -477,11 +478,15 @@ struct Entry {
     uint8_t y;
     uint8_t w;
     uint8_t h;
+    uint16_t slice_id;
+    uint16_t subpic_id;
 };
 
 struct SliceMap {
     uint16_t entry_idx;
     uint16_t nb_entries;
+    uint16_t subpic_id;
+    uint16_t subpic_address;
 };
 /*FIXME check values over flow */
 struct OVPPS
@@ -602,6 +607,7 @@ struct OVPPS
         struct SubpicInfo subpictures[256];
         struct Entry entries[256];
         struct SliceMap slices[256];
+        uint16_t slice_id[256];
         uint16_t nb_subpics;
         uint16_t nb_entries;
         uint16_t nb_slices;

@@ -1012,7 +1012,7 @@ init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu, const struc
         ov_log(NULL, OVLOG_ERROR, "Mismatch in PU %d slice number : %d, nb slices : %d\n", pic->poc, nb_slices, pps->pps_num_slices_in_pic_minus1 + 1);
     }
 
-    nb_slices = pps->part_info.nb_entries;
+    nb_slices = pps->part_info.nb_entries - 1;
 
     sync->nb_slices = &sync->internal.nb_slices;
 
