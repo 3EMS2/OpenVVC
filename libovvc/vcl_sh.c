@@ -508,7 +508,7 @@ find_subpic_id(const struct PicPartitionInfo *const part_info, uint8_t ctu_x, ui
 }
 
 static void
-setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_info, const struct TileInfo *const tinfo, uint8_t log2_ctb_s)
+setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_info, struct TileInfo *const tinfo, uint8_t log2_ctb_s)
 {
     struct SliceInfo slice_info[300];
     int tile_id = 0;
@@ -519,6 +519,8 @@ setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_inf
     if (part_info->nb_entries) return;
     part_info->nb_slices = pps->pps_single_slice_per_subpic_flag ? part_info->nb_subpics : pps->pps_num_slices_in_pic_minus1 + 1;
     part_info->nb_entries = 0;
+    if (!tinfo->nb_tile_cols) tinfo->nb_tile_cols = 1;
+    if (!tinfo->nb_tile_rows) tinfo->nb_tile_rows = 1;
     for (i = 0; i < part_info->nb_slices; i++) {
         struct SliceInfo *sl = &slice_info[i];
 
