@@ -392,9 +392,9 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
                 ph->ph_collocated_from_l0_flag = 1;
                 if (num_ref_entries1 > 0) {
                     ph->ph_collocated_from_l0_flag = nvcl_read_flag(rdr);
-                    if ((ph->ph_collocated_from_l0_flag && num_ref_entries0 > 1) || (!ph->ph_collocated_from_l0_flag && num_ref_entries1 > 1)) {
-                        ph->ph_collocated_ref_idx = nvcl_read_u_expgolomb(rdr);
-                    }
+                }
+                if ((ph->ph_collocated_from_l0_flag && num_ref_entries0 > 1) || (!ph->ph_collocated_from_l0_flag && num_ref_entries1 > 1)) {
+                    ph->ph_collocated_ref_idx = nvcl_read_u_expgolomb(rdr);
                 }
             }
         }

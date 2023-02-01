@@ -319,6 +319,23 @@ update_sps_info(struct SPSInfo *const sps_info, const OVSPS *const sps)
     return 0;
 }
 
+static int16_t
+map_subpic_id(struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
+{
+    uint16_t slice_map_id = 0;
+    for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
+        if (sh_subpic_id == part_info->subpic_id[subpic_id]) {
+
+            ov_log(NULL, OVLOG_ERROR, "Mapped sh_subpic_id %d to subpic %d\n",
+                   sh_subpic_id, subpic_id);
+
+            return subpic_id;
+        }
+    }
+    ov_log(NULL, OVLOG_ERROR, "Invalid subpicture id %d .\n", sh_subpic_id);
+    return 0;
+}
+
 int
 decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_bytes)
 {
@@ -326,27 +343,16 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
     struct SHInfo *const sh_info = &prms->sh_info;
     const OVSH *const sh = prms->sh;
     const OVPPS *const pps = prms->pps;
-    int nb_entry_points_minus1 = 0;
-    if (pps->pps_rect_slice_flag && !pps->pps_num_slices_in_pic_minus1) {
-        int16_t nb_tiles_pic = (uint16_t)pps->part_info.nb_tile_w * pps->part_info.nb_tile_h;
-        nb_entry_points_minus1 = nb_tiles_pic - 1;
-    } else if (pps->pps_rect_slice_flag) {
-        int16_t slice_w = pps->pps_slice_width_in_tiles_minus1[sh->sh_slice_address]  + 1;
-        int16_t slice_h = pps->pps_slice_height_in_tiles_minus1[sh->sh_slice_address] + 1;
-        int16_t nb_tiles_in_slice = slice_w * slice_h;
-        nb_entry_points_minus1 = nb_tiles_in_slice - 1;
-    } else {
-        nb_entry_points_minus1 = sh->sh_num_tiles_in_slice_minus1;
-    }
+    const OVSPS *const sps = prms->sps;
 
     uint16_t slice_address = sh->sh_slice_address;
     uint16_t subpic_id = sh->sh_subpic_id;
-    struct SubpicInfo *subpic = &pps->part_info.subpictures[subpic_id];
+    uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
+    struct SubpicInfo *subpic = &pps->part_info.subpictures[actual_subpic_id];
     uint16_t slice_id =  pps->part_info.slice_id[subpic->map_offset + slice_address];
     struct SliceMap *slice = &pps->part_info.slices[slice_id];
 
-    nb_entry_points_minus1 = slice->nb_entries - 1;
-    int nb_entries = nb_entry_points_minus1 + 1;
+    int nb_entries = slice->nb_entries;
     uint32_t rbsp_offset[257];
     const int nb_rbsp_epb = nal->nb_epb;
     const uint32_t *rbsp_epb_pos = nal->epb_pos;
@@ -376,6 +382,8 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
     sh_info->rbsp_entry[0] = nal->rbsp_data + nb_sh_bytes;
     for (i = 1; i < nb_entries; ++i) {
         sh_info->rbsp_entry[i] = OVMIN(nal->rbsp_data + rbsp_offset[i] + nb_sh_bytes, rbsp_end);
+        if (rbsp_end == sh_info->rbsp_entry[i])
+            ov_log(NULL, 3, "Empty entry\n");
     }
 
     /* Note this is so we can retrieve entry end by using rbsp_entry [i + 1] */

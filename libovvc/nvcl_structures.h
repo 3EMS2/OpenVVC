@@ -291,7 +291,7 @@ struct OVSPS
     uint8_t sps_subpic_id_len_minus1;
     uint8_t sps_subpic_id_mapping_explicitly_signalled_flag;
     uint8_t sps_subpic_id_mapping_present_flag;
-    uint8_t sps_subpic_id[16]; /* max num_sub_pic */
+    uint16_t sps_subpic_id[16]; /* max num_sub_pic */
 
     uint8_t sps_bitdepth_minus8;
     uint8_t sps_entropy_coding_sync_enabled_flag;
@@ -515,7 +515,7 @@ struct OVPPS
     uint8_t pps_num_subpics_minus1;
 
     uint8_t pps_subpic_id_len_minus1;
-    uint8_t pps_subpic_id[16];
+    uint16_t pps_subpic_id[16];
     uint8_t pps_log2_ctu_size_minus5;
     uint8_t pps_num_exp_tile_columns_minus1;
     uint8_t pps_num_exp_tile_rows_minus1;
@@ -607,6 +607,7 @@ struct OVPPS
         struct SubpicInfo subpictures[256];
         struct Entry entries[256];
         struct SliceMap slices[256];
+        uint16_t subpic_id[256];
         uint16_t slice_id[256];
         uint16_t nb_subpics;
         uint16_t nb_entries;

@@ -1012,12 +1012,29 @@ init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu, const struc
         ov_log(NULL, OVLOG_ERROR, "Mismatch in PU %d slice number : %d, nb slices : %d\n", pic->poc, nb_slices, pps->pps_num_slices_in_pic_minus1 + 1);
     }
 
-    nb_slices = pps->part_info.nb_entries - 1;
+    nb_slices = pps->part_info.nb_entries;
 
     sync->nb_slices = &sync->internal.nb_slices;
 
     atomic_init(sync->nb_slices, nb_slices);
     ov_log(NULL, OVLOG_WARNING, "BEGIN pic : %d, nb slices : %d\n", pic->poc, nb_slices);
+}
+
+static int16_t
+map_subpic_id(struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
+{
+    uint16_t slice_map_id = 0;
+    for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
+        if (sh_subpic_id == part_info->subpic_id[subpic_id]) {
+
+            ov_log(NULL, OVLOG_ERROR, "Mapped sh_subpic_id %d to subpic %d\n",
+                   sh_subpic_id, subpic_id);
+
+            return subpic_id;
+        }
+    }
+    ov_log(NULL, OVLOG_ERROR, "Invalid subpicture id %d .\n", sh_subpic_id);
+    return 0;
 }
 
 int
@@ -1027,19 +1044,28 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
 
     const OVSH  *const sh  = ps->sh;
     const OVPH  *const ph  = ps->ph;
+    const OVPPS  *const pps  = ps->pps;
+    const OVSPS  *const sps  = ps->sps;
     int ret = 0;
     int32_t poc = dpb->poc;
     uint8_t cra_flag = 0;
     uint8_t idr_flag = 0;
+    uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
+    struct SubpicInfo *subpic = &pps->part_info.subpictures[actual_subpic_id];
 
     idr_flag |= nalu_type == OVNALU_IDR_W_RADL;
     idr_flag |= nalu_type == OVNALU_IDR_N_LP;
 
     cra_flag |= nalu_type == OVNALU_CRA;
     cra_flag |= nalu_type == OVNALU_GDR;
+    uint8_t once = !dpb->active_pic;
 
     /* TODO move to dec init */
-    if (!ps->sh->sh_slice_address && !ps->sh->sh_subpic_id) {
+#if 0
+    if (!ps->sh->sh_slice_address && !actual_subpic_id) {
+#else
+    if (once) {
+#endif
         if (idr_flag){
             /* New IDR involves a POC refresh and mark the start of
              * a new coded video sequence
@@ -1070,7 +1096,11 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         goto fail;
     }
 
-    if (!ps->sh->sh_slice_address && !ps->sh->sh_subpic_id) {
+#if 0
+    if (!ps->sh->sh_slice_address && !actual_subpic_id) {
+#else
+    if (once) {
+#endif
         update_pic_params(*pic_p, ps);
 
         /* Init picture TMVP info */

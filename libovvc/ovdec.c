@@ -471,6 +471,7 @@ vvc_decode_picture_unit(OVVCDec *dec, const OVPictureUnit *pu)
     }
     if (dec->dpb)
         dec->dpb->active_pic = NULL;
+
     ovpu_unref(&dec->pu);
     //printf("PU END\n");
     return 0;
@@ -514,6 +515,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
     }
 
     if (*frame_p) {
+        if (punit)
         pp_process_frame(&dec->ppctx, punit, frame_p);
         ovpu_unref(&punit);
     }
@@ -551,6 +553,7 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
     ret = ovdpb_drain_frame(dpb, frame_p, &punit);
 
     if (*frame_p) {
+        if (punit)
         pp_process_frame(&dec->ppctx, punit, frame_p);
         ovpu_unref(&punit);
     }

@@ -383,32 +383,39 @@ slicedec_finish_decoding(OVSliceDec *sldec)
     }
 }
 
+static int16_t
+map_subpic_id(struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
+{
+    uint16_t slice_map_id = 0;
+    for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
+        if (sh_subpic_id == part_info->subpic_id[subpic_id]) {
+
+            ov_log(NULL, OVLOG_ERROR, "Mapped sh_subpic_id %d to subpic %d\n",
+                   sh_subpic_id, subpic_id);
+
+            return subpic_id;
+        }
+    }
+    ov_log(NULL, OVLOG_ERROR, "Invalid subpicture id %d .\n", sh_subpic_id);
+    return 0;
+}
+
 int
 slicedec_submit_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct EntryThread* entry_th)
 {
     /* FIXME do not recompute everywhere */
     const OVPPS *const pps = prms->pps;
     const OVSH *const sh = prms->sh;
-    int nb_entry_points_minus1 = 0;
+    const OVSPS *const sps = prms->sps;
 
     uint16_t slice_address = prms->sh->sh_slice_address;
     uint16_t subpic_id = prms->sh->sh_subpic_id;
-    struct SubpicInfo *subpic = &prms->pps->part_info.subpictures[subpic_id];
+    uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
+    struct SubpicInfo *subpic = &prms->pps->part_info.subpictures[actual_subpic_id];
     uint16_t slice_id =  prms->pps->part_info.slice_id[subpic->map_offset + slice_address];
     struct SliceMap *slice = &prms->pps->part_info.slices[slice_id];
 
     int16_t nb_tiles_pic = (uint16_t)pps->part_info.nb_tile_w * pps->part_info.nb_tile_h;
-    if (pps->pps_rect_slice_flag && !pps->pps_num_slices_in_pic_minus1) {
-        int16_t nb_tiles_pic = (uint16_t)pps->part_info.nb_tile_w * pps->part_info.nb_tile_h;
-        nb_entry_points_minus1 = nb_tiles_pic - 1;
-    } else if (pps->pps_rect_slice_flag) {
-        int16_t slice_w = pps->pps_slice_width_in_tiles_minus1[sh->sh_slice_address]  + 1;
-        int16_t slice_h = pps->pps_slice_height_in_tiles_minus1[sh->sh_slice_address] + 1;
-        int16_t nb_tiles_in_slice = slice_w * slice_h;
-        nb_entry_points_minus1 = nb_tiles_in_slice - 1;
-    } else {
-        nb_entry_points_minus1 = sh->sh_num_tiles_in_slice_minus1;
-    }
 
     int nb_entries = slice->nb_entries;
     if (!pps->pps_rect_slice_flag && nb_tiles_pic - sh->sh_slice_address > 1) {
@@ -1205,6 +1212,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     const int nb_ctu_w = einfo->nb_ctu_w;
     const int nb_ctu_h = einfo->nb_ctu_h;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    ov_log(NULL, OVLOG_WARNING, "SLICE %d, SUBPIC %d\n", prms->sh->sh_slice_address, prms->sh->sh_subpic_id );
     ov_log(NULL, OVLOG_WARNING, "start (%d,%d), %dx%d\n", einfo->ctb_x, einfo->ctb_y, einfo->nb_ctu_w, einfo->nb_ctu_h);
 
     ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
@@ -1358,16 +1366,16 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     tools->affine_amvr_enabled = sps->sps_affine_amvr_enabled_flag;
     tools->scaling_list_enabled = ph->ph_explicit_scaling_list_enabled_flag || sh->sh_explicit_scaling_list_used_flag;
     tools->lfnst_scaling_list_enabled = tools->scaling_list_enabled && !sps->sps_scaling_matrix_for_lfnst_disabled_flag;
-    tools->sao_luma_flag   =  sh->sh_sao_luma_used_flag;
-    tools->sao_chroma_flag =  sh->sh_sao_chroma_used_flag;
+    tools->sao_luma_flag   =  sh->sh_sao_luma_used_flag | ph->ph_sao_luma_enabled_flag;
+    tools->sao_chroma_flag =  sh->sh_sao_chroma_used_flag | ph->ph_sao_chroma_enabled_flag;
 
-    tools->alf_luma_enabled_flag = sh->sh_alf_enabled_flag;
-    tools->alf_cb_enabled_flag = sh->sh_alf_cb_enabled_flag;
-    tools->alf_cr_enabled_flag = sh->sh_alf_cr_enabled_flag;
-    tools->cc_alf_cb_enabled_flag = sh->sh_alf_cc_cb_enabled_flag;
-    tools->cc_alf_cr_enabled_flag = sh->sh_alf_cc_cr_enabled_flag;
+    tools->alf_luma_enabled_flag = sh->sh_alf_enabled_flag | ph->ph_alf_enabled_flag;
+    tools->alf_cb_enabled_flag = sh->sh_alf_cb_enabled_flag | ph->ph_alf_cb_enabled_flag;
+    tools->alf_cr_enabled_flag = sh->sh_alf_cr_enabled_flag | ph->ph_alf_cr_enabled_flag;
+    tools->cc_alf_cb_enabled_flag = sh->sh_alf_cc_cb_enabled_flag | ph->ph_alf_cc_cb_enabled_flag;
+    tools->cc_alf_cr_enabled_flag = sh->sh_alf_cc_cr_enabled_flag | ph->ph_alf_cc_cr_enabled_flag;;
 
-    tools->num_alf_aps_ids_luma  = sh->sh_num_alf_aps_ids_luma;
+    tools->num_alf_aps_ids_luma  = sh->sh_num_alf_aps_ids_luma | ph->ph_num_alf_aps_ids_luma;
 
 #if 1
     tools->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
@@ -1456,7 +1464,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     init_slice_tree_ctx(ctudec, prms);
 
     rcn_init_functions(&ctudec->rcn_funcs, ict_type(ph), tools->lm_chroma_enabled,
-                       sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag,
+                       sps->sps_chroma_vertical_collocated_flag, sh->sh_lmcs_used_flag,
                        sps->sps_bitdepth_minus8 + 8, sh->sh_dep_quant_used_flag);
 
     //In loop filter information for CTU reconstruction
