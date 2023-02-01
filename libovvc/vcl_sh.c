@@ -718,7 +718,7 @@ setup_subpic_id_map(struct PicPartitionInfo *part_info, const OVPPS *const pps, 
                 part_info->subpic_id[subpic_id] = subpic_id;
         }
     }
-    return 0;
+    return;
 }
 
 static int16_t
@@ -813,7 +813,12 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
     ov_log(NULL, OVLOG_WARNING, "Read slice address %d , subpic_id %d, subpic idx %d\n", sh->sh_slice_address, sh->sh_subpic_id, actual_subpic_id);
 
+    struct SubpicInfo *subpic = &pps->part_info.subpictures[actual_subpic_id];
+    uint16_t slice_address = sh->sh_slice_address;
+    uint16_t slice_id =  pps->part_info.slice_id[subpic->map_offset + slice_address];
+    struct SliceMap *slice = &pps->part_info.slices[slice_id];
     int nb_extra_sh_bits = sps->sps_num_extra_sh_bytes * 8;
+
     for (i = 0; i < nb_extra_sh_bits; i++) {
         if (sps->sps_extra_sh_bit_present_flag[i])
             sh->sh_extra_bit[i] = nvcl_read_bits(rdr, 1);
@@ -821,6 +826,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     if (!pps->pps_rect_slice_flag && nb_tiles_pic - sh->sh_slice_address > 1) {
         sh->sh_num_tiles_in_slice_minus1 = nvcl_read_u_expgolomb(rdr);
+        slice->nb_entries = sh->sh_num_tiles_in_slice_minus1 + 1;
     }
 
     sh->sh_slice_type = I;
@@ -1011,24 +1017,17 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         }
     }
 
-    uint16_t slice_address = sh->sh_slice_address;
-    uint16_t subpic_id = sh->sh_subpic_id;
-    struct SubpicInfo *subpic = &pps->part_info.subpictures[actual_subpic_id];
-    uint16_t slice_id =  pps->part_info.slice_id[subpic->map_offset + slice_address];
-    struct SliceMap *slice = &pps->part_info.slices[slice_id];
 
     uint16_t nb_entry_points_minus1 = slice->nb_entries - 1;
 
-    ov_log(NULL, OVLOG_ERROR, "Slice address %d\n", slice_address);
+    //ov_log(NULL, OVLOG_ERROR, "Slice address %d\n", slice_address);
 
-    if (!pps->pps_rect_slice_flag && nb_tiles_pic - sh->sh_slice_address > 1) {
-        nb_entry_points_minus1 = sh->sh_num_tiles_in_slice_minus1;
-        slice->nb_entries = nb_entry_points_minus1 + 1;
-    }
+#if 0
     if (pps->pps_single_slice_per_subpic_flag) {
         nb_entry_points_minus1 = 0;
-        slice->nb_entries = nb_entry_points_minus1 + 1;
+        slice->nb_entries = 1;
     }
+#endif
 
     if (nb_entry_points_minus1) {
         if (nb_entry_points_minus1 > 255) return -1;
