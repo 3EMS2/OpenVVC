@@ -1012,7 +1012,7 @@ init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu, const struc
         ov_log(NULL, OVLOG_ERROR, "Mismatch in PU %d slice number : %d, nb slices : %d\n", pic->poc, nb_slices, pps->pps_num_slices_in_pic_minus1 + 1);
     }
 
-    nb_slices = pps->part_info.nb_entries;
+    nb_slices = pps->part_info.nb_slices;
 
     sync->nb_slices = &sync->internal.nb_slices;
 
@@ -1027,8 +1027,10 @@ map_subpic_id(struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
         if (sh_subpic_id == part_info->subpic_id[subpic_id]) {
 
+#if 0
             ov_log(NULL, OVLOG_ERROR, "Mapped sh_subpic_id %d to subpic %d\n",
                    sh_subpic_id, subpic_id);
+#endif
 
             return subpic_id;
         }
@@ -1283,7 +1285,7 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
     ov_log(NULL, OVLOG_TRACE, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
 
     if (!(nb_slices - 1)) {
-         ov_log(NULL, OVLOG_WARNING, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
+         ov_log(NULL, OVLOG_ERROR, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
         //printf( "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
         ovdpb_unref_pic(pic, OV_IN_DECODING_PIC_FLAG);
         pic->flags &= OV_OUTPUT_PIC_FLAG;
@@ -1300,8 +1302,8 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
         pthread_cond_broadcast(sync->ref_cnd);
         pthread_mutex_unlock(sync->ref_mtx);
     } else {
-         ov_log(NULL, OVLOG_WARNING, "END2 pic : %d, nb slices : %d\n", pic->poc, nb_slices);
-        ovdpb_unref_pic(pic, 0);
+         //ov_log(NULL, OVLOG_WARNING, "END2 pic : %d, nb slices : %d\n", pic->poc, nb_slices);
+         ovdpb_unref_pic(pic, 0);
     }
 }
 

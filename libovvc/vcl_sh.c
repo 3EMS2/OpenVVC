@@ -446,7 +446,7 @@ setup_subpic_prms(const OVSPS *const sps, struct PicPartitionInfo *const part_in
         int i;
 
         for (i = 0; i <= (sps->sps_num_subpics_minus1 & 0xF); i++) {
-            printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
+            //printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
             part_info->subpictures[i].x = subpic_x;
             part_info->subpictures[i].y = subpic_y;
             part_info->subpictures[i].w = subpic_w;
@@ -470,7 +470,7 @@ setup_subpic_prms(const OVSPS *const sps, struct PicPartitionInfo *const part_in
             subpic_w = sps->sps_subpic_width_minus1[i] + 1;
             subpic_h = sps->sps_subpic_height_minus1[i] + 1;
 
-            printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
+            //printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
 
             part_info->subpictures[i].x = subpic_x;
             part_info->subpictures[i].y = subpic_y;
@@ -489,7 +489,7 @@ setup_subpic_prms(const OVSPS *const sps, struct PicPartitionInfo *const part_in
         part_info->subpictures[i].w = subpic_w;
         part_info->subpictures[i].h = subpic_h;
         //part_info->subpictures[i].nb_slices = 0;
-        printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
+        //printf ("Subpicture %d : (%d, %d) %dx%d\n", i, subpic_x, subpic_y, subpic_w, subpic_h);
     }
 
 }
@@ -558,7 +558,7 @@ setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_inf
                     for (int l = 0; l < nb_exp_slices; l++) {
                         int tmp_h = pps->pps_exp_slice_height_in_ctus_minus1[i + l] + 1;
                         int subpic_id =  find_subpic_id(&pps->part_info, x, pos_y);
-                        printf("slice %d in tile %d in subpic %d: x %d y %d, wxh %dx%d\n", i + l, tmp_tile_id, subpic_id, x, pos_y, w, tmp_h);
+                        //printf("slice %d in tile %d in subpic %d: x %d y %d, wxh %dx%d\n", i + l, tmp_tile_id, subpic_id, x, pos_y, w, tmp_h);
                         part_info->subpictures[subpic_id].nb_slices++;
                         part_info->entries[part_info->nb_entries].x = x;
                         part_info->entries[part_info->nb_entries].y = pos_y;
@@ -588,7 +588,7 @@ setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_inf
                             int rem_h = h - (pos_y - y);
                             int subpic_id =  find_subpic_id(&pps->part_info, x, pos_y);
                             int implicit_h = OVMIN(last_read, rem_h);
-                            printf("Implicit slice %d in tile %d in subpic %d: x %d y %d, wxh %dx%d\n", i + nb_exp_slices + l, tmp_tile_id, subpic_id, x, pos_y, w, implicit_h);
+                            //printf("Implicit slice %d in tile %d in subpic %d: x %d y %d, wxh %dx%d\n", i + nb_exp_slices + l, tmp_tile_id, subpic_id, x, pos_y, w, implicit_h);
                             part_info->entries[part_info->nb_entries].x = x;
                             part_info->entries[part_info->nb_entries].y = pos_y;
                             part_info->entries[part_info->nb_entries].w = w;
@@ -610,7 +610,7 @@ setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_inf
                 } else {
                     //for (int l = 0; l < nb_tiles_entries; ++l) {
                     int subpic_id =  find_subpic_id(&pps->part_info, x, y);
-                    printf("slice %d: tile : %d in subpic %d x %d, y %d, wxh %dx%d\n", i, tmp_tile_id, subpic_id, x, y, w, h);
+                    //printf("slice %d: tile : %d in subpic %d x %d, y %d, wxh %dx%d\n", i, tmp_tile_id, subpic_id, x, y, w, h);
                     //printf("nb_tiles_in_slice %d \n", sl_w_tile * sl_h_tile);
                     if (!j && !k) {
                         part_info->slices[i].entry_idx = part_info->nb_entries;

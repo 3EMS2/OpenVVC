@@ -390,8 +390,10 @@ map_subpic_id(struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
         if (sh_subpic_id == part_info->subpic_id[subpic_id]) {
 
+#if 0
             ov_log(NULL, OVLOG_ERROR, "Mapped sh_subpic_id %d to subpic %d\n",
                    sh_subpic_id, subpic_id);
+#endif
 
             return subpic_id;
         }
@@ -1212,11 +1214,12 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     const int nb_ctu_w = einfo->nb_ctu_w;
     const int nb_ctu_h = einfo->nb_ctu_h;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-    ov_log(NULL, OVLOG_WARNING, "SLICE %d, SUBPIC %d\n", prms->sh->sh_slice_address, prms->sh->sh_subpic_id );
-    ov_log(NULL, OVLOG_WARNING, "start (%d,%d), %dx%d\n", einfo->ctb_x, einfo->ctb_y, einfo->nb_ctu_w, einfo->nb_ctu_h);
+
+    ov_log(NULL, OVLOG_WARNING, "Decode entry slice %d in subpicture %d at (%d,%d), %dx%d\n",
+           prms->sh->sh_slice_address, prms->sh->sh_subpic_id,
+           einfo->ctb_x, einfo->ctb_y, einfo->nb_ctu_w, einfo->nb_ctu_h);
 
     ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
-
 
     ctudec->cabac_ctx = &cabac_ctx;
 

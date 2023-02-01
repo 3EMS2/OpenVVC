@@ -394,7 +394,7 @@ nvcl_decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
     uint8_t nalu_type = nalu->type & 0x1F;
 
     static int count = 0;
-    ov_log(NULL, OVLOG_ERROR, "Received new %s NAL unit %d.\n", nalu_name[nalu_type], count++);
+    ov_log(NULL, OVLOG_TRACE, "Received new %s NAL unit %d.\n", nalu_name[nalu_type], count++);
 
     int ret = nalu_action[nalu_type](nvcl_ctx, nalu);
 

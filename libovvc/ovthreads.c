@@ -267,8 +267,10 @@ map_subpic_id(struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
         if (sh_subpic_id == part_info->subpic_id[subpic_id]) {
 
+#if 0
             ov_log(NULL, OVLOG_ERROR, "Mapped sh_subpic_id %d to subpic %d\n",
                    sh_subpic_id, subpic_id);
+#endif
 
             return subpic_id;
         }
