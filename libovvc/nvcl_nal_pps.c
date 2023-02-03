@@ -328,8 +328,8 @@ nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         const OVSPS *sps = (OVSPS *)nvcl_ctx->sps_list[pps->pps_seq_parameter_set_id]->data;
 	    const int log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
 
-	    const int pic_w = sps->sps_pic_width_max_in_luma_samples;
-	    const int pic_h = sps->sps_pic_height_max_in_luma_samples;
+	    const int pic_w = pps->pps_pic_width_in_luma_samples;
+	    const int pic_h = pps->pps_pic_height_in_luma_samples;
 
 	    const int nb_ctu_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
 	    const int nb_ctu_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;

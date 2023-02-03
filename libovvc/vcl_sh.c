@@ -521,6 +521,8 @@ setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_inf
     part_info->nb_entries = 0;
     if (!tinfo->nb_tile_cols) tinfo->nb_tile_cols = 1;
     if (!tinfo->nb_tile_rows) tinfo->nb_tile_rows = 1;
+    part_info->nb_tile_w = tinfo->nb_tile_cols;
+    part_info->nb_tile_h = tinfo->nb_tile_rows;
     for (i = 0; i < part_info->nb_slices; i++) {
         struct SliceInfo *sl = &slice_info[i];
 

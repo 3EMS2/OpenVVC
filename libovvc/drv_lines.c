@@ -43,6 +43,8 @@
 #include "ovdec_internal.h"
 
 #define LOG2_MIN_CU_S 2
+#define LOG2_MIN_CTU_S 5
+#define LOG2_MAX_CTU_S 7
 /* TODO define in a header */
 enum SliceType {
      SLICE_B = 0,
@@ -86,14 +88,15 @@ init_inter_drv_lines(struct DRVLines *const drv_lns, int nb_pb_ctb,
 {
     struct InterLines *const lns = &drv_lns->inter_lines;
 
+    printf("init: nb_rst_units %d, %p %p %p \n", (nb_ctb_pic_w + 2), lns->dir0, lns->dir1, lns->affine);
     lns->mv0  = ov_mallocz(sizeof(*lns->mv0) * nb_pb_ctb * (nb_ctb_pic_w + 2));
     lns->mv1  = ov_mallocz(sizeof(*lns->mv1) * nb_pb_ctb * (nb_ctb_pic_w + 2));
 
-    lns->dir0  = ov_mallocz(sizeof(*lns->dir0) * (nb_ctb_pic_w + 2));
-    lns->dir1  = ov_mallocz(sizeof(*lns->dir1) * (nb_ctb_pic_w + 2));
+    lns->dir0  = ov_mallocz(sizeof(*lns->dir0) * 4 * (nb_ctb_pic_w + 2));
+    lns->dir1  = ov_mallocz(sizeof(*lns->dir1) * 4 * (nb_ctb_pic_w + 2));
 
-    lns->affine = ov_mallocz(sizeof(*lns->affine) * (nb_ctb_pic_w + 2));
-    lns->aff_info = ov_mallocz(sizeof(*lns->aff_info) * (nb_ctb_pic_w + 2));
+    lns->affine = ov_mallocz(sizeof(*lns->affine) * 4 * (nb_ctb_pic_w + 2));
+    lns->aff_info = ov_mallocz(sizeof(*lns->aff_info) * 4 * (nb_ctb_pic_w + 2));
 
     if (!lns->mv0 || !lns->mv1 || !lns->dir0 || !lns->dir1) {
         free_inter_drv_lines(drv_lns);
@@ -140,7 +143,7 @@ init_ibc_drv_lines(struct DRVLines *const drv_lns, int nb_pb_ctb,
     struct IBCLines *const lns = &drv_lns->ibc_lines;
 
     lns->mv  = ov_mallocz(sizeof(*lns->mv) * nb_pb_ctb * (nb_ctb_pic_w + 2));
-    lns->map = ov_mallocz(sizeof(*lns->map) * (nb_ctb_pic_w + 2));
+    lns->map = ov_mallocz(sizeof(*lns->map) * 4 * (nb_ctb_pic_w + 2));
 
     if (!lns->mv || !lns->map) {
         free_ibc_drv_lines(drv_lns);
@@ -437,21 +440,21 @@ init_dbf_lines(struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
 {
     uint8_t malloc_chk = 0;
 
-    l->qp_x_map       = ov_mallocz((nb_pu_line + 1) * sizeof(int8_t));
-    l->qp_x_map_cb    = ov_mallocz((nb_pu_line + 1) * sizeof(int8_t));
-    l->qp_x_map_cr    = ov_mallocz((nb_pu_line + 1) * sizeof(int8_t));
+    l->qp_x_map       = ov_mallocz((nb_pu_line + 1) * 4 * sizeof(int8_t));
+    l->qp_x_map_cb    = ov_mallocz((nb_pu_line + 1) * 4 * sizeof(int8_t));
+    l->qp_x_map_cr    = ov_mallocz((nb_pu_line + 1) * 4 * sizeof(int8_t));
 
-    l->small_map      = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
-    l->large_map_c    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+    l->small_map      = ov_mallocz((nb_ctu_line + 1) * 4 * sizeof(uint64_t));
+    l->large_map_c    = ov_mallocz((nb_ctu_line + 1) * 4 * sizeof(uint64_t));
 
-    l->dbf_bs1_hor    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
-    l->dbf_bs1_hor_cb = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
-    l->dbf_bs1_hor_cr = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+    l->dbf_bs1_hor    = ov_mallocz((nb_ctu_line + 1) * 4 * sizeof(uint64_t));
+    l->dbf_bs1_hor_cb = ov_mallocz((nb_ctu_line + 1) * 4 * sizeof(uint64_t));
+    l->dbf_bs1_hor_cr = ov_mallocz((nb_ctu_line + 1) * 4 * sizeof(uint64_t));
 
-    l->dbf_bs2_hor    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
-    l->dbf_bs2_hor_c  = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+    l->dbf_bs2_hor    = ov_mallocz((nb_ctu_line + 1) * 4 * sizeof(uint64_t));
+    l->dbf_bs2_hor_c  = ov_mallocz((nb_ctu_line + 1) * 4 * sizeof(uint64_t));
 
-    l->dbf_affine  = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+    l->dbf_affine  = ov_mallocz((nb_ctu_line + 1) * 4 * sizeof(uint64_t));
 
     malloc_chk |= l->qp_x_map       == NULL;
     malloc_chk |= l->qp_x_map_cb    == NULL;
@@ -737,24 +740,25 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
       */
 
      uint16_t pic_w = prms->sps->sps_pic_width_max_in_luma_samples;
-     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
 
-     nb_ctb_pic_w += tinfo->nb_tile_cols * 2;
-     nb_ctb_pic_w *= tinfo->nb_tile_rows;
+     uint16_t nb_ctb_pic_w = (pic_w + ((1 << LOG2_MIN_CTU_S) - 1)) >> LOG2_MIN_CTU_S;
+
+     nb_ctb_pic_w += prms->pps->part_info.nb_tile_w * 2;
+     nb_ctb_pic_w *= prms->pps->part_info.nb_tile_h;
 
      uint16_t nb_pb_pic_w = (nb_ctb_pic_w << log2_ctb_s) >> log2_min_cb_s;
 
      uint16_t nb_pb_pic_w2 = (nb_ctb_pic_w << log2_ctb_s) >> LOG2_MIN_CU_S;
-     uint8_t nb_pb_ctb2 = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
+     uint8_t nb_pb_ctb2 = (1 << 7) >> LOG2_MIN_CU_S;
 
      ret = init_inter_drv_lines(lns, nb_pb_ctb2, 32*nb_ctb_pic_w);
 
      /* FIXME return */
-     ret = init_dbf_lines(&lns->dbf_lines, nb_ctb_pic_w, 32 * nb_pb_pic_w2);
+     ret = init_dbf_lines(&lns->dbf_lines, 32*nb_ctb_pic_w, 32 * nb_pb_pic_w2);
 
      ret = init_ibc_drv_lines(lns, nb_pb_ctb2, 32*nb_ctb_pic_w);
 
-     lns->intra_luma_x  = ov_mallocz(sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
+     lns->intra_luma_x  = ov_mallocz(sizeof(*lns->intra_luma_x) *4* nb_pb_pic_w2);
 
      if (!lns->intra_luma_x || ret < 0) {
          drv_lines_uninit(sldec);
@@ -769,6 +773,7 @@ reset_inter_lines(const struct InterLines *const inter_lns, uint16_t nb_ctu_w,
                   uint8_t log2_ctb_s)
 {
     uint16_t nb_rst_units = (nb_ctu_w << log2_ctb_s) >> LOG2_UNIT_S;
+    printf("reset: nb_rst_units %d, %p %p %p \n", nb_rst_units, inter_lns->dir0, inter_lns->dir1, inter_lns->affine);
     memset(inter_lns->dir0,   0, sizeof(*inter_lns->dir0)   * nb_rst_units);
     memset(inter_lns->dir1,   0, sizeof(*inter_lns->dir1)   * nb_rst_units);
     memset(inter_lns->affine, 0, sizeof(*inter_lns->affine) * nb_rst_units);
@@ -801,8 +806,8 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
     uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
 
-    nb_ctb_pic_w += tinfo->nb_tile_cols;
-    nb_ctb_pic_w *= tinfo->nb_tile_rows;
+    nb_ctb_pic_w += pps->part_info.nb_tile_w;
+    nb_ctb_pic_w *= pps->part_info.nb_tile_h;
 
     uint16_t nb_pb_pic_w = (nb_ctb_pic_w << log2_ctb_s) >> log2_min_cb_s;
     uint16_t nb_pb_pic_w2 = (nb_ctb_pic_w << log2_ctb_s) >> LOG2_MIN_CU_S;
