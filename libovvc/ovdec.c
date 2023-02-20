@@ -682,7 +682,7 @@ ovdec_start(OVDec *ovdec)
     if (ret < 0) {
         return ret;
     }
-    ovdec->ppctx.brightness = 100;
+    ovdec->ppctx.brightness = 10000;
 
     return 0;
 }

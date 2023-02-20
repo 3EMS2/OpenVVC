@@ -758,7 +758,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     sh->sh_picture_header_in_slice_header_flag = nvcl_read_flag(rdr);
     if (sh->sh_picture_header_in_slice_header_flag) {
-        ov_log(NULL, OVLOG_ERROR, "PH in SH%d\n", sh->sh_slice_address);
+        ov_log(NULL, OVLOG_DEBUG, "PH in SH%d\n", sh->sh_slice_address);
         int ret = nvcl_decode_ph(rdr, nvcl_ctx, &ph_manager, 0);
         if (ret < 0) {
             ov_log(NULL, 3, "Failed reading PH from SH\n");

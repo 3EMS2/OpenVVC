@@ -115,8 +115,8 @@ pp_process_frame2(const OVSEI* sei, OVFrame **frame_p)
 
 #if HAVE_SLHDR
         if(sei->sei_slhdr){
-            static const struct ColorDescription pq_bt2020 = {.colour_primaries = 9, .matrix_coeffs = 16, .transfer_characteristics=9, .full_range = 0} ;
-            //printf ("display brightness %d\n", sei->brightness);
+            static const struct ColorDescription pq_bt2020 = {.colour_primaries = 9, .matrix_coeffs = 9, .transfer_characteristics=16, .full_range = 0} ;
+            ov_log (NULL, OVLOG_ERROR, "display brightness %d\n", sei->brightness);
             pp_set_display_peak(sei->sei_slhdr->slhdr_context, sei->brightness);
             pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, src_planes, dst_planes,
                                    sei->sei_slhdr->payload_array, src_frm->width, src_frm->height);

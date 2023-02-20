@@ -88,7 +88,7 @@ init_inter_drv_lines(struct DRVLines *const drv_lns, int nb_pb_ctb,
 {
     struct InterLines *const lns = &drv_lns->inter_lines;
 
-    printf("init: nb_rst_units %d, %p %p %p \n", (nb_ctb_pic_w + 2), lns->dir0, lns->dir1, lns->affine);
+    //printf("init: nb_rst_units %d, %p %p %p \n", (nb_ctb_pic_w + 2), lns->dir0, lns->dir1, lns->affine);
     lns->mv0  = ov_mallocz(sizeof(*lns->mv0) * nb_pb_ctb * (nb_ctb_pic_w + 2));
     lns->mv1  = ov_mallocz(sizeof(*lns->mv1) * nb_pb_ctb * (nb_ctb_pic_w + 2));
 
@@ -773,7 +773,7 @@ reset_inter_lines(const struct InterLines *const inter_lns, uint16_t nb_ctu_w,
                   uint8_t log2_ctb_s)
 {
     uint16_t nb_rst_units = (nb_ctu_w << log2_ctb_s) >> LOG2_UNIT_S;
-    printf("reset: nb_rst_units %d, %p %p %p \n", nb_rst_units, inter_lns->dir0, inter_lns->dir1, inter_lns->affine);
+    //printf("reset: nb_rst_units %d, %p %p %p \n", nb_rst_units, inter_lns->dir0, inter_lns->dir1, inter_lns->affine);
     memset(inter_lns->dir0,   0, sizeof(*inter_lns->dir0)   * nb_rst_units);
     memset(inter_lns->dir1,   0, sizeof(*inter_lns->dir1)   * nb_rst_units);
     memset(inter_lns->affine, 0, sizeof(*inter_lns->affine) * nb_rst_units);

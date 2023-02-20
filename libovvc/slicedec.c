@@ -1519,7 +1519,14 @@ slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
             return ret;
         }
     } else {
-        reset_drv_lines(sldec, prms);
+        drv_lines_uninit(sldec);
+        int ret;
+        ret = init_drv_lines(sldec, prms);
+        if (ret < 0) {
+            ov_log(NULL, 3, "FAILED init DRV lines\n");
+            return ret;
+        }
+        //reset_drv_lines(sldec, prms);
     }
 
     return 0;

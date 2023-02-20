@@ -1285,7 +1285,7 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
     ov_log(NULL, OVLOG_TRACE, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
 
     if (!(nb_slices - 1)) {
-         ov_log(NULL, OVLOG_ERROR, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
+         ov_log(NULL, OVLOG_TRACE, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
         //printf( "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
         ovdpb_unref_pic(pic, OV_IN_DECODING_PIC_FLAG);
         pic->flags &= OV_OUTPUT_PIC_FLAG;
