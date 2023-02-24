@@ -112,8 +112,7 @@ libovvc_la_SOURCES = 	ctudec.c                     \
 						vcl_coding_tree.c            \
 						vcl_transform_unit.c         \
 						vcl_residual_coding.c        \
-						vcl_cabac.c					 \
-						fg_compute_block_avg.asm
+						vcl_cabac.c
 
 
 include_HEADERS = 	ovdefs.h               \
