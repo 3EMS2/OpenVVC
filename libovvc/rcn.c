@@ -264,11 +264,6 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
     #elif __ARM_ARCH
       #if __ARM_NEON
         #if ARM_SIMDE
-          #ifndef EXCLUDE_FOR_CLANG
-          if (bitdepth == 10) {
-            rcn_init_dequant_sse(rcn_func);
-          }
-          #endif
           if (bitdepth == 10) {
             rcn_init_mc_functions_sse(rcn_func);
             rcn_init_tr_functions_sse(rcn_func);
@@ -296,7 +291,6 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
         if (bitdepth == 10) {
           rcn_init_mc_functions_neon(rcn_func);
           rcn_init_dc_planar_functions_neon(rcn_func);
-          rcn_init_dequant_neon(rcn_func);
           rcn_init_ict_functions_neon(rcn_func, ict_type);
           rcn_init_tr_functions_neon(rcn_func);
           rcn_init_sao_functions_neon(rcn_func);
