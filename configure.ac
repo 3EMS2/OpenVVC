@@ -36,11 +36,6 @@ AX_PTHREAD([],[AC_MSG_ERROR([POSIX threads not found])])
 #Check for SLHDR lib
 PKG_HAVE_DEFINE_WITH_MODULES([SLHDR], [slhdr_cwrap], [ Use SL HDR ], [xyes])
 
-# --enable-werror
-AC_ARG_ENABLE([werror], [AS_HELP_STRING([--enable-werror], [treat warnings as errors [no]])],
-                [CFLAGS="-Werror $CFLAGS"], []
-)
-
 # --disable-simd
 AC_ARG_ENABLE([simd], [AS_HELP_STRING([--disable-simd], [disable all simd optimisations [no]])],
                 [
