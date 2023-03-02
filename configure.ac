@@ -19,6 +19,10 @@ AC_CONFIG_FILES([Makefile libovvc/Makefile libovvc/x86/Makefile libovvc/arm/Make
 
 AC_SUBST([LIB_VERSION], m4_esyscmd([printf $(cat VERSION | sed  's/\./:/g' )]))
 
+AC_DEFINE_UNQUOTED([HOST],["$host"], [Host information])
+AC_DEFINE_UNQUOTED([HOST_CPU],["$host_cpu"], [CPU information])
+AC_DEFINE_UNQUOTED([HOST_OS],["$host_os"], [OS information])
+AC_DEFINE_UNQUOTED([HOST_VENDOR],["$host_vendor"], [Vendor information])
 
 # This does workarounds for pthreads on various compilers.
 AX_PTHREAD([],[AC_MSG_ERROR([POSIX threads not found])])
