@@ -133,16 +133,10 @@ AS_IF([test x"$flag_sse4_1" = x"true" -o x"$flag_avx2" = x"true"], [
         ])
 AM_CONDITIONAL([HAVE_X86_OPTIM], [test x"$X86" = x"true" -a x"$enable_simd" = x"yes"])
 
-
-
 # Define Makefile Conditionals
-
 AM_CONDITIONAL([HAVE_NEON], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes"])
-
 AM_CONDITIONAL([HAVE_NEON_ASM], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes" -a x"$enable_arm_asm" = x"yes"])
-
 AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes" -a x"$enable_arm_simde" = x"yes"])
-
 AM_CONDITIONAL([HAVE_EXCLUDE_CLANG], [test x"$ARM" = x"true" -a x"$isClang" = x"true"])
 
 AC_OUTPUT
