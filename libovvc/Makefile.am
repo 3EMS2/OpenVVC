@@ -20,6 +20,11 @@ SUBDIRS = x86/
 libovvc_la_LIBADD += ./x86/libx86optim.la
 endif
 
+if HAVE_AVX2
+SUBDIRS = x86/
+libovvc_la_LIBADD += ./x86/libx86optim2.la
+endif
+
 if HAVE_NEON
 SUBDIRS = arm/
 libovvc_la_LIBADD += ./arm/libarmoptim.la

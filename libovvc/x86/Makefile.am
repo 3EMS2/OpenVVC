@@ -1,8 +1,12 @@
 if HAVE_X86_OPTIM
-noinst_LTLIBRARIES = libx86optim.la
+noinst_LTLIBRARIES = libx86optim.la \
+                     libx86optim2.la
+
 libx86optim_la_CPPFLAGS = -I${srcdir}/../ -DBITDEPTH=10
+libx86optim2_la_CPPFLAGS = -I${srcdir}/../ -DBITDEPTH=10
 noinst_HEADERS =
 libx86optim_la_SOURCES =
+libx86optim2_la_SOURCES =
 
 if HAVE_SSE4_1
 libx86optim_la_SOURCES +=	rcn_transform_sse.c         \
@@ -22,10 +26,11 @@ libx86optim_la_SOURCES +=	rcn_transform_sse.c         \
 							rcn_dequant_sse.c
 
 noinst_HEADERS += rcn_sse.h
+libx86optim_la_CFLAGS = @CFLAGS@ -msse4.1
 endif
 
 if HAVE_AVX2
-libx86optim_la_SOURCES +=	rcn_alf_avx2.c              \
+libx86optim2_la_SOURCES +=	rcn_alf_avx2.c              \
 							rcn_sao_avx2.c              \
 							rcn_intra_mip_avx2.c        \
 							rcn_prof_bdof_avx2.c        \
@@ -36,5 +41,6 @@ libx86optim_la_SOURCES +=	rcn_alf_avx2.c              \
 
 
 noinst_HEADERS += rcn_avx2.h
+libx86optim2_la_CFLAGS = @CFLAGS@  -mavx2
 endif
 endif
