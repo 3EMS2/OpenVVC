@@ -15,7 +15,13 @@ AM_PROG_AR
 LT_INIT
 
 AC_CONFIG_HEADERS([ovconfig.h])
-AC_CONFIG_FILES([Makefile libovvc/Makefile libovvc/x86/Makefile libovvc/arm/Makefile examples/Makefile libovvc/libopenvvc.pc])
+AC_CONFIG_FILES([Makefile
+		libovvc/Makefile
+		libovvc/x86/Makefile
+		libovvc/arm/Makefile
+		examples/Makefile
+		libovvc/libopenvvc.pc]
+)
 
 AC_SUBST([LIB_VERSION], m4_esyscmd([printf $(cat VERSION | sed  's/\./:/g' )]))
 
@@ -81,8 +87,8 @@ AS_CASE([$host_os],
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm assembly optimisation [no]])],
                 [
                 AS_IF([test $enable_arm_asm = "yes"], [
-                                AC_DEFINE([ARCH_AARCH64_ASSEMBLY],[1], [Define the use of AARCH64 ASSEMBLY optimisation])
-                        ]
+			AC_DEFINE([ARCH_AARCH64_ASSEMBLY],[1], [Define the use of AARCH64 ASSEMBLY optimisation])
+		]
                 )
                 ],
                 [
