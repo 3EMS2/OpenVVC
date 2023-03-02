@@ -38,21 +38,19 @@ PKG_HAVE_DEFINE_WITH_MODULES([SLHDR], [slhdr_cwrap], [ Use SL HDR ], [xyes])
 
 # --disable-simd
 AC_ARG_ENABLE([simd], [AS_HELP_STRING([--disable-simd], [disable all simd optimisations [no]])],
-                [
                 AS_IF([test $enable_simd = "no"], [
                                 AC_DEFINE([NO_SIMD],[1], [If define, it will remove SIMD compilation])
                         ]
-                )
-                ], 
+                ), 
                 [enable_simd="yes"]
 )
 
 # host and cpu specific settings
 AS_CASE([$host_cpu],
-        [i?86], [BITS="32" X86="true"],
-        [x86_64], [BITS="64" X86="true"],
-        [aarch32|arm32|arm], [BITS="32" ARM="true"],
-        [aarch64|arm64], [BITS="64" ARM="true"],
+        [i?86], [BITS="32" is_x86="yes"],
+        [x86_64], [BITS="64" is_x86="yes"],
+        [aarch32|arm32|arm], [BITS="32" is_ARM="yes"],
+        [aarch64|arm64], [BITS="64" is_ARM="yes"],
         [AC_MSG_ERROR([Unknown host: [$host]])]
 )
 
@@ -61,14 +59,14 @@ AS_CASE([$host_os],
                 AC_DEFINE([PREFIX],[1], [Define if assembly function should be prefixed])
                 AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
                 AC_DEFINE([EXCLUDE_FOR_CLANG],[1], [Exclude files from clang compilation])
-                isClang="true"
+                isClang="yes"
         ],
         [mingw*], [
                 AC_DEFINE([HAVE_ALIGNED_MALLOC],[1], [Define the use of align malloc])
         ],
         [*android*], [
                 AC_DEFINE([EXCLUDE_FOR_CLANG],[1], [Exclude files from clang compilation])
-                isClang="true"
+                isClang="yes"
         ],
         [linux*|cygwin*|msys*], [
                 AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
@@ -77,38 +75,33 @@ AS_CASE([$host_os],
         ]
 )
 
-
 # --disable-arm-asm
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm assembly optimisation [no]])],
-                [
-                AS_IF([test $enable_arm_asm = "yes"], [
-			AC_DEFINE([ARCH_AARCH64_ASSEMBLY],[1], [Define the use of AARCH64 ASSEMBLY optimisation])
-		]
-                )
-                ],
-                [
-                        enable_arm_asm="yes"
-                        AC_DEFINE([ARCH_AARCH64_ASSEMBLY],[1], [Define the use of AARCH64 ASSEMBLY optimisation])
-                ]
+                [ AS_IF([test $enable_arm_asm = "yes"], [as_arm64="yes" h_as_arm64=1],
+							[as_arm64="no"  h_as_arm64=0]) ],
+                [enable_arm_asm="yes" h_as_arm64=1]
 )
+
 
 # --enable-arm-simde
 AC_ARG_ENABLE([arm-simde], [AS_HELP_STRING([--enable-arm-simde], [enables arm simde optimisation [no]])],
-                [
-                AS_IF([test $enable_arm_simde = "yes"], [
-                                AC_DEFINE([ARM_SIMDE],[1], [Define the use of SIMDE optimisation conversion])
-                                AC_DEFINE([SIMDE_NO_CHECK_IMMEDIATE_CONSTANT],[1], [Define SIMDE_NO_CHECK_IMMEDIATE_CONSTANT])
-                        ])
-                ], 
-                [
-                        enable_arm_simde="yes" 
-                        AC_DEFINE([ARM_SIMDE],[1], [Define the use of SIMDE optimisation conversion])
-                        AC_DEFINE([SIMDE_NO_CHECK_IMMEDIATE_CONSTANT],[1], [Define SIMDE_NO_CHECK_IMMEDIATE_CONSTANT])
-                ]
+		[ AS_IF([test $enable_arm_simde = "yes" -a $is_ARM = "yes"],
+			[cc_simde="yes" h_simde=1],
+			[cc_simde="no" h_simde=0])
+		], 
+                [enable_arm_simde="yes" cc_simde="yes" h_simde=1]
 )
 
+AS_IF([test x"$is_ARM" = x"yes"],
+		AC_DEFINE_UNQUOTED([ARM_SIMDE],[$h_simde], [Define the use of SIMDE optimisation conversion])
+		AC_DEFINE_UNQUOTED([ARCH_AARCH64_ASSEMBLY],[$h_as_arm64], [Define the use of AARCH64 ASSEMBLY optimisation])
+# Always one (it will not be used in case SIMDE are disabled
+	AC_DEFINE([SIMDE_NO_CHECK_IMMEDIATE_CONSTANT],[1], [Define SIMDE_NO_CHECK_IMMEDIATE_CONSTANT])
+)
+
+
 # Check compiler build capability
-AS_IF([test x"$x86" = x"true" -a x"$enable_simd" = x"yes"],
+AS_IF([test x"$is_x86" = x"yes" -a x"$enable_simd" = x"yes"],
 	 [
 		AX_CHECK_COMPILE_FLAG([-msse4.1], [cc_sse41="yes" h_sse41=1])
 		AX_CHECK_COMPILE_FLAG([-mavx2],   [cc_avx2="yes"  h_avx2=1])
@@ -119,17 +112,20 @@ AS_IF([test x"$x86" = x"true" -a x"$enable_simd" = x"yes"],
          [h_sse41=0 h_avx2=0 h_simd=0]
 )
 
-AC_DEFINE_UNQUOTED([HAVE_X86_OPTIM],[$h_simd],  [Define the use of x86 optimisation])
-AC_DEFINE_UNQUOTED([HAVE_SSE4_1],   [$h_sse41], [Define the use of SSE4_1 optimisation])
-AC_DEFINE_UNQUOTED([HAVE_AVX2],     [$h_avx2],  [Define the use of AVX2 optimisation])
+AS_IF([test x"$is_x86" = x"yes"],
+	AC_DEFINE_UNQUOTED([HAVE_X86_OPTIM],[$h_simd],  [Define the use of x86 optimisation])
+	AC_DEFINE_UNQUOTED([HAVE_SSE4_1],   [$h_sse41], [Define the use of SSE4_1 optimisation])
+	AC_DEFINE_UNQUOTED([HAVE_AVX2],     [$h_avx2],  [Define the use of AVX2 optimisation])
+)
+
 AM_CONDITIONAL([HAVE_X86_OPTIM], [test -n "$cc_simd"])
 AM_CONDITIONAL([HAVE_SSE4_1],    [test -n "$cc_sse41"])
 AM_CONDITIONAL([HAVE_AVX2],      [test -n "$cc_avx2"])
 
 # Define Makefile Conditionals
-AM_CONDITIONAL([HAVE_NEON], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes"])
-AM_CONDITIONAL([HAVE_NEON_ASM], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes" -a x"$enable_arm_asm" = x"yes"])
-AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes" -a x"$enable_arm_simde" = x"yes"])
-AM_CONDITIONAL([HAVE_EXCLUDE_CLANG], [test x"$ARM" = x"true" -a x"$isClang" = x"true"])
+AM_CONDITIONAL([HAVE_NEON], [test x"$is_ARM" = x"yes" -a x"$enable_simd" = x"yes"])
+AM_CONDITIONAL([HAVE_NEON_ASM], [test x"$is_ARM" = x"yes" -a x"$enable_simd" = x"yes" -a x"$enable_arm_asm" = x"yes"])
+AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$is_ARM" = x"yes" -a x"$enable_simd" = x"yes" -a x"$enable_arm_simde" = x"yes"])
+AM_CONDITIONAL([HAVE_EXCLUDE_CLANG], [test x"$is_ARM" = x"yes" -a x"$isClang" = x"yes"])
 
 AC_OUTPUT
