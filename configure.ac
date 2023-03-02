@@ -27,11 +27,7 @@ AC_DEFINE_UNQUOTED([HOST_VENDOR],["$host_vendor"], [Vendor information])
 # This does workarounds for pthreads on various compilers.
 AX_PTHREAD([],[AC_MSG_ERROR([POSIX threads not found])])
 
-
-# --disable-slhdr
-
 #Check for SLHDR lib
-
 PKG_HAVE_DEFINE_WITH_MODULES([SLHDR], [slhdr_cwrap], [ Use SL HDR ], [xyes])
 
 # --enable-werror
