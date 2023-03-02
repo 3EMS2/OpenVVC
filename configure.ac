@@ -19,19 +19,10 @@ AC_CONFIG_FILES([Makefile libovvc/Makefile libovvc/x86/Makefile libovvc/arm/Make
 
 AC_SUBST([LIB_VERSION], m4_esyscmd([printf $(cat VERSION | sed  's/\./:/g' )]))
 
-# We need to force AX_PTHREAD to check -pthread -lpthread since otherwise
-# it only outputs -pthread for GCC. Without -lpthread GCC does not link the
-# shared library against the pthread library (even though it does link the
-# executable).
-PTHREAD_CFLAGS=-pthread
-PTHREAD_LIBS=-lpthread
 
 # This does workarounds for pthreads on various compilers.
 AX_PTHREAD([],[AC_MSG_ERROR([POSIX threads not found])])
 
-CFLAGS="$PTHREAD_CFLAGS $CFLAGS"
-LIBS="$PTHREAD_LIBS $LIBS"
-CC="$PTHREAD_CC"
 
 # --disable-slhdr
 
