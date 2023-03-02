@@ -50,6 +50,13 @@ AC_ARG_ENABLE([simd], [AS_HELP_STRING([--disable-simd], [disable all simd optimi
                 [enable_simd="yes"]
 )
 
+# host and cpu specific settings
+AS_CASE([$host_cpu],
+        [i?86], [BITS="32" X86="true"],
+        [x86_64], [BITS="64" X86="true"],
+        [aarch32|arm32|arm], [BITS="32" ARM="true"],
+        [aarch64|arm64], [BITS="64" ARM="true"],
+)
 
 # --disable-arm-asm
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm assembly optimisation [no]])],
@@ -80,13 +87,6 @@ AC_ARG_ENABLE([arm-simde], [AS_HELP_STRING([--enable-arm-simde], [enables arm si
                 ]
 )
 
-# host and cpu specific settings
-AS_CASE([$host_cpu],
-        [i?86], [BITS="32" X86="true"],
-        [x86_64], [BITS="64" X86="true"],
-        [aarch32|arm32], [BITS="32" ARM="true"],
-        [aarch64|arm64], [BITS="64" ARM="true"]
-)
 
 AS_CASE([$host_os],
         [darwin*], [
