@@ -56,6 +56,7 @@ AS_CASE([$host_cpu],
         [x86_64], [BITS="64" X86="true"],
         [aarch32|arm32|arm], [BITS="32" ARM="true"],
         [aarch64|arm64], [BITS="64" ARM="true"],
+        [AC_MSG_ERROR([Unknown host: [$host]])]
 )
 
 # --disable-arm-asm
