@@ -55,6 +55,28 @@ AS_CASE([$host_cpu],
         [AC_MSG_ERROR([Unknown host: [$host]])]
 )
 
+AS_CASE([$host_os],
+        [darwin*], [
+                AC_DEFINE([PREFIX],[1], [Define if assembly function should be prefixed])
+                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
+                AC_DEFINE([EXCLUDE_FOR_CLANG],[1], [Exclude files from clang compilation])
+                isClang="true"
+        ],
+        [mingw*], [
+                AC_DEFINE([HAVE_ALIGNED_MALLOC],[1], [Define the use of align malloc])
+        ],
+        [*android*], [
+                AC_DEFINE([EXCLUDE_FOR_CLANG],[1], [Exclude files from clang compilation])
+                isClang="true"
+        ],
+        [linux*|cygwin*|msys*], [
+                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
+        ], [
+                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
+        ]
+)
+
+
 # --disable-arm-asm
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm assembly optimisation [no]])],
                 [
@@ -84,28 +106,6 @@ AC_ARG_ENABLE([arm-simde], [AS_HELP_STRING([--enable-arm-simde], [enables arm si
                 ]
 )
 
-
-AS_CASE([$host_os],
-        [darwin*], [
-                AC_DEFINE([PREFIX],[1], [Define if assembly function should be prefixed])
-                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
-                AC_DEFINE([EXCLUDE_FOR_CLANG],[1], [Exclude files from clang compilation])
-                isClang="true"
-        ],
-        [mingw*], [
-                AC_DEFINE([HAVE_ALIGNED_MALLOC],[1], [Define the use of align malloc])
-                
-        ],
-        [*android*], [
-                AC_DEFINE([EXCLUDE_FOR_CLANG],[1], [Exclude files from clang compilation])
-                isClang="true"
-        ],
-        [linux*|cygwin*|msys*], [
-                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
-        ], [
-                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
-        ]
-)
 
 # Check compiler build capability
 AS_IF([test x"$X86" = x"true"], [
