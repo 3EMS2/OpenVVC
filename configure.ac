@@ -55,18 +55,11 @@ AS_CASE([$host_cpu],
 )
 
 AS_CASE([$host_os],
-        [darwin*], [
-                AC_DEFINE([PREFIX],[1], [Define if assembly function should be prefixed])
-                isClang="yes"
-        ],
-        [mingw*], [
-        ],
-        [*android*], [
-                isClang="yes"
-        ],
-        [linux*|cygwin*|msys*], [
-        ], [
-        ]
+        [darwin*], AC_DEFINE([PREFIX],[1], [Define if assembly function should be prefixed]),
+        [mingw*], [],
+	[*android*], [],
+        [linux*|cygwin*|msys*], [],
+	[]
 )
 
 AC_CHECK_FUNCS(posix_memalign _aligned_malloc memalign, [break],
