@@ -38,19 +38,18 @@ PKG_HAVE_DEFINE_WITH_MODULES([SLHDR], [slhdr_cwrap], [ Use SL HDR ], [xyes])
 
 # --disable-simd
 AC_ARG_ENABLE([simd], [AS_HELP_STRING([--disable-simd], [disable all simd optimisations [no]])],
-                AS_IF([test $enable_simd = "no"], [
-                                AC_DEFINE([NO_SIMD],[1], [If define, it will remove SIMD compilation])
-                        ]
+                AS_IF([test $enable_simd = "no"],
+			[AC_DEFINE([NO_SIMD],[1], [If define, it will remove SIMD compilation])]
                 ), 
                 [enable_simd="yes"]
 )
 
 # host and cpu specific settings
 AS_CASE([$host_cpu],
-        [i?86], [BITS="32" is_x86="yes"],
         [x86_64], [BITS="64" is_x86="yes"],
-        [aarch32|arm32|arm], [BITS="32" is_ARM="yes"],
-        [aarch64|arm64], [BITS="64" is_ARM="yes"],
+        [i?86], [BITS="32" is_x86="yes"],
+        [aarch64|arm64], [BITS="64" is_ARM="yes" is_64bits="yes"],
+        [aarch32|arm32|arm|armv7a], [BITS="32" is_ARM="yes" is_32bits="yes"],
         [AC_MSG_ERROR([Unknown host: [$host]])]
 )
 
@@ -66,19 +65,21 @@ AC_CHECK_FUNCS(posix_memalign _aligned_malloc memalign, [break],
 		AC_MSG_ERROR([No aligned malloc function found.]))
 
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm assembly optimisation [no]])],
-                [ AS_IF([test $enable_arm_asm = "yes"], [as_arm64="yes" h_as_arm64=1],
-							[as_arm64="no"  h_as_arm64=0]) ],
-                [enable_arm_asm="yes" h_as_arm64=1]
+                [ AS_IF([test $enable_arm_asm = "yes" -a x"$BITS" = x"64"], [as_arm64="yes" h_as_arm64=1],
+			[as_arm64="no"  h_as_arm64=0]) ],
+                [as_arm64=$is_64bits h_as_arm64=0]
 )
 
-
-# --enable-arm-simde
 AC_ARG_ENABLE([arm-simde], [AS_HELP_STRING([--enable-arm-simde], [enables arm simde optimisation [no]])],
-		[ AS_IF([test $enable_arm_simde = "yes" -a $is_ARM = "yes"],
+		[ AS_IF([test $enable_arm_simde = "yes"],
 			[cc_simde="yes" h_simde=1],
 			[cc_simde="no" h_simde=0])
 		], 
-                [enable_arm_simde="yes" cc_simde="yes" h_simde=1]
+                [cc_simde=[$is_ARM] h_simde=1]
+)
+
+AS_IF([test x"$is_ARM" = x"yes" -a x"$enable_simd" = x"no"],
+		[cc_simde="no" h_simde=0 as_arm64="no" h_as_arm64=0],
 )
 
 AS_IF([test x"$is_ARM" = x"yes"],
@@ -115,8 +116,8 @@ AM_CONDITIONAL([HAVE_SSE4_1],    [test -n "$cc_sse41"])
 AM_CONDITIONAL([HAVE_AVX2],      [test -n "$cc_avx2"])
 
 # Define Makefile Conditionals
-AM_CONDITIONAL([HAVE_NEON], [test x"$is_ARM" = x"yes" -a x"$enable_simd" = x"yes"])
-AM_CONDITIONAL([HAVE_NEON_ASM], [test x"$is_ARM" = x"yes" -a x"$enable_simd" = x"yes" -a x"$enable_arm_asm" = x"yes"])
-AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$is_ARM" = x"yes" -a x"$enable_simd" = x"yes" -a x"$enable_arm_simde" = x"yes"])
+AM_CONDITIONAL([HAVE_NEON],       [test x"$is_ARM" = x"yes" -a x"$enable_simd" = x"yes"])
+AM_CONDITIONAL([HAVE_NEON_ASM],   [test x"$as_arm64" = x"yes"])
+AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$is_ARM" = x"yes" -a x"$cc_simde" = x"yes"])
 
 AC_OUTPUT
