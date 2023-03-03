@@ -108,6 +108,9 @@ AS_IF([test x"$is_x86" = x"yes" -a x"$enable_simd" = x"yes"],
          [h_sse41=0 h_avx2=0 h_simd=0]
 )
 
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(long long)
+
 AS_IF([test x"$is_x86" = x"yes"],
 	AC_DEFINE_UNQUOTED([HAVE_X86_OPTIM],[$h_simd],  [Define the use of x86 optimisation])
 	AC_DEFINE_UNQUOTED([HAVE_SSE4_1],   [$h_sse41], [Define the use of SSE4_1 optimisation])

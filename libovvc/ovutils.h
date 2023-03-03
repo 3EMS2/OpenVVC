@@ -47,8 +47,16 @@
 #define ov_clz(x) __builtin_clz(x)
 #define ov_ctz(x) __builtin_ctz(x)
 
+#if SIZEOF_LONG == 8
+#define ov_clz64(x) __builtin_clzl(x)
+#define ov_ctz64(x) __builtin_ctzl(x)
+#elif SIZEOF_LONG_LONG == 8
 #define ov_clz64(x) __builtin_clzll(x)
 #define ov_ctz64(x) __builtin_ctzll(x)
+#else
+#define ov_clz64(x) __builtin_clzll(x)
+#define ov_ctz64(x) __builtin_ctzll(x)
+#endif
 
 static inline uint8_t ov_ceil_log2(unsigned x)
 {
