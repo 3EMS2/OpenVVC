@@ -58,14 +58,12 @@ AS_CASE([$host_os],
         [darwin*], [
                 AC_DEFINE([PREFIX],[1], [Define if assembly function should be prefixed])
                 AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
-                AC_DEFINE([EXCLUDE_FOR_CLANG],[1], [Exclude files from clang compilation])
                 isClang="yes"
         ],
         [mingw*], [
                 AC_DEFINE([HAVE_ALIGNED_MALLOC],[1], [Define the use of align malloc])
         ],
         [*android*], [
-                AC_DEFINE([EXCLUDE_FOR_CLANG],[1], [Exclude files from clang compilation])
                 isClang="yes"
         ],
         [linux*|cygwin*|msys*], [

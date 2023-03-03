@@ -18,9 +18,6 @@ libarmoptim_la_SOURCES +=	rcn_transform_sse.c                   \
 							rcn_dmvr_sse.c                        \
 							rcn_prof_bdof_sse.c                   \
 							rcn_intra_angular_sse.c
-if !HAVE_EXCLUDE_CLANG
-libarmoptim_la_SOURCES +=	rcn_dequant_sse.c
-endif
 endif
 
 if HAVE_NEON_ASM
