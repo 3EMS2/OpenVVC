@@ -118,6 +118,5 @@ AM_CONDITIONAL([HAVE_AVX2],      [test -n "$cc_avx2"])
 AM_CONDITIONAL([HAVE_NEON], [test x"$is_ARM" = x"yes" -a x"$enable_simd" = x"yes"])
 AM_CONDITIONAL([HAVE_NEON_ASM], [test x"$is_ARM" = x"yes" -a x"$enable_simd" = x"yes" -a x"$enable_arm_asm" = x"yes"])
 AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$is_ARM" = x"yes" -a x"$enable_simd" = x"yes" -a x"$enable_arm_simde" = x"yes"])
-AM_CONDITIONAL([HAVE_EXCLUDE_CLANG], [test x"$is_ARM" = x"yes" -a x"$isClang" = x"yes"])
 
 AC_OUTPUT
