@@ -8,7 +8,7 @@ AM_INIT_AUTOMAKE([foreign -Wall])
 AM_SILENT_RULES([yes])
 
 AC_PROG_CC(gcc, clang)
-AM_PROG_AS(gcc, clang)
+AM_PROG_AS(gcc, clang, nasm, yasm)
 AM_PROG_AR
 
 # Enable Libtool
