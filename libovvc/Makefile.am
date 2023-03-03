@@ -1,11 +1,3 @@
-X86ASM = nasm
-X86ASMFLAGS = -g -f elf64 -prefer-non-pic -I$(srcdir)/../
-SUFFIXES = .asm
-
-.asm.lo:
-	$(LIBTOOL) --mode=compile --tag=CC $(X86ASM) \
-	$(X86ASMFLAGS) $(X86ASMDEFS) $< -o $@
-
 lib_LTLIBRARIES = libovvc.la
 libovvc_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIB_VERSION)
 libovvc_la_LDFLAGS += @SLHDR_LIBS@
@@ -170,8 +162,7 @@ noinst_HEADERS = 	bitdepth.h            \
 									rcn_transform_scale.h \
 									slicedec.h            \
 									vcl_cabac.h           \
-									vcl.h				  \
-									fg_compute_block_avg.h
+									vcl.h
 
 ovversion.h:
 	$(AM_V_GEN)$(srcdir)/../version.sh $(srcdir)/../VERSION ovversion.h ./

@@ -2,10 +2,32 @@ if HAVE_X86_OPTIM
 noinst_LTLIBRARIES = libx86optim.la \
                      libx86optim2.la
 
+X86ASM = nasm
+X86ASMFLAGS = -g -f elf64 -prefer-non-pic -I$(srcdir)
+#SUFFIXES = .asm
+
+LTASCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(X86ASM) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(X86ASMFLAGS)
+
+AM_V_ASM = $(am__v_ASM_$(V))
+am__v_ASM_ = $(am__v_ASM_$(AM_DEFAULT_VERBOSITY))
+am__v_ASM_0 = @echo "  $(CCAS)   " $@;
+am__v_ASM_1 =
+
+.asm.lo:
+	$(AM_V_ASM)$(LTASCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -o $@ $<
+	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+
+#.asm.lo:
+#	$(LIBTOOL) --mode=compile --tag=CC $(CCAS) \
+#	$(X86ASMFLAGS) $(X86ASMDEFS) $< -o $@
+
 libx86optim_la_CPPFLAGS = -I${srcdir}/../ -DBITDEPTH=10
 libx86optim2_la_CPPFLAGS = -I${srcdir}/../ -DBITDEPTH=10
 noinst_HEADERS =
-libx86optim_la_SOURCES =
+libx86optim_la_SOURCES = fg_compute_block_avg.asm
 libx86optim2_la_SOURCES =
 
 if HAVE_SSE4_1
