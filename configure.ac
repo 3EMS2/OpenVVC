@@ -57,23 +57,21 @@ AS_CASE([$host_cpu],
 AS_CASE([$host_os],
         [darwin*], [
                 AC_DEFINE([PREFIX],[1], [Define if assembly function should be prefixed])
-                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
                 isClang="yes"
         ],
         [mingw*], [
-                AC_DEFINE([HAVE_ALIGNED_MALLOC],[1], [Define the use of align malloc])
         ],
         [*android*], [
                 isClang="yes"
         ],
         [linux*|cygwin*|msys*], [
-                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
         ], [
-                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
         ]
 )
 
-# --disable-arm-asm
+AC_CHECK_FUNCS(posix_memalign _aligned_malloc memalign, [break],
+		AC_MSG_ERROR([No aligned malloc function found.]))
+
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm assembly optimisation [no]])],
                 [ AS_IF([test $enable_arm_asm = "yes"], [as_arm64="yes" h_as_arm64=1],
 							[as_arm64="no"  h_as_arm64=0]) ],
