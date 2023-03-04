@@ -398,8 +398,37 @@ static void
 rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_arr,
                        OVSample *const src, const int stride, const Area blk,
                        const int shift);
-
 static void
+fill(int *tmp_v, int *tmp_h,int *tmp_d, int *tmp_b,
+     const OVSample *l0, const OVSample *l1, const OVSample *l2, const OVSample *l3)
+{
+    int16_t y10 = l1[0] << 1;
+    int16_t y21 = l2[1] << 1;
+    int16_t y12 = l1[2] << 1;
+    int16_t y22 = l2[3] << 1;
+
+    *tmp_v  = abs(y10 - (l0[ 0] + l2[ 0]));
+    *tmp_v += abs(y21 - (l1[ 1] + l3[ 1]));
+    *tmp_v += abs(y12 - (l0[ 2] + l2[ 2]));
+    *tmp_v += abs(y22 - (l1[ 3] + l3[ 3]));
+
+    *tmp_h  = abs(y10 - (l1[ 1] + l1[-1]));
+    *tmp_h += abs(y21 - (l2[ 2] + l2[ 0]));
+    *tmp_h += abs(y12 - (l1[ 3] + l1[ 1]));
+    *tmp_h += abs(y22 - (l2[ 4] + l2[ 2]));
+
+    *tmp_d  = abs(y10 - (l0[-1] + l2[ 1]));
+    *tmp_d += abs(y21 - (l1[ 0] + l3[ 2]));
+    *tmp_d += abs(y12 - (l0[ 1] + l2[ 3]));
+    *tmp_d += abs(y22 - (l1[ 2] + l3[ 4]));
+
+    *tmp_b  = abs(y10 - (l2[-1] + l0[ 1]));
+    *tmp_b += abs(y21 - (l3[ 0] + l1[ 2]));
+    *tmp_b += abs(y12 - (l2[ 1] + l0[ 3]));
+    *tmp_b += abs(y22 - (l3[ 2] + l1[ 4]));
+}
+
+static void                                               
 rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_arr,
                      OVSample *const src, const int stride, const Area blk,
                      const int shift, int virbnd_pos)
@@ -419,11 +448,11 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     const OVSample *_src = src - 3 * stride - 3;
     int i;
 #if 0
-Area blk2 = blk;
-blk2.height -= 8;
-rcn_alf_classif_novbnd(class_idx_arr, transpose_idx_arr,
-                     src, stride, blk2,
-                     shift);
+    Area blk2 = blk;
+    blk2.height -= 8;
+    rcn_alf_classif_novbnd(class_idx_arr, transpose_idx_arr,
+                           src, stride, blk2,
+                           shift);
     for (i = 0; i < ((virbnd_pos - blk.y) >> 1); ++i) {
         _src += stride << 1;
     }
@@ -438,27 +467,10 @@ rcn_alf_classif_novbnd(class_idx_arr, transpose_idx_arr,
         int j;
 
         for (j = 0; j < nb_sb_w + 1; ++j) {
-            int16_t y10 = l1[0] << 1;
-            int16_t y21 = l2[1] << 1;
-            int16_t y12 = l1[2] << 1;
-            int16_t y22 = l2[3] << 1;
+            int j4 = j << 2;
 
-            tmp_v[j]  = abs(y10 - (l0[ 0] + l2[ 0])) + abs(y21 - (l1[1] + l3[1]));
-            tmp_v[j] += abs(y12 - (l0[ 2] + l2[ 2])) + abs(y22 - (l1[3] + l3[3]));
-
-            tmp_h[j]  = abs(y10 - (l1[ 1] + l1[-1])) + abs(y21 - (l2[2] + l2[0]));
-            tmp_h[j] += abs(y12 - (l1[ 3] + l1[ 1])) + abs(y22 - (l2[4] + l2[2]));
-
-            tmp_d[j]  = abs(y10 - (l0[-1] + l2[ 1])) + abs(y21 - (l1[0] + l3[2]));
-            tmp_d[j] += abs(y12 - (l0[ 1] + l2[ 3])) + abs(y22 - (l1[2] + l3[4]));
-
-            tmp_b[j]  = abs(y10 - (l2[-1] + l0[ 1])) + abs(y21 - (l3[0] + l1[2]));
-            tmp_b[j] += abs(y12 - (l2[ 1] + l0[ 3])) + abs(y22 - (l3[2] + l1[4]));
-
-            l0 += 4;
-            l1 += 4;
-            l2 += 4;
-            l3 += 4;
+            fill(tmp_v + j,tmp_h + j,tmp_d + j ,tmp_b +j,
+                 l0 + j4, l1 + j4, l2 + j4, l3 + j4);
         }
 
         int* lpl_v = laplacian[VER]  [i];
@@ -515,71 +527,50 @@ rcn_alf_classif_novbnd(class_idx_arr, transpose_idx_arr,
 
     i = blk_h - 4;
 
-    //for (; i < blk_h - 2 ; i += 2) {
+    int j;
 
-        int j;
+    const OVSample *l0 = &_src[1 + 0 * stride];
+    const OVSample *l1 = &_src[1 + 1 * stride];
+    const OVSample *l2 = &_src[1 + 2 * stride];
+    const OVSample *l3 = l2;
 
-        const OVSample *l0 = &_src[1 + 0 * stride];
-        const OVSample *l1 = &_src[1 + 1 * stride];
-        const OVSample *l2 = &_src[1 + 2 * stride];
-        const OVSample *l3 = l2;
+    for (j = 0; j < nb_sb_w + 1; ++j) {
+        int j4 = j << 2;
+        fill(tmp_v + j,tmp_h + j,tmp_d + j ,tmp_b +j,
+             l0 + j4, l1 + j4, l2 + j4, l3 + j4);
+    }
 
-        for (j = 0; j < nb_sb_w + 1; ++j) {
-            int16_t y10 = l1[0] << 1;
-            int16_t y21 = l2[1] << 1;
-            int16_t y12 = l1[2] << 1;
-            int16_t y22 = l2[3] << 1;
-
-            tmp_v[j]  = abs(y10 - (l0[ 0] + l2[ 0])) + abs(y21 - (l1[1] + l3[1]));
-            tmp_v[j] += abs(y12 - (l0[ 2] + l2[ 2])) + abs(y22 - (l1[3] + l3[3]));
-
-            tmp_h[j]  = abs(y10 - (l1[ 1] + l1[-1])) + abs(y21 - (l2[2] + l2[0]));
-            tmp_h[j] += abs(y12 - (l1[ 3] + l1[ 1])) + abs(y22 - (l2[4] + l2[2]));
-
-            tmp_d[j]  = abs(y10 - (l0[-1] + l2[ 1])) + abs(y21 - (l1[0] + l3[2]));
-            tmp_d[j] += abs(y12 - (l0[ 1] + l2[ 3])) + abs(y22 - (l1[2] + l3[4]));
-
-            tmp_b[j]  = abs(y10 - (l2[-1] + l0[ 1])) + abs(y21 - (l3[0] + l1[2]));
-            tmp_b[j] += abs(y12 - (l2[ 1] + l0[ 3])) + abs(y22 - (l3[2] + l1[4]));
-
-            l0 += 4;
-            l1 += 4;
-            l2 += 4;
-            l3 += 4;
-        }
-
-        int* lpl_v = laplacian[VER]  [i >> 1];
-        int* lpl_h = laplacian[HOR]  [i >> 1];
-        int* lpl_d = laplacian[DIAG0][i >> 1];
-        int* lpl_b = laplacian[DIAG1][i >> 1];
-        for (j = 0; j < nb_sb_w; ++j) {
-            lpl_v[j] = tmp_v[j] + tmp_v[j + 1];
-            lpl_h[j] = tmp_h[j] + tmp_h[j + 1];
-            lpl_d[j] = tmp_d[j] + tmp_d[j + 1];
-            lpl_b[j] = tmp_b[j] + tmp_b[j + 1];
-        }
-        _src += stride << 1;
+    int* lpl_v = laplacian[VER]  [i >> 1];
+    int* lpl_h = laplacian[HOR]  [i >> 1];
+    int* lpl_d = laplacian[DIAG0][i >> 1];
+    int* lpl_b = laplacian[DIAG1][i >> 1];
+    for (j = 0; j < nb_sb_w; ++j) {
+        lpl_v[j] = tmp_v[j] + tmp_v[j + 1];
+        lpl_h[j] = tmp_h[j] + tmp_h[j + 1];
+        lpl_d[j] = tmp_d[j] + tmp_d[j + 1];
+        lpl_b[j] = tmp_b[j] + tmp_b[j + 1];
+    }
+    _src += stride << 1;
     //}
+    i = (blk_h - 8) >> 1;
 
-    int tmp_i = (blk_h - 8) >> 1;
+    int sb_y = (i >> 1) + (blk.y >> 2);
 
-    int sb_y = (tmp_i >> 1) + (blk.y >> 2);
+    const int* lpl_v0 = laplacian[VER][i];
+    const int* lpl_v1 = laplacian[VER][i + 1];
+    const int* lpl_v2 = laplacian[VER][i + 2];
 
-    const int* lpl_v0 = laplacian[VER][tmp_i];
-    const int* lpl_v1 = laplacian[VER][tmp_i + 1];
-    const int* lpl_v2 = laplacian[VER][tmp_i + 2];
+    const int* lpl_h0 = laplacian[HOR][i];
+    const int* lpl_h1 = laplacian[HOR][i + 1];
+    const int* lpl_h2 = laplacian[HOR][i + 2];
 
-    const int* lpl_h0 = laplacian[HOR][tmp_i];
-    const int* lpl_h1 = laplacian[HOR][tmp_i + 1];
-    const int* lpl_h2 = laplacian[HOR][tmp_i + 2];
+    const int* lpl_d0 = laplacian[DIAG0][i];
+    const int* lpl_d1 = laplacian[DIAG0][i + 1];
+    const int* lpl_d2 = laplacian[DIAG0][i + 2];
 
-    const int* lpl_d0 = laplacian[DIAG0][tmp_i];
-    const int* lpl_d1 = laplacian[DIAG0][tmp_i + 1];
-    const int* lpl_d2 = laplacian[DIAG0][tmp_i + 2];
-
-    const int* lpl_b0 = laplacian[DIAG1][tmp_i];
-    const int* lpl_b1 = laplacian[DIAG1][tmp_i + 1];
-    const int* lpl_b2 = laplacian[DIAG1][tmp_i + 2];
+    const int* lpl_b0 = laplacian[DIAG1][i];
+    const int* lpl_b1 = laplacian[DIAG1][i + 1];
+    const int* lpl_b2 = laplacian[DIAG1][i + 2];
 
     for (j = 0; j < nb_sb_w; ++j) {
         int sum_v = lpl_v0[j] + lpl_v1[j] + lpl_v2[j];
@@ -606,27 +597,9 @@ rcn_alf_classif_novbnd(class_idx_arr, transpose_idx_arr,
     l0 = l1;
 
     for (j = 0; j < nb_sb_w + 1; ++j) {
-        int16_t y10 = l1[0] << 1;
-        int16_t y21 = l2[1] << 1;
-        int16_t y12 = l1[2] << 1;
-        int16_t y22 = l2[3] << 1;
-
-        tmp_v[j]  = abs(y10 - (l0[ 0] + l2[ 0])) + abs(y21 - (l1[1] + l3[1]));
-        tmp_v[j] += abs(y12 - (l0[ 2] + l2[ 2])) + abs(y22 - (l1[3] + l3[3]));
-
-        tmp_h[j]  = abs(y10 - (l1[ 1] + l1[-1])) + abs(y21 - (l2[2] + l2[0]));
-        tmp_h[j] += abs(y12 - (l1[ 3] + l1[ 1])) + abs(y22 - (l2[4] + l2[2]));
-
-        tmp_d[j]  = abs(y10 - (l0[-1] + l2[ 1])) + abs(y21 - (l1[0] + l3[2]));
-        tmp_d[j] += abs(y12 - (l0[ 1] + l2[ 3])) + abs(y22 - (l1[2] + l3[4]));
-
-        tmp_b[j]  = abs(y10 - (l2[-1] + l0[ 1])) + abs(y21 - (l3[0] + l1[2]));
-        tmp_b[j] += abs(y12 - (l2[ 1] + l0[ 3])) + abs(y22 - (l3[2] + l1[4]));
-
-        l0 += 4;
-        l1 += 4;
-        l2 += 4;
-        l3 += 4;
+        int j4 = j << 2;
+        fill(tmp_v + j,tmp_h + j,tmp_d + j ,tmp_b +j,
+             l0 + j4, l1 + j4, l2 + j4, l3 + j4);
     }
 
     lpl_v = laplacian[VER]  [i >> 1];
@@ -640,7 +613,8 @@ rcn_alf_classif_novbnd(class_idx_arr, transpose_idx_arr,
         lpl_b[j] = tmp_b[j] + tmp_b[j + 1];
     }
     _src += stride << 1;
-    i += 2;
+
+    i = blk_h;
     //}
 
     for (; i < blk_h + 4; i += 2) {
@@ -652,27 +626,9 @@ rcn_alf_classif_novbnd(class_idx_arr, transpose_idx_arr,
         const OVSample *l3 = &_src[1 + 3 * stride];
 
         for (j = 0; j < nb_sb_w + 1; ++j) {
-            int16_t y10 = l1[0] << 1;
-            int16_t y21 = l2[1] << 1;
-            int16_t y12 = l1[2] << 1;
-            int16_t y22 = l2[3] << 1;
-
-            tmp_v[j]  = abs(y10 - (l0[ 0] + l2[ 0])) + abs(y21 - (l1[1] + l3[1]));
-            tmp_v[j] += abs(y12 - (l0[ 2] + l2[ 2])) + abs(y22 - (l1[3] + l3[3]));
-
-            tmp_h[j]  = abs(y10 - (l1[ 1] + l1[-1])) + abs(y21 - (l2[2] + l2[0]));
-            tmp_h[j] += abs(y12 - (l1[ 3] + l1[ 1])) + abs(y22 - (l2[4] + l2[2]));
-
-            tmp_d[j]  = abs(y10 - (l0[-1] + l2[ 1])) + abs(y21 - (l1[0] + l3[2]));
-            tmp_d[j] += abs(y12 - (l0[ 1] + l2[ 3])) + abs(y22 - (l1[2] + l3[4]));
-
-            tmp_b[j]  = abs(y10 - (l2[-1] + l0[ 1])) + abs(y21 - (l3[0] + l1[2]));
-            tmp_b[j] += abs(y12 - (l2[ 1] + l0[ 3])) + abs(y22 - (l3[2] + l1[4]));
-
-            l0 += 4;
-            l1 += 4;
-            l2 += 4;
-            l3 += 4;
+            int j4 = j << 2;
+            fill(tmp_v + j,tmp_h + j,tmp_d + j ,tmp_b +j,
+                 l0 + j4, l1 + j4, l2 + j4, l3 + j4);
         }
 
         int* lpl_v = laplacian[VER]  [i >> 1];
@@ -685,7 +641,6 @@ rcn_alf_classif_novbnd(class_idx_arr, transpose_idx_arr,
             lpl_d[j] = tmp_d[j] + tmp_d[j + 1];
             lpl_b[j] = tmp_b[j] + tmp_b[j + 1];
         }
-
         _src += stride << 1;
     }
 
@@ -693,18 +648,19 @@ rcn_alf_classif_novbnd(class_idx_arr, transpose_idx_arr,
 
     lpl_v1 = laplacian[VER][i + 1];
     lpl_v2 = laplacian[VER][i + 2];
-    int *lpl_v3 = laplacian[VER][i + 3];
 
     lpl_h1 = laplacian[HOR][i + 1];
     lpl_h2 = laplacian[HOR][i + 2];
-    int *lpl_h3 = laplacian[HOR][i + 3];
 
     lpl_d1 = laplacian[DIAG0][i + 1];
     lpl_d2 = laplacian[DIAG0][i + 2];
-    int *lpl_d3 = laplacian[DIAG0][i + 3];
 
     lpl_b1 = laplacian[DIAG1][i + 1];
     lpl_b2 = laplacian[DIAG1][i + 2];
+
+    int *lpl_v3 = laplacian[VER][i + 3];
+    int *lpl_h3 = laplacian[HOR][i + 3];
+    int *lpl_d3 = laplacian[DIAG0][i + 3];
     int *lpl_b3 = laplacian[DIAG1][i + 3];
 
     sb_y++;
