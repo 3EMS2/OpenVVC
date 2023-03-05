@@ -503,27 +503,43 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     }
 
 #endif
-
-    for (i = 0; i < ((blk_h - 8) >> 1); i += 2) {
-        int k;
-    const OVSample *_src = src - 3 * stride - 3 + i *(stride << 1);
-    for (k = i; k < i + 4; ++k) {
+    for (i = 0; i < 2; ++i) {
 
         const OVSample *l0 = &_src[1 + 0 * stride];
         const OVSample *l1 = &_src[1 + 1 * stride];
         const OVSample *l2 = &_src[1 + 2 * stride];
         const OVSample *l3 = &_src[1 + 3 * stride];
 
-        int* lpl_v = laplacian[VER]  [k];
-        int* lpl_h = laplacian[HOR]  [k];
-        int* lpl_d = laplacian[DIAG0][k];
-        int* lpl_b = laplacian[DIAG1][k];
+        int* lpl_v = laplacian[VER]  [i];
+        int* lpl_h = laplacian[HOR]  [i];
+        int* lpl_d = laplacian[DIAG0][i];
+        int* lpl_b = laplacian[DIAG1][i];
 
         fill_lpl2(lpl_v, lpl_h, lpl_d, lpl_b,
                   l0, l1, l2, l3, nb_sb_w);
 
         _src += stride << 1;
     }
+
+    for (i = 0; i < ((blk_h - 8) >> 1); i += 2) {
+        int k;
+        for (k = i + 2; k < i + 4; ++k) {
+
+            const OVSample *l0 = &_src[1 + 0 * stride];
+            const OVSample *l1 = &_src[1 + 1 * stride];
+            const OVSample *l2 = &_src[1 + 2 * stride];
+            const OVSample *l3 = &_src[1 + 3 * stride];
+
+            int* lpl_v = laplacian[VER]  [k];
+            int* lpl_h = laplacian[HOR]  [k];
+            int* lpl_d = laplacian[DIAG0][k];
+            int* lpl_b = laplacian[DIAG1][k];
+
+            fill_lpl2(lpl_v, lpl_h, lpl_d, lpl_b,
+                      l0, l1, l2, l3, nb_sb_w);
+
+            _src += stride << 1;
+        }
         const int* lpl_v0 = laplacian[VER][i];
         const int* lpl_v1 = laplacian[VER][i + 1];
         const int* lpl_v2 = laplacian[VER][i + 2];
@@ -566,7 +582,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
 
     int j;
 
-    _src = src - 3 * stride - 3 + ((blk_h - 4) >> 1) * (stride << 1);
+    //_src = src - 3 * stride - 3 + ((blk_h - 4) >> 1) * (stride << 1);
     const OVSample *l0 = &_src[1 + 0 * stride];
     const OVSample *l1 = &_src[1 + 1 * stride];
     const OVSample *l2 = &_src[1 + 2 * stride];
