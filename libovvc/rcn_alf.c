@@ -427,6 +427,28 @@ fill(int *tmp_v, int *tmp_h,int *tmp_d, int *tmp_b,
     *tmp_b += abs(y12 - (l2[ 1] + l0[ 3]));
     *tmp_b += abs(y22 - (l3[ 2] + l1[ 4]));
 }
+static void
+fill_lpl2(int *lpl_v, int *lpl_h,int *lpl_d, int *lpl_b,
+     const OVSample *l0, const OVSample *l1, const OVSample *l2, const OVSample *l3, int nb_sb_w)
+{
+        int j;
+
+        int h[2], d[2], v[2], b[2];
+
+        fill(v, h, d, b, l0, l1, l2, l3);
+
+        for (j = 1; j < nb_sb_w + 1; ++j) {
+            int j4 = j << 2;
+
+            fill(v + (j&1),h + (j&1),d + (j&1) ,b +(j&1),
+                 l0 + j4, l1 + j4, l2 + j4, l3 + j4);
+
+            lpl_v[j - 1] = v[(j - 1)&1] + v[j&1];
+            lpl_h[j - 1] = h[(j - 1)&1] + h[j&1];
+            lpl_d[j - 1] = d[(j - 1)&1] + d[j&1];
+            lpl_b[j - 1] = b[(j - 1)&1] + b[j&1];
+        }
+}
 
 static void                                               
 rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_arr,
@@ -434,6 +456,8 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
                      const int shift, int virbnd_pos)
 {
     int laplacian[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][(32 >> 2)];
+
+    int lpl2[NUM_DIRECTIONS][4][(32 >> 2)];
 
     int tmp_v[(32 + 4) >> 1];
     int tmp_h[(32 + 4) >> 1];
@@ -465,7 +489,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         const OVSample *l1 = &_src[1 + 1 * stride];
         const OVSample *l2 = &_src[1 + 2 * stride];
         const OVSample *l3 = &_src[1 + 3 * stride];
-
+#if 0
         int j;
 
         int* lpl_v = laplacian[VER]  [i];
@@ -487,6 +511,36 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
             lpl_d[j - 1] = tmp_d[j - 1] + tmp_d[j];
             lpl_b[j - 1] = tmp_b[j - 1] + tmp_b[j];
         }
+
+        int j;
+
+        int* lpl_v = laplacian[VER]  [i];
+        int* lpl_h = laplacian[HOR]  [i];
+        int* lpl_d = laplacian[DIAG0][i];
+        int* lpl_b = laplacian[DIAG1][i];
+        int h[2], d[2], v[2], b[2];
+
+        fill(v, h, d, b,
+             l0, l1, l2, l3);
+
+        for (j = 1; j < nb_sb_w + 1; ++j) {
+            int j4 = j << 2;
+
+            fill(v + (j&1),h + (j&1),d + (j&1) ,b +(j&1),
+                 l0 + j4, l1 + j4, l2 + j4, l3 + j4);
+
+            lpl_v[j - 1] = v[(j - 1)&1] + v[j&1];
+            lpl_h[j - 1] = h[(j - 1)&1] + h[j&1];
+            lpl_d[j - 1] = d[(j - 1)&1] + d[j&1];
+            lpl_b[j - 1] = b[(j - 1)&1] + b[j&1];
+        }
+#endif
+        int* lpl_v = laplacian[VER]  [i];
+        int* lpl_h = laplacian[HOR]  [i];
+        int* lpl_d = laplacian[DIAG0][i];
+        int* lpl_b = laplacian[DIAG1][i];
+        fill_lpl2(lpl_v, lpl_h, lpl_d, lpl_b,
+                  l0, l1, l2, l3, nb_sb_w);
 
         _src += stride << 1;
     }
@@ -539,22 +593,26 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     const OVSample *l2 = &_src[1 + 2 * stride];
     const OVSample *l3 = l2;
 
-    for (j = 0; j < nb_sb_w + 1; ++j) {
-        int j4 = j << 2;
-        fill(tmp_v + j,tmp_h + j,tmp_d + j ,tmp_b +j,
-             l0 + j4, l1 + j4, l2 + j4, l3 + j4);
-    }
-
     int* lpl_v = laplacian[VER]  [i >> 1];
     int* lpl_h = laplacian[HOR]  [i >> 1];
     int* lpl_d = laplacian[DIAG0][i >> 1];
     int* lpl_b = laplacian[DIAG1][i >> 1];
-    for (j = 0; j < nb_sb_w; ++j) {
-        lpl_v[j] = tmp_v[j] + tmp_v[j + 1];
-        lpl_h[j] = tmp_h[j] + tmp_h[j + 1];
-        lpl_d[j] = tmp_d[j] + tmp_d[j + 1];
-        lpl_b[j] = tmp_b[j] + tmp_b[j + 1];
+
+    fill(tmp_v, tmp_h, tmp_d,tmp_b,
+         l0, l1, l2, l3);
+
+    for (j = 1; j < nb_sb_w + 1; ++j) {
+        int j4 = j << 2;
+
+        fill(tmp_v + j,tmp_h + j,tmp_d + j ,tmp_b +j,
+             l0 + j4, l1 + j4, l2 + j4, l3 + j4);
+
+        lpl_v[j - 1] = tmp_v[j - 1] + tmp_v[j];
+        lpl_h[j - 1] = tmp_h[j - 1] + tmp_h[j];
+        lpl_d[j - 1] = tmp_d[j - 1] + tmp_d[j];
+        lpl_b[j - 1] = tmp_b[j - 1] + tmp_b[j];
     }
+
     _src += stride << 1;
     //}
     i = (blk_h - 8) >> 1;
