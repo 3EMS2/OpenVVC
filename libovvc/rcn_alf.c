@@ -442,6 +442,8 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
 
     int blk_h = blk.height;
     int blk_w = blk.width;
+    int sb_y_0 = (blk.y >> 2);
+    int sb_x_0 = (blk.x >> 2);
     int nb_sb_w = blk_w >> 2;
     int nb_sb_h = blk_h >> 2;
 
@@ -466,23 +468,26 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
 
         int j;
 
-        for (j = 0; j < nb_sb_w + 1; ++j) {
-            int j4 = j << 2;
-
-            fill(tmp_v + j,tmp_h + j,tmp_d + j ,tmp_b +j,
-                 l0 + j4, l1 + j4, l2 + j4, l3 + j4);
-        }
-
         int* lpl_v = laplacian[VER]  [i];
         int* lpl_h = laplacian[HOR]  [i];
         int* lpl_d = laplacian[DIAG0][i];
         int* lpl_b = laplacian[DIAG1][i];
-        for (j = 0; j < nb_sb_w; ++j) {
-            lpl_v[j] = tmp_v[j] + tmp_v[j + 1];
-            lpl_h[j] = tmp_h[j] + tmp_h[j + 1];
-            lpl_d[j] = tmp_d[j] + tmp_d[j + 1];
-            lpl_b[j] = tmp_b[j] + tmp_b[j + 1];
+
+        fill(tmp_v, tmp_h, tmp_d,tmp_b,
+             l0, l1, l2, l3);
+
+        for (j = 1; j < nb_sb_w + 1; ++j) {
+            int j4 = j << 2;
+
+            fill(tmp_v + j,tmp_h + j,tmp_d + j ,tmp_b +j,
+                 l0 + j4, l1 + j4, l2 + j4, l3 + j4);
+
+            lpl_v[j - 1] = tmp_v[j - 1] + tmp_v[j];
+            lpl_h[j - 1] = tmp_h[j - 1] + tmp_h[j];
+            lpl_d[j - 1] = tmp_d[j - 1] + tmp_d[j];
+            lpl_b[j - 1] = tmp_b[j - 1] + tmp_b[j];
         }
+
         _src += stride << 1;
     }
 
@@ -514,8 +519,8 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
             int sum_d = lpl_d0[j] + lpl_d1[j] + lpl_d2[j] + lpl_d3[j];
             int sum_b = lpl_b0[j] + lpl_b1[j] + lpl_b2[j] + lpl_b3[j];
 
-            int sb_y = (i >> 1) + (blk.y >> 2);
-            int sb_x = j + (blk.x >> 2);
+            int sb_y = (i >> 1) + sb_y_0;
+            int sb_x = j + sb_x_0;
 
             struct ALFilterIdx fidx = alf_derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 0);
 
@@ -554,7 +559,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     //}
     i = (blk_h - 8) >> 1;
 
-    int sb_y = (i >> 1) + (blk.y >> 2);
+    int sb_y = (i >> 1) + sb_y_0;
 
     const int* lpl_v0 = laplacian[VER][i];
     const int* lpl_v1 = laplacian[VER][i + 1];
@@ -578,7 +583,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         int sum_d = lpl_d0[j] + lpl_d1[j] + lpl_d2[j];
         int sum_b = lpl_b0[j] + lpl_b1[j] + lpl_b2[j];
 
-        int sb_x = j + (blk.x >> 2);
+        int sb_x = j + sb_x_0;
 
         struct ALFilterIdx fidx = alf_derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 1);
 
@@ -666,7 +671,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     sb_y++;
 
     for (j = 0; j < nb_sb_w; ++j) {
-        int sb_x = j + (blk.x >> 2);
+        int sb_x = j + sb_x_0;
 
         int sum_v =             lpl_v1[j] + lpl_v2[j] + lpl_v3[j];
         int sum_h =             lpl_h1[j] + lpl_h2[j] + lpl_h3[j];
