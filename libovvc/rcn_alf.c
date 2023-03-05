@@ -518,25 +518,25 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
 
             _src += stride << 1;
         }
-        const int* lpl_v0 = lpl2[VER][(i) & 3];
-        const int* lpl_v1 = lpl2[VER][(i + 1) & 3];
-        const int* lpl_v2 = lpl2[VER][(i + 2) & 3];
-        const int* lpl_v3 = lpl2[VER][(i + 3) & 3];
+        const int* lpl_v0 = lpl2[VER][0];
+        const int* lpl_v1 = lpl2[VER][1];
+        const int* lpl_v2 = lpl2[VER][2];
+        const int* lpl_v3 = lpl2[VER][3];
 
-        const int* lpl_h0 = lpl2[HOR][(i) & 3];
-        const int* lpl_h1 = lpl2[HOR][(i + 1) & 3];
-        const int* lpl_h2 = lpl2[HOR][(i + 2) & 3];
-        const int* lpl_h3 = lpl2[HOR][(i + 3) & 3];
+        const int* lpl_h0 = lpl2[HOR][0];
+        const int* lpl_h1 = lpl2[HOR][1];
+        const int* lpl_h2 = lpl2[HOR][2];
+        const int* lpl_h3 = lpl2[HOR][3];
 
-        const int* lpl_d0 = lpl2[DIAG0][(i) & 3];
-        const int* lpl_d1 = lpl2[DIAG0][(i + 1) & 3];
-        const int* lpl_d2 = lpl2[DIAG0][(i + 2) & 3];
-        const int* lpl_d3 = lpl2[DIAG0][(i + 3) & 3];
+        const int* lpl_d0 = lpl2[DIAG0][0];
+        const int* lpl_d1 = lpl2[DIAG0][1];
+        const int* lpl_d2 = lpl2[DIAG0][2];
+        const int* lpl_d3 = lpl2[DIAG0][3];
 
-        const int* lpl_b0 = lpl2[DIAG1][(i) & 3];
-        const int* lpl_b1 = lpl2[DIAG1][(i + 1) & 3];
-        const int* lpl_b2 = lpl2[DIAG1][(i + 2) & 3];
-        const int* lpl_b3 = lpl2[DIAG1][(i + 3) & 3];
+        const int* lpl_b0 = lpl2[DIAG1][0];
+        const int* lpl_b1 = lpl2[DIAG1][1];
+        const int* lpl_b2 = lpl2[DIAG1][2];
+        const int* lpl_b3 = lpl2[DIAG1][3];
         int j;
 
         for (j = 0; j < nb_sb_w; ++j) {
