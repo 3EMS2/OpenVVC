@@ -457,7 +457,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
 {
     int laplacian[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][(32 >> 2)];
 
-    int lpl2[NUM_DIRECTIONS][4][(32 >> 2)];
+    int lpl2[NUM_DIRECTIONS][4][(32 >> 2) + 1];
 
     int tmp_v[(32 + 4) >> 1];
     int tmp_h[(32 + 4) >> 1];
@@ -518,6 +518,16 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         fill_lpl2(lpl_v, lpl_h, lpl_d, lpl_b,
                   l0, l1, l2, l3, nb_sb_w);
 
+            lpl2[VER]  [i % 4][0] = lpl_v[0];
+            lpl2[HOR]  [i % 4][0] = lpl_h[0];
+            lpl2[DIAG0][i % 4][0] = lpl_d[0];
+            lpl2[DIAG1][i % 4][0] = lpl_b[0];
+            for (int j = 1; j < nb_sb_w + 1; ++j) {
+                lpl2[VER]  [i % 4][j] = lpl_v[j];
+                lpl2[HOR]  [i % 4][j] = lpl_h[j];
+                lpl2[DIAG0][i % 4][j] = lpl_d[j];
+                lpl2[DIAG1][i % 4][j] = lpl_b[j];
+            }
         _src += stride << 1;
     }
 
@@ -538,27 +548,38 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
             fill_lpl2(lpl_v, lpl_h, lpl_d, lpl_b,
                       l0, l1, l2, l3, nb_sb_w);
 
+            lpl2[VER]  [k % 4][0] = lpl_v[0];
+            lpl2[HOR]  [k % 4][0] = lpl_h[0];
+            lpl2[DIAG0][k % 4][0] = lpl_d[0];
+            lpl2[DIAG1][k % 4][0] = lpl_b[0];
+            for (int j = 1; j < nb_sb_w + 1; ++j) {
+                lpl2[VER]  [k % 4][j] = lpl_v[j];
+                lpl2[HOR]  [k % 4][j] = lpl_h[j];
+                lpl2[DIAG0][k % 4][j] = lpl_d[j];
+                lpl2[DIAG1][k % 4][j] = lpl_b[j];
+            }
+
             _src += stride << 1;
         }
-        const int* lpl_v0 = laplacian[VER][i];
-        const int* lpl_v1 = laplacian[VER][i + 1];
-        const int* lpl_v2 = laplacian[VER][i + 2];
-        const int* lpl_v3 = laplacian[VER][i + 3];
+        const int* lpl_v0 = lpl2[VER][(i) & 3];
+        const int* lpl_v1 = lpl2[VER][(i + 1) & 3];
+        const int* lpl_v2 = lpl2[VER][(i + 2) & 3];
+        const int* lpl_v3 = lpl2[VER][(i + 3) & 3];
 
-        const int* lpl_h0 = laplacian[HOR][i];
-        const int* lpl_h1 = laplacian[HOR][i + 1];
-        const int* lpl_h2 = laplacian[HOR][i + 2];
-        const int* lpl_h3 = laplacian[HOR][i + 3];
+        const int* lpl_h0 = lpl2[HOR][(i) & 3];
+        const int* lpl_h1 = lpl2[HOR][(i + 1) & 3];
+        const int* lpl_h2 = lpl2[HOR][(i + 2) & 3];
+        const int* lpl_h3 = lpl2[HOR][(i + 3) & 3];
 
-        const int* lpl_d0 = laplacian[DIAG0][i];
-        const int* lpl_d1 = laplacian[DIAG0][i + 1];
-        const int* lpl_d2 = laplacian[DIAG0][i + 2];
-        const int* lpl_d3 = laplacian[DIAG0][i + 3];
+        const int* lpl_d0 = lpl2[DIAG0][(i) & 3];
+        const int* lpl_d1 = lpl2[DIAG0][(i + 1) & 3];
+        const int* lpl_d2 = lpl2[DIAG0][(i + 2) & 3];
+        const int* lpl_d3 = lpl2[DIAG0][(i + 3) & 3];
 
-        const int* lpl_b0 = laplacian[DIAG1][i];
-        const int* lpl_b1 = laplacian[DIAG1][i + 1];
-        const int* lpl_b2 = laplacian[DIAG1][i + 2];
-        const int* lpl_b3 = laplacian[DIAG1][i + 3];
+        const int* lpl_b0 = lpl2[DIAG1][(i) & 3];
+        const int* lpl_b1 = lpl2[DIAG1][(i + 1) & 3];
+        const int* lpl_b2 = lpl2[DIAG1][(i + 2) & 3];
+        const int* lpl_b3 = lpl2[DIAG1][(i + 3) & 3];
         int j;
 
         for (j = 0; j < nb_sb_w; ++j) {
