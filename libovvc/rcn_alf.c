@@ -455,8 +455,6 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
                      OVSample *const src, const int stride, const Area blk,
                      const int shift, int virbnd_pos)
 {
-    int laplacian[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][(32 >> 2)];
-
     int lpl2[NUM_DIRECTIONS][4][(32 >> 2) + 1];
 
     int tmp_v[(32 + 4) >> 1];
@@ -483,26 +481,6 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         _src += stride << 1;
     }
 #else
-#if 0
-    for (i = 0; i < ((blk_h - 4) >> 1); ++i) {
-
-        const OVSample *l0 = &_src[1 + 0 * stride];
-        const OVSample *l1 = &_src[1 + 1 * stride];
-        const OVSample *l2 = &_src[1 + 2 * stride];
-        const OVSample *l3 = &_src[1 + 3 * stride];
-
-        int* lpl_v = laplacian[VER]  [i];
-        int* lpl_h = laplacian[HOR]  [i];
-        int* lpl_d = laplacian[DIAG0][i];
-        int* lpl_b = laplacian[DIAG1][i];
-
-        fill_lpl2(lpl_v, lpl_h, lpl_d, lpl_b,
-                  l0, l1, l2, l3, nb_sb_w);
-
-        _src += stride << 1;
-    }
-
-#endif
     for (i = 0; i < 2; ++i) {
 
         const OVSample *l0 = &_src[1 + 0 * stride];
@@ -510,24 +488,14 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         const OVSample *l2 = &_src[1 + 2 * stride];
         const OVSample *l3 = &_src[1 + 3 * stride];
 
-        int* lpl_v = laplacian[VER]  [i];
-        int* lpl_h = laplacian[HOR]  [i];
-        int* lpl_d = laplacian[DIAG0][i];
-        int* lpl_b = laplacian[DIAG1][i];
+        int* lpl_v = lpl2[VER]  [(i & 3)];
+        int* lpl_h = lpl2[HOR]  [(i & 3)];
+        int* lpl_d = lpl2[DIAG0][(i & 3)];
+        int* lpl_b = lpl2[DIAG1][(i & 3)];
 
         fill_lpl2(lpl_v, lpl_h, lpl_d, lpl_b,
                   l0, l1, l2, l3, nb_sb_w);
 
-            lpl2[VER]  [i % 4][0] = lpl_v[0];
-            lpl2[HOR]  [i % 4][0] = lpl_h[0];
-            lpl2[DIAG0][i % 4][0] = lpl_d[0];
-            lpl2[DIAG1][i % 4][0] = lpl_b[0];
-            for (int j = 1; j < nb_sb_w + 1; ++j) {
-                lpl2[VER]  [i % 4][j] = lpl_v[j];
-                lpl2[HOR]  [i % 4][j] = lpl_h[j];
-                lpl2[DIAG0][i % 4][j] = lpl_d[j];
-                lpl2[DIAG1][i % 4][j] = lpl_b[j];
-            }
         _src += stride << 1;
     }
 
@@ -540,24 +508,13 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
             const OVSample *l2 = &_src[1 + 2 * stride];
             const OVSample *l3 = &_src[1 + 3 * stride];
 
-            int* lpl_v = laplacian[VER]  [k];
-            int* lpl_h = laplacian[HOR]  [k];
-            int* lpl_d = laplacian[DIAG0][k];
-            int* lpl_b = laplacian[DIAG1][k];
+            int* lpl_v = lpl2[VER]  [(k & 3)];
+            int* lpl_h = lpl2[HOR]  [(k & 3)];
+            int* lpl_d = lpl2[DIAG0][(k & 3)];
+            int* lpl_b = lpl2[DIAG1][(k & 3)];
 
             fill_lpl2(lpl_v, lpl_h, lpl_d, lpl_b,
                       l0, l1, l2, l3, nb_sb_w);
-
-            lpl2[VER]  [k % 4][0] = lpl_v[0];
-            lpl2[HOR]  [k % 4][0] = lpl_h[0];
-            lpl2[DIAG0][k % 4][0] = lpl_d[0];
-            lpl2[DIAG1][k % 4][0] = lpl_b[0];
-            for (int j = 1; j < nb_sb_w + 1; ++j) {
-                lpl2[VER]  [k % 4][j] = lpl_v[j];
-                lpl2[HOR]  [k % 4][j] = lpl_h[j];
-                lpl2[DIAG0][k % 4][j] = lpl_d[j];
-                lpl2[DIAG1][k % 4][j] = lpl_b[j];
-            }
 
             _src += stride << 1;
         }
@@ -685,6 +642,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     lpl_h = lpl2[HOR]  [(i >> 1) & 3];
     lpl_d = lpl2[DIAG0][(i >> 1) & 3];
     lpl_b = lpl2[DIAG1][(i >> 1) & 3];
+
     for (j = 0; j < nb_sb_w; ++j) {
         lpl_v[j] = tmp_v[j] + tmp_v[j + 1];
         lpl_h[j] = tmp_h[j] + tmp_h[j + 1];
