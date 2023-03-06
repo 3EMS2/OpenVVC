@@ -348,7 +348,6 @@ alf_derive_filter_idx(uint32_t sum_h, uint32_t sum_v, uint32_t sum_d, uint32_t s
 
     fidx.class_idx = th[activity];
 
-
     if (sum_v > sum_h) {
         max_hv = sum_v;
         min_hv = sum_h;
@@ -469,6 +468,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     int nb_sb_w = blk_w >> 2;
     int nb_sb_h = blk_h >> 2;
 
+
     const OVSample *_src = src - 3 * stride - 3;
     int i;
 #if 0
@@ -499,9 +499,9 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         _src += stride << 1;
     }
 
-    for (i = 0; i < ((blk_h - 8) >> 1); i += 2) {
+    for (i = 0; i < nb_sb_h - 2; ++i) {
         int k;
-        for (k = i + 2; k < i + 4; ++k) {
+        for (k = 2 * i + 2; k < 2 * i + 4; ++k) {
 
             const OVSample *l0 = &_src[1 + 0 * stride];
             const OVSample *l1 = &_src[1 + 1 * stride];
@@ -545,7 +545,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
             int sum_d = lpl_d0[j] + lpl_d1[j] + lpl_d2[j] + lpl_d3[j];
             int sum_b = lpl_b0[j] + lpl_b1[j] + lpl_b2[j] + lpl_b3[j];
 
-            int sb_y = (i >> 1) + sb_y_0;
+            int sb_y = i + sb_y_0;
             int sb_x = j + sb_x_0;
 
             struct ALFilterIdx fidx = alf_derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 0);
@@ -622,7 +622,6 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.tr_idx;
     }
 
-    //for (; i < blk_h; i += 2) {
     i = blk_h - 2;
 
     l0 = &_src[1 + 0 * stride];
@@ -649,10 +648,9 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         lpl_d[j] = tmp_d[j] + tmp_d[j + 1];
         lpl_b[j] = tmp_b[j] + tmp_b[j + 1];
     }
-    _src += stride << 1;
 
+    _src += stride << 1;
     i = blk_h;
-    //}
 
     for (; i < blk_h + 4; i += 2) {
         int j;
@@ -894,7 +892,6 @@ cc_alf_filterBlk(OVSample * chroma_dst, OVSample * luma_src, const int chr_strid
 {
     const int clsSizeY           = 4;
     const int clsSizeX           = 4;
-    //ATTENTION: scaleX et Y fixed to 1 (en 4 2 0)
     const int scaleX             = 1;
     const int scaleY             = 1;
     for (int i = 0; i < blk_dst.height; i += clsSizeY) {
@@ -912,14 +909,6 @@ cc_alf_filterBlk(OVSample * chroma_dst, OVSample * luma_src, const int chr_strid
                 const OVSample *srcCross = luma_src + col + row * luma_stride;
 
                 int pos = ((blk_dst.y + i + ii) << scaleY) & (vbCTUHeight - 1);
-
-                if (pos == (vbPos - 2) || pos == (vbPos + 1)) {
-                    offset3 = offset1;
-                } else if (pos == (vbPos - 1) || pos == vbPos) {
-                    offset1 = 0;
-                    offset2 = 0;
-                    offset3 = 0;
-                }
 
                 for (int jj = 0; jj < clsSizeX; jj++) {
                     const int jj2     = (jj << scaleX);
@@ -979,7 +968,7 @@ cc_alf_filterBlkVB(OVSample * chroma_dst, OVSample * luma_src, const int chr_str
                 const OVSample *srcCross = luma_src + col + row * luma_stride;
 
                 int pos = ((blk_dst.y + i + ii) << scaleY) & (vbCTUHeight - 1);
-                if (!(scaleY == 0 && (pos == vbPos || pos == vbPos + 1))) {
+                //if (!(scaleY == 0 && (pos == vbPos || pos == vbPos + 1))) {
                     if (pos == (vbPos - 2) || pos == (vbPos + 1)) {
                         offset3 = offset1;
                     } else if (pos == (vbPos - 1) || pos == vbPos) {
@@ -1013,7 +1002,7 @@ cc_alf_filterBlkVB(OVSample * chroma_dst, OVSample * luma_src, const int chr_str
 
                         srcSelf[jj] = ov_bdclip(sum);
                     }
-                }
+                //}
             }
         }
         chroma_dst += chr_stride * clsSizeY;
