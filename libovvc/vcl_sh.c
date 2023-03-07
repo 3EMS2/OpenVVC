@@ -726,7 +726,7 @@ setup_subpic_id_map(struct PicPartitionInfo *part_info, const OVPPS *const pps, 
 }
 
 static int16_t
-map_subpic_id(struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
+map_subpic_id(const struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
 {
     uint16_t slice_map_id = 0;
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
@@ -750,7 +750,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
              const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type)
 {
     int i;
-    struct TileInfo const tinfo = {0};
+    struct TileInfo tinfo = {0};
     OVSH *sh = &hls_data->sh;
     OVPH *ph = NULL;
     const OVPPS *pps = NULL;
@@ -784,16 +784,17 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
      */
     init_tile_ctx(&tinfo, pps);
     uint8_t log2_ctb_s = 5 + sps->sps_log2_ctu_size_minus5;
-    setup_subpic_prms(sps, &pps->part_info, &tinfo, log2_ctb_s);
-    setup_slice_prms(pps, &pps->part_info, &tinfo, log2_ctb_s);
-    setup_suppic_slice_map(&pps->part_info);
-    setup_subpic_id_map(&pps->part_info, pps, sps);
+    struct PicPartitionInfo *const part_info = &pps->part_info;
+    setup_subpic_prms(sps, part_info, &tinfo, log2_ctb_s);
+    setup_slice_prms(pps, part_info, &tinfo, log2_ctb_s);
+    setup_suppic_slice_map(part_info);
+    setup_subpic_id_map(part_info, pps, sps);
 
     int nb_slices_subpic = 1;
     if (sps->sps_subpic_info_present_flag) {
         uint8_t subpic_id_len = pps->pps_subpic_id_mapping_present_flag ? pps->pps_subpic_id_len_minus1 + 1 : sps->sps_subpic_id_len_minus1 + 1;
         sh->sh_subpic_id = nvcl_read_bits(rdr, subpic_id_len);
-        uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
+        uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
         nb_slices_subpic = pps->pps_single_slice_per_subpic_flag ? 1 : pps->part_info.subpictures[actual_subpic_id].nb_slices;
     } else {
         nb_slices_subpic = pps->pps_num_slices_in_pic_minus1 + 1;
@@ -817,10 +818,10 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
     ov_log(NULL, OVLOG_WARNING, "Read slice address %d , subpic_id %d, subpic idx %d\n", sh->sh_slice_address, sh->sh_subpic_id, actual_subpic_id);
 
-    struct SubpicInfo *subpic = &pps->part_info.subpictures[actual_subpic_id];
+    const struct SubpicInfo *subpic = &pps->part_info.subpictures[actual_subpic_id];
     uint16_t slice_address = sh->sh_slice_address;
     uint16_t slice_id =  pps->part_info.slice_id[subpic->map_offset + slice_address];
-    struct SliceMap *slice = &pps->part_info.slices[slice_id];
+    struct SliceMap *slice = &part_info->slices[slice_id];
     int nb_extra_sh_bits = sps->sps_num_extra_sh_bytes * 8;
 
     for (i = 0; i < nb_extra_sh_bits; i++) {

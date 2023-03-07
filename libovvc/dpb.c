@@ -1021,7 +1021,7 @@ init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu, const struc
 }
 
 static int16_t
-map_subpic_id(struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
+map_subpic_id(const struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
 {
     uint16_t slice_map_id = 0;
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
@@ -1053,7 +1053,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     uint8_t cra_flag = 0;
     uint8_t idr_flag = 0;
     uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
-    struct SubpicInfo *subpic = &pps->part_info.subpictures[actual_subpic_id];
+    const struct SubpicInfo *subpic = &pps->part_info.subpictures[actual_subpic_id];
 
     idr_flag |= nalu_type == OVNALU_IDR_W_RADL;
     idr_flag |= nalu_type == OVNALU_IDR_N_LP;

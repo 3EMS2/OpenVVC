@@ -320,7 +320,7 @@ update_sps_info(struct SPSInfo *const sps_info, const OVSPS *const sps)
 }
 
 static int16_t
-map_subpic_id(struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
+map_subpic_id(const struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
 {
     uint16_t slice_map_id = 0;
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
@@ -350,9 +350,9 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
     uint16_t slice_address = sh->sh_slice_address;
     uint16_t subpic_id = sh->sh_subpic_id;
     uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
-    struct SubpicInfo *subpic = &pps->part_info.subpictures[actual_subpic_id];
+    const struct SubpicInfo *subpic = &pps->part_info.subpictures[actual_subpic_id];
     uint16_t slice_id =  pps->part_info.slice_id[subpic->map_offset + slice_address];
-    struct SliceMap *slice = &pps->part_info.slices[slice_id];
+    const struct SliceMap *slice = &pps->part_info.slices[slice_id];
 
     int nb_entries = slice->nb_entries;
     uint32_t rbsp_offset[257];

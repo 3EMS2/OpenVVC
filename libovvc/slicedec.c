@@ -50,6 +50,481 @@
 #include "rcn_dequant.h"
 #include "hls_structures.h"
 
+struct ScalingList2x2
+{
+    int16_t coeff[4];
+};
+
+struct ScalingList4x4
+{
+    int16_t coeff[16];
+};
+
+struct ScalingList8x8
+{
+    int16_t coeff[64];
+};
+
+struct ScalingLists {
+    struct ScalingList2x2 chroma_2x2[2];
+    struct ScalingList4x4 ycbcbr_4x4[8 - 2];
+    struct ScalingList8x8 ycbcbr_8x8[28 - 8];
+    int16_t dc_val[28];
+};
+
+static void
+derive_scaling_matrix_2x2(struct ScalingLists *const sl_ctx, const OVScalingListData *sl, int id)
+{
+    struct ScalingList2x2 *sl_dst = &sl_ctx->chroma_2x2[id];
+    const struct ScalingList2x2 *sl_ref = sl_dst;
+    int i;
+    uint8_t init_val = 0;
+
+    uint8_t is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id] << 1;
+
+
+    if (!is_pred_or_cpy) {
+        init_val = 8;
+    } else {
+        sl_ref -= sl->scaling_list_pred_id_delta[id];
+        if (sl_ref == sl_dst) {
+            init_val = 16;
+        }
+    }
+
+    int16_t coeff = init_val;
+    for (i = 0; i < 4; i++) {
+        coeff += sl->scaling_list_delta_coef[id][i];
+        sl_dst->coeff[i] = sl_ref->coeff[i] + coeff;
+    }
+
+    sl_ctx->dc_val[id] = sl_dst->coeff[0];
+}
+
+static void
+derive_scaling_matrix_4x4(struct ScalingLists *const sl_ctx, const OVScalingListData *sl, int id)
+{
+    struct ScalingList4x4 *sl_dst = &sl_ctx->ycbcbr_4x4[id - 2];
+    const struct ScalingList4x4 *sl_ref = sl_dst;
+    int i;
+    uint8_t init_val = 0;
+
+    uint8_t is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+    is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id] << 1;
+
+
+    if (!is_pred_or_cpy) {
+        init_val = 8;
+    } else {
+        sl_ref -= sl->scaling_list_pred_id_delta[id];
+        if (sl_ref == sl_dst) {
+            init_val = 16;
+        }
+    }
+
+    int16_t coeff = init_val;
+    for (i = 0; i < 16; i++) {
+        coeff += sl->scaling_list_delta_coef[id][i];
+        sl_dst->coeff[i] = sl_ref->coeff[i] + coeff;
+    }
+
+    sl_ctx->dc_val[id] = sl_dst->coeff[0];
+}
+
+static void
+derive_scaling_matrix_8x8(struct ScalingLists *const sl_ctx, const OVScalingListData *sl, int id)
+{
+    struct ScalingList8x8 *sl_dst = &sl_ctx->ycbcbr_8x8[id - 8];
+    const struct ScalingList8x8 *sl_ref = sl_dst;
+    int i;
+    uint8_t init_val = 0;
+    uint8_t ref_id = id;
+
+    uint8_t is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+    is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id] << 1;
+
+
+    if (!is_pred_or_cpy) {
+        init_val = 8;
+    } else {
+        sl_ref -= sl->scaling_list_pred_id_delta[id];
+        ref_id -= sl->scaling_list_pred_id_delta[id];
+        if (sl_ref == sl_dst) {
+            init_val = 16;
+        }
+    }
+
+    int16_t coeff = init_val;
+
+    if (id > 13) {
+        coeff += sl->scaling_list_dc_coef[id - 14];
+    }
+
+    for (i = 0; i < 64; i++) {
+        coeff += sl->scaling_list_delta_coef[id][i];
+        sl_dst->coeff[i] = sl_ref->coeff[i] + coeff;
+    }
+
+    if (id > 13) {
+        int16_t dc_pred =  ref_id > 13 ? sl_ctx->dc_val[ref_id] : sl_ref->coeff[0];
+        sl_ctx->dc_val[id] = dc_pred + sl->scaling_list_dc_coef[id - 14];
+    } else {
+        sl_ctx->dc_val[id] = sl_dst->coeff[0];
+    }
+}
+
+static uint8_t map[64] =
+{
+    1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 0,
+        1, 1, 1, 1, 1, 0, 0, 1,
+        1, 1, 0, 0, 0, 1, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+static void
+derive_scaling_matrix_8x8_2(struct ScalingLists *const sl_ctx, const OVScalingListData *sl, int id)
+{
+    struct ScalingList8x8 *sl_dst = &sl_ctx->ycbcbr_8x8[id - 8];
+    const struct ScalingList8x8 *sl_ref = sl_dst;
+    int i;
+    uint8_t init_val = 0;
+    uint8_t ref_id = id;
+
+    uint8_t is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+    is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id] << 1;
+
+
+    if (!is_pred_or_cpy) {
+        init_val = 8;
+    } else {
+        sl_ref -= sl->scaling_list_pred_id_delta[id];
+        ref_id -= sl->scaling_list_pred_id_delta[id];
+        if (sl_ref == sl_dst) {
+            init_val = 16;
+        }
+    }
+
+    int16_t coeff = init_val;
+
+    if (id > 13) {
+        coeff += sl->scaling_list_dc_coef[id - 14];
+    }
+
+    uint8_t skip = 0;
+    for (i = 0; i < 64; i++) {
+        if (map[i]) {
+            coeff += sl->scaling_list_delta_coef[id][i - skip];
+        } else {
+            skip++;
+        }
+        sl_dst->coeff[i] = sl_ref->coeff[i] + coeff;
+    }
+
+    if (id > 13) {
+        int16_t dc_pred =  ref_id > 13 ? sl_ctx->dc_val[ref_id] : sl_ref->coeff[0];
+        sl_ctx->dc_val[id] = dc_pred + sl->scaling_list_dc_coef[id - 14];
+    } else {
+        sl_ctx->dc_val[id] = sl_dst->coeff[0];
+    }
+}
+
+#define LOG2_TB_W(id) (((id) >> 3) & 7)
+#define LOG2_TB_H(id) ((id) & 7)
+
+#define TB_EXIST(id) (LOG2_TB_H(id) != 7 && LOG2_TB_W(id) != 7 && !(LOG2_TB_H(id) == 0 && LOG2_TB_W(id) == 0))
+
+#define TB_SIZE(id) (TB_EXIST(id) << (OVMIN(LOG2_TB_W(id), 5) + OVMIN(LOG2_TB_H(id), 5)))
+
+static const uint16_t tb_lut_size_tb[64] = {
+   TB_SIZE( 0),
+   TB_SIZE( 1),
+   TB_SIZE( 2),
+   TB_SIZE( 3),
+   TB_SIZE( 4),
+   TB_SIZE( 5),
+   TB_SIZE( 6),
+   TB_SIZE( 7),
+   TB_SIZE( 8),
+   TB_SIZE( 9),
+   TB_SIZE(10),
+   TB_SIZE(11),
+   TB_SIZE(12),
+   TB_SIZE(13),
+   TB_SIZE(14),
+   TB_SIZE(15),
+   TB_SIZE(16),
+   TB_SIZE(17),
+   TB_SIZE(18),
+   TB_SIZE(19),
+   TB_SIZE(20),
+   TB_SIZE(21),
+   TB_SIZE(22),
+   TB_SIZE(23),
+   TB_SIZE(24),
+   TB_SIZE(25),
+   TB_SIZE(26),
+   TB_SIZE(27),
+   TB_SIZE(28),
+   TB_SIZE(29),
+   TB_SIZE(30),
+   TB_SIZE(31),
+   TB_SIZE(32),
+   TB_SIZE(33),
+   TB_SIZE(34),
+   TB_SIZE(35),
+   TB_SIZE(36),
+   TB_SIZE(37),
+   TB_SIZE(38),
+   TB_SIZE(39),
+   TB_SIZE(40),
+   TB_SIZE(41),
+   TB_SIZE(42),
+   TB_SIZE(43),
+   TB_SIZE(44),
+   TB_SIZE(45),
+   TB_SIZE(46),
+   TB_SIZE(47),
+   TB_SIZE(48),
+   TB_SIZE(49),
+   TB_SIZE(50),
+   TB_SIZE(51),
+   TB_SIZE(52),
+   TB_SIZE(53),
+   TB_SIZE(54),
+   TB_SIZE(55),
+   TB_SIZE(56),
+   TB_SIZE(57),
+   TB_SIZE(58),
+   TB_SIZE(59),
+   TB_SIZE(60),
+   TB_SIZE(61),
+   TB_SIZE(62),
+   TB_SIZE(63),
+};
+
+static const uint16_t tb_lut_offset[64] =
+{      0,    0,    2,    6,   14,   30,   62,   94,
+      94,   96,  100,  108,  124,  156,  220,  284,
+     284,  288,  296,  312,  344,  408,  536,  664,
+     664,  672,  688,  720,  784,  912, 1168, 1424,
+    1424, 1440, 1472, 1536, 1664, 1920, 2432, 2944,
+    2944, 2976, 3040, 3168, 3424, 3936, 4960, 5984,
+    5984, 6016, 6080, 6208, 6464, 6976, 8000, 9024,
+    9024, 9024, 9024, 9024, 9024, 9024, 9024, 9024
+};
+
+const uint8_t diag_scan_2x2[4] = {
+    0,  2,
+    1,  3
+};
+
+const uint8_t diag_scan_4x4[16] = {
+    0,  2,  5,  9,
+    1,  4,  8, 12,
+    3,  7, 11, 14,
+    6, 10, 13, 15
+};
+
+const uint8_t diag_scan_8x8[64] = {
+     0,  2,  5,  9, 14, 20, 27, 35,
+     1,  4,  8, 13, 19, 26, 34, 42,
+     3,  7, 12, 18, 25, 33, 41, 48,
+     6, 11, 17, 24, 32, 40, 47, 53,
+    10, 16, 23, 31, 39, 46, 52, 57,
+    15, 22, 30, 38, 45, 51, 56, 60,
+    21, 29, 37, 44, 50, 55, 59, 62,
+    28, 36, 43, 49, 54, 58, 61, 63
+};
+
+static void
+derive_scaling_tb(const int16_t *mat, int16_t *dst,  uint8_t log2_tb_w, uint8_t log2_tb_h)
+{
+    const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
+    uint8_t log2_max_wh = OVMAX(log2_tb_w, log2_tb_h);
+
+    uint8_t log2_matrix_s = OVMIN(log2_max_wh, 3);
+
+    uint8_t log2_red_w = OVMIN(log2_tb_w, 5);
+    uint8_t log2_red_h = OVMIN(log2_tb_h, 5);
+
+    uint8_t mat_w = 1 << log2_red_w;
+    uint8_t mat_h = 1 << log2_red_h;
+
+    int16_t m[32*32] = {0};
+
+    uint16_t cnt = 0;
+    const uint8_t *diag_scan = log2_matrix_s < 2 ? diag_scan_2x2 : log2_matrix_s < 3 ? diag_scan_4x4 : diag_scan_8x8;
+
+    for (int i = 0; i < mat_h; ++i) {
+        int y = (i << log2_matrix_s) >> log2_tb_h;
+        for (int j = 0; j < mat_w; ++j) {
+            int x = (j << log2_matrix_s) >> log2_tb_w;
+            int16_t val = mat[diag_scan[x + (y << log2_matrix_s)]];
+            m[cnt++] = val;
+        }
+    }
+
+    if (log2_tb_w >= 2 && log2_tb_h >= 2) {
+        /* Reorder per coeff subblock */
+        //int16_t m2[32*32] = {0};
+        uint16_t cnt = 0;
+        for (int i = 0; i < mat_h; i += 4) {
+            for (int j = 0; j < mat_w; j += 4) {
+                dst[ 0 + cnt * 16] = m[(j + 0) + ((i + 0) << log2_red_w)];
+                dst[ 1 + cnt * 16] = m[(j + 1) + ((i + 0) << log2_red_w)];
+                dst[ 2 + cnt * 16] = m[(j + 2) + ((i + 0) << log2_red_w)];
+                dst[ 3 + cnt * 16] = m[(j + 3) + ((i + 0) << log2_red_w)];
+
+                dst[ 4 + cnt * 16] = m[(j + 0) + ((i + 1) << log2_red_w)];
+                dst[ 5 + cnt * 16] = m[(j + 1) + ((i + 1) << log2_red_w)];
+                dst[ 6 + cnt * 16] = m[(j + 2) + ((i + 1) << log2_red_w)];
+                dst[ 7 + cnt * 16] = m[(j + 3) + ((i + 1) << log2_red_w)];
+
+                dst[ 8 + cnt * 16] = m[(j + 0) + ((i + 2) << log2_red_w)];
+                dst[ 9 + cnt * 16] = m[(j + 1) + ((i + 2) << log2_red_w)];
+                dst[10 + cnt * 16] = m[(j + 2) + ((i + 2) << log2_red_w)];
+                dst[11 + cnt * 16] = m[(j + 3) + ((i + 2) << log2_red_w)];
+
+                dst[12 + cnt * 16] = m[(j + 0) + ((i + 3) << log2_red_w)];
+                dst[13 + cnt * 16] = m[(j + 1) + ((i + 3) << log2_red_w)];
+                dst[14 + cnt * 16] = m[(j + 2) + ((i + 3) << log2_red_w)];
+                dst[15 + cnt * 16] = m[(j + 3) + ((i + 3) << log2_red_w)];
+                cnt++;
+            }
+        }
+
+    } else {
+        uint16_t cnt = 0;
+        for (int i = 0; i < mat_h; ++i) {
+            for (int j = 0; j < mat_w; ++j) {
+                dst[cnt] = m[cnt];
+                cnt++;
+            }
+        }
+    }
+
+    return;
+}
+
+
+static void
+derive_tbs_chroma(struct ScalingLists *sl_ctx, int16_t *intra_luts_cb, int16_t *inter_luts_cb,
+                  int16_t *intra_luts_cr, int16_t *inter_luts_cr)
+{
+    for (int log2_tb_w = 0; log2_tb_w < 7; ++log2_tb_w) {
+        for (int log2_tb_h = 0; log2_tb_h < 7; ++log2_tb_h) {
+            uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
+            if ((log2_tb_h >= 1 || log2_tb_w >= 1)) {
+                uint8_t log2_max_wh = OVMAX(log2_tb_w, log2_tb_h);
+
+                int8_t intra_list_id = (log2_max_wh - 1) * 6 - 4;
+                int8_t inter_list_id = OVMIN(27, intra_list_id + 3);
+                uint8_t lut_id = (log2_tb_w << 3) | log2_tb_h;
+
+                if (intra_list_id < 2) {
+                    struct ScalingList2x2 *sl_dst = &sl_ctx->chroma_2x2[inter_list_id + 1];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->chroma_2x2[inter_list_id + 2];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    inter_luts_cb[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 1];
+                    inter_luts_cr[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 2];
+                } else if (intra_list_id < 8) {
+                    struct ScalingList4x4 *sl_dst = &sl_ctx->ycbcbr_4x4[intra_list_id - 2 + 1];
+                    derive_scaling_tb(sl_dst->coeff, &intra_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+
+                    sl_dst = &sl_ctx->ycbcbr_4x4[inter_list_id - 2 + 1];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->ycbcbr_4x4[intra_list_id - 2 + 2];
+                    derive_scaling_tb(sl_dst->coeff, &intra_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+
+                    sl_dst = &sl_ctx->ycbcbr_4x4[inter_list_id - 2 + 2];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+
+                    intra_luts_cb[tb_lut_offset[lut_id]] = sl_ctx->dc_val[intra_list_id + 1];
+                    inter_luts_cb[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 1];
+
+                    intra_luts_cr[tb_lut_offset[lut_id]] = sl_ctx->dc_val[intra_list_id + 2];
+                    inter_luts_cr[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 2];
+
+                } else if (intra_list_id < 26) {
+                    struct ScalingList8x8 *sl_dst = &sl_ctx->ycbcbr_8x8[intra_list_id - 8 + 1];
+                    derive_scaling_tb(sl_dst->coeff, &intra_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->ycbcbr_8x8[inter_list_id - 8 + 1];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->ycbcbr_8x8[intra_list_id - 8 + 2];
+                    derive_scaling_tb(sl_dst->coeff, &intra_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->ycbcbr_8x8[inter_list_id - 8 + 2];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+
+                    intra_luts_cb[tb_lut_offset[lut_id]] = sl_ctx->dc_val[intra_list_id + 1];
+                    inter_luts_cb[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 1];
+
+                    intra_luts_cr[tb_lut_offset[lut_id]] = sl_ctx->dc_val[intra_list_id + 2];
+                    inter_luts_cr[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 2];
+                }
+            }
+        }
+    }
+}
+
+static void
+derive_tbs_luma(struct ScalingLists *sl_ctx, int16_t *intra_luts, int16_t *inter_luts)
+{
+    for (int log2_tb_w = 0; log2_tb_w < 7; ++log2_tb_w) {
+        for (int log2_tb_h = 0; log2_tb_h < 7; ++log2_tb_h) {
+            uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
+            if (log2_tb_s >= 2 && (log2_tb_h > 1 || log2_tb_w > 1)) {
+                uint8_t log2_max_wh = OVMAX(log2_tb_w, log2_tb_h);
+
+                uint8_t intra_list_id = (log2_max_wh - 1) * 6 - 4;
+                uint8_t inter_list_id = OVMIN(27, intra_list_id + 3);
+                uint8_t lut_id = (log2_tb_w << 3) | log2_tb_h;
+
+                if (intra_list_id < 8) {
+                    struct ScalingList4x4 *sl_dst = &sl_ctx->ycbcbr_4x4[intra_list_id - 2];
+                    derive_scaling_tb(sl_dst->coeff, &intra_luts[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->ycbcbr_4x4[inter_list_id - 2];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                } else {
+                    struct ScalingList8x8 *sl_dst = &sl_ctx->ycbcbr_8x8[intra_list_id - 8];
+                    derive_scaling_tb(sl_dst->coeff, &intra_luts[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->ycbcbr_8x8[inter_list_id - 8];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+
+                }
+
+                intra_luts[tb_lut_offset[lut_id]] = sl_ctx->dc_val[intra_list_id];
+                inter_luts[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id];
+
+            }
+        }
+    }
+}
+
+void
+derive_scaling_tb_luts(struct TBScalingLUTs *const sl_luts, const OVAPS *const aps)
+{
+    struct ScalingLists sls = {0};
+    for (int i = 0; i < 28; ++i) {
+        if (i < 2) {
+            derive_scaling_matrix_2x2(&sls, &aps->aps_scaling_list_data, i);
+        } else if (i < 8) {
+            derive_scaling_matrix_4x4(&sls, &aps->aps_scaling_list_data, i);
+        } else if (i < 26) {
+            derive_scaling_matrix_8x8(&sls, &aps->aps_scaling_list_data, i);
+        } else {
+            derive_scaling_matrix_8x8_2(&sls, &aps->aps_scaling_list_data, i);
+        }
+    }
+    derive_tbs_luma(&sls, sl_luts->intra_luts, sl_luts->inter_luts);
+    derive_tbs_chroma(&sls, sl_luts->intra_luts_cb, sl_luts->inter_luts_cb,
+                      sl_luts->intra_luts_cr, sl_luts->inter_luts_cr);
+}
 
 /* TODO define in a header */
 enum SliceType {
@@ -384,7 +859,7 @@ slicedec_finish_decoding(OVSliceDec *sldec)
 }
 
 static int16_t
-map_subpic_id(struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
+map_subpic_id(const struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
 {
     uint16_t slice_map_id = 0;
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
@@ -413,9 +888,9 @@ slicedec_submit_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct E
     uint16_t slice_address = prms->sh->sh_slice_address;
     uint16_t subpic_id = prms->sh->sh_subpic_id;
     uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
-    struct SubpicInfo *subpic = &prms->pps->part_info.subpictures[actual_subpic_id];
+    const struct SubpicInfo *subpic = &prms->pps->part_info.subpictures[actual_subpic_id];
     uint16_t slice_id =  prms->pps->part_info.slice_id[subpic->map_offset + slice_address];
-    struct SliceMap *slice = &prms->pps->part_info.slices[slice_id];
+    const struct SliceMap *slice = &prms->pps->part_info.slices[slice_id];
 
     int16_t nb_tiles_pic = (uint16_t)pps->part_info.nb_tile_w * pps->part_info.nb_tile_h;
 

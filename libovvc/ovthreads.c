@@ -261,7 +261,7 @@ setup_slice_prms(const OVPPS *const pps, const struct PicPartitionInfo *const pa
 }
 
 static int16_t
-map_subpic_id(struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
+map_subpic_id(const struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
 {
     uint16_t slice_map_id = 0;
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
@@ -300,10 +300,10 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
     uint16_t slice_address = prms->sh->sh_slice_address;
     uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, prms->sh->sh_subpic_id) : prms->sh->sh_subpic_id;
     uint16_t subpic_id = prms->sh->sh_subpic_id;
-    struct SubpicInfo *subpic = &prms->pps->part_info.subpictures[actual_subpic_id];
+    const struct SubpicInfo *subpic = &prms->pps->part_info.subpictures[actual_subpic_id];
     uint16_t slice_id =  prms->pps->part_info.slice_id[subpic->map_offset + slice_address];
-    struct SliceMap *slice = &prms->pps->part_info.slices[slice_id];
-    struct Entry *e = !pps->pps_rect_slice_flag ? &prms->pps->part_info.entries[slice_address + entry_idx] : &prms->pps->part_info.entries[slice->entry_idx + entry_idx];
+    const struct SliceMap *slice = &prms->pps->part_info.slices[slice_id];
+    const struct Entry *e = !pps->pps_rect_slice_flag ? &prms->pps->part_info.entries[slice_address + entry_idx] : &prms->pps->part_info.entries[slice->entry_idx + entry_idx];
 
     einfo->tile_x = tile_x;
     einfo->tile_y = tile_y;

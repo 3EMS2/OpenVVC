@@ -199,8 +199,8 @@ alf_init_filter_l(const struct OVALFData* alf_data, int16_t *dst_coeff, int16_t 
     if (!alf_data) return;
 
     int nb_filters = alf_data->alf_luma_num_filters_signalled_minus1 + 1;
-    const int8_t* coeff = alf_data->alf_luma_coeff;
-    const uint8_t* clip = alf_data->alf_luma_clip_idx;
+    const int8_t* coeff = alf_data->alf_luma_coeff[0];
+    const uint8_t* clip = alf_data->alf_luma_clip_idx[0];
 
     for (int class_idx = 0; class_idx < MAX_NUM_ALF_CLASSES; class_idx++) {
         int filter_idx = alf_data->alf_luma_coeff_delta_idx[class_idx];
@@ -261,10 +261,10 @@ ccalf_init_filter_cb(RCNALF* alf, const struct OVALFData* alf_data)
             //alf->clip_c [alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
 
             alf->ccalf_coef_cb[alt_idx][coeff_idx] = coeff[coeff_idx];
-            alf->ccalf_clip_cb[alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
+            //alf->ccalf_clip_cb[alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
         }
         alf->ccalf_coef_cb[alt_idx][nb_coeffs_min1] = 1 << (NUM_BITS - 1);
-        alf->ccalf_clip_cb[alt_idx][nb_coeffs_min1] = 1 << BITDEPTH;
+        //alf->ccalf_clip_cb[alt_idx][nb_coeffs_min1] = 1 << BITDEPTH;
     }
 }
 
@@ -283,10 +283,10 @@ ccalf_init_filter_cr(RCNALF* alf, const struct OVALFData* alf_data)
             //alf->clip_c [alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
 
             alf->ccalf_coef_cr[alt_idx][coeff_idx] = coeff[coeff_idx];
-            alf->ccalf_clip_cr[alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
+            //alf->ccalf_clip_cr[alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
         }
         alf->ccalf_coef_cr[alt_idx][nb_coeffs_min1] = 1 << (NUM_BITS - 1);
-        alf->ccalf_clip_cr[alt_idx][nb_coeffs_min1] = 1 << BITDEPTH;
+        //alf->ccalf_clip_cr[alt_idx][nb_coeffs_min1] = 1 << BITDEPTH;
     }
 }
 

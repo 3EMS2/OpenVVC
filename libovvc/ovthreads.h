@@ -86,4 +86,6 @@ int ovthread_slice_sync_init(struct SliceSynchro *slice_sync);
 
 void ovthread_slice_sync_uninit(struct SliceSynchro *slice_sync);
 
+/* FIXME to be replaced */
+void fifo_flush(struct MainThread* main_thread);
 #endif
