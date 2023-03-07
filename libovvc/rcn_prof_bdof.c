@@ -171,8 +171,8 @@ static void
 extend_prof_buff(const OVSample *const src, uint16_t *dst_prof, int16_t ref_stride, uint8_t ext_x, uint8_t ext_y)
 {
     const OVSample *ref = src  - ref_stride  - 1;
-    int16_t     *dst = dst_prof;
-    int16_t *dst_lst = dst_prof + (SB_H + 1) * PROF_BUFF_STRIDE;
+    int16_t     *dst = (int16_t *)dst_prof;
+    int16_t *dst_lst = (int16_t *)dst_prof + (SB_H + 1) * PROF_BUFF_STRIDE;
     int i, j;
 
     /* Position ref according to precision */

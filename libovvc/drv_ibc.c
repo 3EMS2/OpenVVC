@@ -135,7 +135,7 @@ ibc_hmvp_mvp_cand(const struct IBCMVCtx *const ibc_ctx, int8_t mvp_idx, int8_t n
 
 static IBCMV
 ibc_derive_hmvp_merge_cand(const struct IBCMVCtx *const ibc_ctx,
-                           const IBCMV const a1_b1[2],
+                           const IBCMV a1_b1[2],
                            uint8_t status_msk, int8_t nb_cand,
                            int8_t merge_idx)
 {

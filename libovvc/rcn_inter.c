@@ -1047,10 +1047,10 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         bdof->extend_bdof_buff(ref0_b.y, tmp_buff, ref0_b.stride, pu_w, pu_h, prec_x0 >> 3, prec_y0 >> 3);
         bdof->extend_bdof_buff(ref1_b.y, tmp_buff1, ref1_b.stride, pu_w, pu_h, prec_x1 >> 3, prec_y1 >> 3);
 
-        bdof->grad(tmp_buff, ref_stride, pu_w, pu_h, grad_stride,
+        bdof->grad((uint16_t *)tmp_buff, ref_stride, pu_w, pu_h, grad_stride,
                    grad_x0 + grad_stride + 1, grad_y0 + grad_stride + 1);
 
-        bdof->grad(tmp_buff1, ref_stride, pu_w, pu_h, grad_stride,
+        bdof->grad((uint16_t *)tmp_buff1, ref_stride, pu_w, pu_h, grad_stride,
                    grad_x1 + grad_stride + 1, grad_y1 + grad_stride + 1);
 
         /* Grad padding */
@@ -1228,10 +1228,10 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     bdof->extend_bdof_buff(ref0_b.y, ref_bdof0, ref0_b.stride, pb_w, pb_h, prec_x0 >> 3, prec_y0 >> 3);
     bdof->extend_bdof_buff(ref1_b.y, ref_bdof1, ref1_b.stride, pb_w, pb_h, prec_x1 >> 3, prec_y1 >> 3);
 
-    bdof->grad(ref_bdof0, ref_stride, pb_w, pb_h, grad_stride,
+    bdof->grad((uint16_t *)ref_bdof0, ref_stride, pb_w, pb_h, grad_stride,
                grad_x0 + grad_stride + 1, grad_y0 + grad_stride + 1);
 
-    bdof->grad(ref_bdof1, ref_stride, pb_w, pb_h, grad_stride,
+    bdof->grad((uint16_t *)ref_bdof1, ref_stride, pb_w, pb_h, grad_stride,
                grad_x1 + grad_stride + 1, grad_y1 + grad_stride + 1);
 
     /* Grad padding */
@@ -1332,9 +1332,9 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                                     ref0_b.y, ref0_b.stride, pu_h,
                                                     prec_x0, prec_y0, pu_w);
 
-        prof->extend_prof_buff(ref0_b.y, tmp_prof, ref0_b.stride, prec_x0 >> 3, prec_y0 >> 3);
+        prof->extend_prof_buff(ref0_b.y, (uint16_t *)tmp_prof, ref0_b.stride, prec_x0 >> 3, prec_y0 >> 3);
 
-        prof->grad(tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
+        prof->grad((uint16_t *)tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
         prof->rcn1((OVSample *)tmp_buff, MAX_PB_SIZE, tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE,
                   tmp_grad_x, tmp_grad_y,
@@ -1354,9 +1354,9 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                                     ref1_b.y, ref1_b.stride, pu_h,
                                                     prec_x1, prec_y1, pu_w);
 
-        prof->extend_prof_buff(ref1_b.y, tmp_prof, ref1_b.stride, prec_x1 >> 3, prec_y1 >> 3);
+        prof->extend_prof_buff(ref1_b.y, (uint16_t *)tmp_prof, ref1_b.stride, prec_x1 >> 3, prec_y1 >> 3);
 
-        prof->grad(tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
+        prof->grad((uint16_t *)tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
         prof->rcn1((OVSample *)tmp_buff1, MAX_PB_SIZE, tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE,
                   tmp_grad_x, tmp_grad_y, 4,
@@ -1758,7 +1758,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     }
 
     /* FIXME specialize and reduce buff sizes */
-    mc_l->bidir0[prec_mc_type][log2_pu_w - 1](tmp_prof + PROF_BUFF_STRIDE + 1,
+    mc_l->bidir0[prec_mc_type][log2_pu_w - 1]((int16_t *)tmp_prof + PROF_BUFF_STRIDE + 1,
                                               src_y, src_stride, pu_h,
                                               prec_x, prec_y, pu_w);
 
@@ -1767,13 +1767,13 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     prof->grad(tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
     if (!inter_ctx->inter_params.weighted_pred_status) {
-        prof->rcn0(dst.y, dst.stride, tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
+        prof->rcn0(dst.y, dst.stride, (int16_t *)tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
                    4, dmv_scale_h, dmv_scale_v);
     } else {
         int16_t offset = rpl_idx ? inter_ctx->inter_params.wp_info1[ref_idx].offset_y : inter_ctx->inter_params.wp_info0[ref_idx].offset_y;
         int16_t wx = rpl_idx ? inter_ctx->inter_params.wp_info1[ref_idx].weight_y : inter_ctx->inter_params.wp_info0[ref_idx].weight_y;
 
-        prof->rcn0_w(dst.y, dst.stride, tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
+        prof->rcn0_w(dst.y, dst.stride, (int16_t *)tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
                      4, dmv_scale_h, dmv_scale_v, inter_ctx->inter_params.weighted_denom, wx, offset);
 
     }
@@ -1869,11 +1869,11 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
                                               src_y, src_stride, pu_h,
                                               prec_x, prec_y, pu_w);
 
-    prof->extend_prof_buff(src_y, tmp_prof, src_stride, prec_x >> 3, prec_y >> 3);
+    prof->extend_prof_buff(src_y, (uint16_t *)tmp_prof, src_stride, prec_x >> 3, prec_y >> 3);
 
-    prof->grad(tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
+    prof->grad((uint16_t *)tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
-    prof->rcn1((OVSample*) dst, dst_stride, (uint16_t *)tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
+    prof->rcn1((OVSample*) dst, dst_stride, (int16_t *)tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
               4, dmv_scale_h, dmv_scale_v);
 }
 

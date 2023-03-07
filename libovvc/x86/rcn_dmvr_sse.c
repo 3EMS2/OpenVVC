@@ -120,14 +120,14 @@ rcn_dmvr_sad_8(const uint16_t *ref0, const uint16_t *ref1,
 
 /*FIXME return min_dmvr_idx; */
 static uint8_t
-dmvr_compute_sads_16(const uint16_t *ref0, const uint16_t *ref1,
+dmvr_compute_sads_16(const OVSample *ref0, const OVSample *ref1,
                   uint64_t *sad_array, int sb_w, int sb_h)
 {
     const int32_t stride_l0 = 128 + 4;
     const int32_t stride_l1 = 128 + 4;
 
-    const int16_t *const ref0_start = ref0;
-    const int16_t *const ref1_start = ref1;
+    const OVSample *const ref0_start = ref0;
+    const OVSample *const ref1_start = ref1;
     uint64_t min_cost = (uint64_t) -1;
 
     uint8_t idx;
@@ -166,14 +166,14 @@ dmvr_compute_sads_16(const uint16_t *ref0, const uint16_t *ref1,
 
 /*FIXME return min_dmvr_idx; */
 static uint8_t
-dmvr_compute_sads_8(const uint16_t *ref0, const uint16_t *ref1,
+dmvr_compute_sads_8(const OVSample *ref0, const OVSample *ref1,
                   uint64_t *sad_array, int sb_w, int sb_h)
 {
     const int32_t stride_l0 = 128 + 4;
     const int32_t stride_l1 = 128 + 4;
 
-    const int16_t *const ref0_start = ref0;
-    const int16_t *const ref1_start = ref1;
+    const OVSample *const ref0_start = ref0;
+    const OVSample *const ref1_start = ref1;
     uint64_t min_cost = (uint64_t) -1;
 
     uint8_t idx;

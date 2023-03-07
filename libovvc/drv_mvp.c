@@ -1363,9 +1363,9 @@ fill_tmvp_map(struct TMVPMV *const tmvp_mv, struct TMVPMV mv,
     /* Align MVs on 8x8 grid */
     struct TMVPMV *mv_line = &dst_mv[((pb_x + skip_first_x) >> 1) + ((pb_y + skip_first_y) >> 1) * 16];
 
-    for (j = 0; j < (nb_pb_h + !skip_first_y >> 1); ++j) {
+    for (j = 0; j < ((nb_pb_h + !skip_first_y) >> 1); ++j) {
         struct TMVPMV *dst = mv_line;
-        for (i = 0; i < (nb_pb_w + !skip_first_x >> 1); ++i) {
+        for (i = 0; i < ((nb_pb_w + !skip_first_x) >> 1); ++i) {
             *dst = mv;
             ++dst;
         }

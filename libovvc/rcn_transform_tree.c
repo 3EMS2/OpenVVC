@@ -251,7 +251,7 @@ dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_
     if (!tools->scaling_list_enabled || (tools->scaling_list_enabled && is_lfnst && !tools->lfnst_scaling_list_enabled)) {
         ctudec->rcn_funcs.tmp.dequant_tb_4x4(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     } else {
-        const uint16_t *lut;
+        const int16_t *lut;
         is_intra = !!(cu_flags & flg_pred_mode_flag);
         if (is_intra) {
           lut = ctudec->tb_scaling_luts.intra_luts;
@@ -386,7 +386,7 @@ dequant_non_4x4_sb(const OVCTUDec *const ctudec, int16_t *dst, int16_t *src, uin
     if (!tools->scaling_list_enabled) {
         dequant_tb(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
     } else {
-        const uint16_t *lut;
+        const int16_t *lut;
         uint8_t is_intra = !!(cu_flags & flg_pred_mode_flag);
         if (is_intra) {
           lut = ctudec->tb_scaling_luts.intra_luts;

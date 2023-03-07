@@ -146,7 +146,7 @@ duplicated:
     return 0;
 }
 
-static int
+static void
 pred_weight_table_monochrome_sh(OVNVCLReader *const rdr, struct RPLWeightInfo *const wgt_info, uint8_t nb_active_refs0, uint8_t nb_active_refs1)
 {
     int i;
@@ -178,7 +178,7 @@ pred_weight_table_monochrome_sh(OVNVCLReader *const rdr, struct RPLWeightInfo *c
     }
 }
 
-static int
+static void
 pred_weight_table_sh(OVNVCLReader *const rdr, struct RPLWeightInfo *const wgt_info, uint8_t nb_active_refs0, uint8_t nb_active_refs1)
 {
     int i;

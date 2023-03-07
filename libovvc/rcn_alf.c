@@ -263,7 +263,7 @@ ccalf_init_filter_cb(RCNALF* alf, const struct OVALFData* alf_data)
             alf->ccalf_coef_cb[alt_idx][coeff_idx] = coeff[coeff_idx];
             //alf->ccalf_clip_cb[alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
         }
-        alf->ccalf_coef_cb[alt_idx][nb_coeffs_min1] = 1 << (NUM_BITS - 1);
+        //alf->ccalf_coef_cb[alt_idx][nb_coeffs_min1] = 127;//1 << (NUM_BITS - 1);
         //alf->ccalf_clip_cb[alt_idx][nb_coeffs_min1] = 1 << BITDEPTH;
     }
 }
@@ -285,7 +285,7 @@ ccalf_init_filter_cr(RCNALF* alf, const struct OVALFData* alf_data)
             alf->ccalf_coef_cr[alt_idx][coeff_idx] = coeff[coeff_idx];
             //alf->ccalf_clip_cr[alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
         }
-        alf->ccalf_coef_cr[alt_idx][nb_coeffs_min1] = 1 << (NUM_BITS - 1);
+        //alf->ccalf_coef_cr[alt_idx][nb_coeffs_min1] = 127;//1 << (NUM_BITS - 1);
         //alf->ccalf_clip_cr[alt_idx][nb_coeffs_min1] = 1 << BITDEPTH;
     }
 }

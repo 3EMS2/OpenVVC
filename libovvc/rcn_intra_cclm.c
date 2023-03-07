@@ -668,7 +668,7 @@ intra_cclm(const struct OVRCNCtx *const rcn_ctx,
     const OVSample  *const src_y = &ctu_buff->y[(x0 << 1) + ((y0 << 1) * stride_l)];
     OVSample *const dst_cb = &ctu_buff->cb[x0 + y0 * stride_c];
     OVSample *const dst_cr = &ctu_buff->cr[x0 + y0 * stride_c];
-    const LMsubsampleFunc const compute_subsample = rcn_ctx->ctudec->rcn_funcs.cclm.compute_subsample;
+    const LMsubsampleFunc compute_subsample = rcn_ctx->ctudec->rcn_funcs.cclm.compute_subsample;
 
     uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
     uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
@@ -754,7 +754,7 @@ intra_mdlm_abv(const struct OVRCNCtx *const rcn_ctx,
     const OVSample  *const src_y = &ctu_buff->y[(x0 << 1) + ((y0 << 1) * stride_l)];
     OVSample *const dst_cb = &ctu_buff->cb[x0 + y0 * stride_c];
     OVSample *const dst_cr = &ctu_buff->cr[x0 + y0 * stride_c];
-    const LMsubsampleFunc const compute_subsample = rcn_ctx->ctudec->rcn_funcs.cclm.compute_subsample;
+    const LMsubsampleFunc compute_subsample = rcn_ctx->ctudec->rcn_funcs.cclm.compute_subsample;
 
     uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
     uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
@@ -827,7 +827,7 @@ intra_mdlm_lft(const struct OVRCNCtx *const rcn_ctx,
     const OVSample  *const src_y = &ctu_buff->y[(x0 << 1) + ((y0 << 1) * stride_l)];
     OVSample *const dst_cb = &ctu_buff->cb[x0 + y0 * stride_c];
     OVSample *const dst_cr = &ctu_buff->cr[x0 + y0 * stride_c];
-    const LMsubsampleFunc const compute_subsample = rcn_ctx->ctudec->rcn_funcs.cclm.compute_subsample;
+    const LMsubsampleFunc compute_subsample = rcn_ctx->ctudec->rcn_funcs.cclm.compute_subsample;
 
     uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
     uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];

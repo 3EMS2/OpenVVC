@@ -105,7 +105,7 @@ replace_ph(const struct HLSReader *const manager,
 }
 #endif
 
-static int
+static void
 pred_weight_table_monochrome_ph(OVNVCLReader *const rdr, struct RPLWeightInfo *const wgt_info, uint8_t nb_refs_entries1, uint8_t pps_weighted_bipred_flag)
 {
     int i;
@@ -139,7 +139,7 @@ pred_weight_table_monochrome_ph(OVNVCLReader *const rdr, struct RPLWeightInfo *c
     }
 }
 
-static int
+static void
 pred_weight_table_ph(OVNVCLReader *const rdr, struct RPLWeightInfo *const wgt_info, uint8_t nb_refs_entries1, uint8_t pps_weighted_bipred_flag)
 {
     int i;

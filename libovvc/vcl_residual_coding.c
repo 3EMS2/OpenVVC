@@ -2491,7 +2491,7 @@ reset_ctx_buffers2(const VVCCoeffCodingCtx *ctx, int log2_w, int log2_h, int las
     int w = 1 << log2_w;
     int h = 1 << log2_h;
 
-    int needed = ((last_x + 4) >> 2) + ((last_y + 4) >> 2) << 2;
+    int needed = (((last_x + 4) >> 2) + ((last_y + 4) >> 2)) << 2;
 
     w = OVMIN(needed, w);
     h = OVMIN(needed, h);

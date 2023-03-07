@@ -129,8 +129,8 @@ simdFilter5x5Blk_sse(OVSample *const dst, const OVSample *const src,
     const int clpMin = 0;
     const int clpMax = (1<<10) - 1;
 
-    int16_t * _src = (int16_t *) src;
-    int16_t * _dst = dst;
+    const OVSample * _src = src;
+    OVSample * _dst = dst;
 
     const __m128i mmOffset = _mm_set1_epi32(ROUND);
     const __m128i mmMin = _mm_set1_epi16( clpMin );
@@ -200,8 +200,8 @@ simdFilter5x5BlkVB_sse(OVSample *const dst, const OVSample *const src,
     const int clpMin = 0;
     const int clpMax = (1<<10) - 1;
 
-    int16_t * _src = (int16_t *) src;
-    int16_t * _dst = dst;
+    const OVSample * _src = src;
+    OVSample * _dst = dst;
 
     const __m128i mmOffset = _mm_set1_epi32(ROUND);
     const __m128i mmMin = _mm_set1_epi16( clpMin );
@@ -307,8 +307,8 @@ simdFilter7x7Blk_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSam
     const int clpMin = 0;
     const int clpMax = (1<<10) - 1;
 
-    int16_t * _src = src;
-    int16_t * _dst = dst;
+    const OVSample * _src = src;
+    OVSample * _dst = dst;
 
     int transpose_idx = 0;
     int class_idx = 0;
@@ -401,8 +401,8 @@ simdFilter7x7BlkVB_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVS
     const int clpMin = 0;
     const int clpMax = (1<<10) - 1;
 
-    int16_t * _src = src;
-    int16_t * _dst = dst;
+    const OVSample * _src = src;
+    OVSample * _dst = dst;
 
     int transpose_idx = 0;
     int class_idx = 0;
@@ -590,13 +590,13 @@ cc_alf_filterBlkVB_sse(OVSample * chroma_dst, OVSample * luma_src, const int chr
             for (int ii = 0; ii < STEP_Y; ii++) {
                 int row       = ii;
                 int col       = j;
-                int16_t *dst  = chroma_dst + col + row * chr_stride;
+                OVSample *dst  = chroma_dst + col + row * chr_stride;
 
                 int offset1 = luma_stride;
                 int offset2 = -luma_stride;
                 int offset3 = 2 * luma_stride;
 
-                const int16_t *src_l = luma_src + (col << 1) + (row << 1) * luma_stride;
+                const OVSample *src_l = luma_src + (col << 1) + (row << 1) * luma_stride;
 
                 int pos = ((blk_dst.y + i + ii) << 1) & (ctu_s - 1);
 
@@ -703,13 +703,13 @@ static void simdDeriveClassificationBlk_sse(uint8_t * class_idx_arr, uint8_t * t
     uint16_t colSums[18][40];
     int i;
     const uint32_t ctb_msk = ctu_s - 1;
-    const int16_t *_src = src - 3 * stride - 3;
+    const OVSample *_src = src - 3 * stride - 3;
 
     for (i = 0; i < blk_h + 4; i += 2) {
-        const int16_t *src0 = &_src[0         ];
-        const int16_t *src1 = &_src[stride    ];
-        const int16_t *src2 = &_src[stride * 2];
-        const int16_t *src3 = &_src[stride * 3];
+        const OVSample *src0 = &_src[0         ];
+        const OVSample *src1 = &_src[stride    ];
+        const OVSample *src2 = &_src[stride * 2];
+        const OVSample *src3 = &_src[stride * 3];
 
         const int y = blk.y - 2 + i;
         int j;

@@ -248,13 +248,13 @@ up_sample_h_4_2(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
 {
-    const int16_t *src_line   = src;
+    const OVSample *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
-    uint16_t *dst_line  = dst;
+    OVSample *dst_line  = dst;
     __m128i a, b, c, r[4];
     __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));
     for (int i = 0; i < (1 << log2_opposite_size); i+=2) {
-        int16_t *curr_dst = (int16_t*)dst_line;
+        OVSample *curr_dst = dst_line;
 
         a = _mm_loadu_si128((__m128i *)src_line);
         b = _mm_slli_epi64(a, 16);
@@ -292,13 +292,13 @@ up_sample_h_8_2(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
 {
-    const int16_t *src_line   = src;
+    const OVSample *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
-    uint16_t *dst_line  = dst;
+    OVSample *dst_line  = dst;
     __m128i a, b, c, r[4];
     __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));
     for (int i = 0; i < (1 << log2_opposite_size); i++) {
-        int16_t *curr_dst = (int16_t*)dst_line;
+        OVSample *curr_dst = dst_line;
 
         a = _mm_loadu_si128((__m128i *)src_line);
         b = _mm_bslli_si128(a, 2);
@@ -336,13 +336,13 @@ up_sample_h_4_4(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
 {
-    const int16_t *src_line   = src;
+    const OVSample *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
-    uint16_t *dst_line  = dst;
+    OVSample *dst_line  = dst;
     __m128i a, b, c, u[8], tmp[5], r[4];
     __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));
     for (int i = 0; i < (1 << log2_opposite_size); i+=2) {
-        int16_t *curr_dst = (int16_t*)dst_line;
+        OVSample *curr_dst = dst_line;
 
         a = _mm_loadu_si128((__m128i *)src_line);
         b = _mm_slli_epi64(a, 16);
@@ -400,13 +400,13 @@ up_sample_h_8_4(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
 {
-    const int16_t *src_line   = src;
+    const OVSample *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
-    uint16_t *dst_line  = dst;
+    OVSample *dst_line  = dst;
     __m128i a, b, c, u[8], tmp[5], r[4];
     __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));
     for (int i = 0; i < (1 << log2_opposite_size); i++) {
-        int16_t *curr_dst = (int16_t*)dst_line;
+        OVSample *curr_dst = dst_line;
 
         a = _mm_loadu_si128((__m128i *)src_line);
         b = _mm_bslli_si128(a, 2);
@@ -464,13 +464,13 @@ up_sample_h_4_8(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
 {
-    const int16_t *src_line   = src;
+    const OVSample *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
-    uint16_t *dst_line  = dst;
+    OVSample *dst_line  = dst;
     __m128i u[16], tmp[7], r[8];
     __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));
     for (int i = 0; i < (1 << log2_opposite_size); i+=2) {
-        int16_t *curr_dst = (int16_t*)dst_line;
+        OVSample *curr_dst = dst_line;
 
         u[0] = _mm_set1_epi16(bndy_line[0]);
         u[1] = _mm_set1_epi16(src_line[0]);
@@ -535,13 +535,13 @@ up_sample_h_8_8(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
 {
-    const int16_t *src_line   = src;
+    const OVSample *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
-    uint16_t *dst_line  = dst;
+    OVSample *dst_line  = dst;
     __m128i u[16], tmp[7], r[8];
     __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));
     for (int i = 0; i < (1 << log2_opposite_size); i++) {
-        int16_t *curr_dst = (int16_t*)dst_line;
+        OVSample *curr_dst = dst_line;
 
         u[0] = _mm_set1_epi16(bndy_line[0]);
         u[1] = _mm_set1_epi16(src_line[0]);
@@ -606,9 +606,9 @@ up_sample_v_4_2(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
 {
-    const int16_t *src_line   = src;
+    const OVSample *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
-    uint16_t *dst_line  = dst;
+    OVSample *dst_line  = dst;
     __m128i s[5], tmp0, tmp1, r[8];
     __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));
     s[0] = _mm_loadu_si128((__m128i *)bndy_line);
@@ -641,9 +641,9 @@ up_sample_v_4_4(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
   {
-      const int16_t *src_line   = src;
+      const OVSample *src_line   = src;
       const uint16_t *bndy_line = ref + ref_step;
-      uint16_t *dst_line  = dst;
+      OVSample *dst_line  = dst;
       __m128i s[5], tmp0, tmp1, tmp2, tmp3, r[16], a2, b2, ab;
       __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));
       s[0] = _mm_loadu_si128((__m128i *)bndy_line);
@@ -692,9 +692,9 @@ up_sample_v_4_8(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
     {
-        const int16_t *src_line   = src;
+        const OVSample *src_line   = src;
         const uint16_t *bndy_line = ref + ref_step;
-        uint16_t *dst_line  = dst;
+        OVSample *dst_line  = dst;
         __m128i s[5], tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, r[32], a2, b2, a4, b4, ab, a2b2;
         __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));
         s[0] = _mm_loadu_si128((__m128i *)bndy_line);
@@ -773,9 +773,9 @@ up_sample_v_8_2(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
   {
-    const int16_t *src_line   = src;
+    const OVSample *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
-    uint16_t *dst_line  = dst;
+    OVSample *dst_line  = dst;
     for (uint8_t line = 0; line < (1<<(log2_opposite_size)); line+=8) {
       __m128i s[9], tmp0, tmp1, r[16];
       __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));
@@ -825,9 +825,9 @@ up_sample_v_8_4(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
   {
-    const int16_t *src_line   = src;
+    const OVSample *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
-    uint16_t *dst_line  = dst;
+    OVSample *dst_line  = dst;
     for (uint8_t line = 0; line < (1<<(log2_opposite_size)); line+=8) {
       __m128i s[9], tmp0, tmp1, tmp2, tmp3, r[32], a2, b2, ab;
       __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));
@@ -901,9 +901,9 @@ up_sample_v_8_8(OVSample *const dst, const OVSample *const src,
                 int dst_step, int dst_stride,
                 int ref_step, int log2_scale)
   {
-    const int16_t *src_line   = src;
+    const OVSample *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
-    uint16_t *dst_line  = dst;
+    OVSample *dst_line  = dst;
     for (uint8_t line = 0; line < (1<<(log2_opposite_size)); line+=8) {
       __m128i s[9], tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, r[64], a2, b2, a4, b4, ab, a2b2;
       __m128i rounding_offset = _mm_set1_epi16(1 << (log2_scale - 1));

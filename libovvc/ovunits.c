@@ -240,7 +240,7 @@ ovpu_ref(OVPictureUnit **ovpu_p, OVPictureUnit *ovpu)
 int
 ovpu_new_ref(OVPictureUnit **ovpu_p, OVPictureUnit *ovpu)
 {
-    ovpu_ref(ovpu_p, ovpu);
+    return ovpu_ref(ovpu_p, ovpu);
 }
 
 int

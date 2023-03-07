@@ -743,8 +743,8 @@ filter_v_7_7(OVSample *src, const int stride, const int tc)
     static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
     static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
 
-    int16_t* srcP = src - stride;
-    int16_t* srcQ = src;
+    OVSample* srcP = src - stride;
+    OVSample* srcQ = src;
 
     __m128i srcP0  = _mm_loadl_epi64( ( const __m128i* ) &srcP[0] );
     __m128i srcP1  = _mm_loadl_epi64( ( const __m128i* ) &srcP[-stride] );
@@ -852,8 +852,8 @@ filter_v_7_5(OVSample *src, const int stride, const int tc)
       static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
       static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
 
-      int16_t* srcP = src - stride;
-      int16_t* srcQ = src;
+      OVSample* srcP = src - stride;
+      OVSample* srcQ = src;
 
       __m128i srcP0  = _mm_loadl_epi64( ( const __m128i* ) &srcP[0] );
       __m128i srcP1  = _mm_loadl_epi64( ( const __m128i* ) &srcP[-stride] );
@@ -955,8 +955,8 @@ filter_v_5_7(OVSample *src, const int stride, const int tc)
   static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
   static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
 
-  int16_t* srcP = src - stride;
-  int16_t* srcQ = src;
+  OVSample* srcP = src - stride;
+  OVSample* srcQ = src;
 
   __m128i srcP0  = _mm_loadl_epi64( ( const __m128i* ) &srcP[0] );
   __m128i srcP1  = _mm_loadl_epi64( ( const __m128i* ) &srcP[-stride] );
@@ -1058,8 +1058,8 @@ filter_v_5_5(OVSample *src, const int stride, const int tc)
   static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
   static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
 
-  int16_t* srcP = src - stride;
-  int16_t* srcQ = src;
+  OVSample* srcP = src - stride;
+  OVSample* srcQ = src;
 
   __m128i srcP0  = _mm_loadl_epi64( ( const __m128i* ) &srcP[0] );
   __m128i srcP1  = _mm_loadl_epi64( ( const __m128i* ) &srcP[-stride] );
@@ -1155,8 +1155,8 @@ filter_v_7_3(OVSample *src, const int stride, const int tc)
   static const int dbCoeffs3[3] = { 53, 32, 11 };
   static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
   static const int8_t tc3[3] = { 6, 4, 2 };
-  int16_t* srcP = src - stride;
-  int16_t* srcQ = src;
+  OVSample* srcP = src - stride;
+  OVSample* srcQ = src;
 
   __m128i srcP0  = _mm_loadl_epi64( ( const __m128i* ) &srcP[0] );
   __m128i srcP1  = _mm_loadl_epi64( ( const __m128i* ) &srcP[-stride] );
@@ -1258,8 +1258,8 @@ filter_v_3_7(OVSample *src, const int stride, const int tc)
   static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
   static const int8_t tc3[3] = { 6, 4, 2 };
 
-  int16_t* srcP = src - stride;
-  int16_t* srcQ = src;
+  OVSample* srcP = src - stride;
+  OVSample* srcQ = src;
 
   __m128i srcP0  = _mm_loadl_epi64( ( const __m128i* ) &srcP[0] );
   __m128i srcP1  = _mm_loadl_epi64( ( const __m128i* ) &srcP[-stride] );
@@ -1360,8 +1360,8 @@ filter_v_5_3(OVSample *src, const int stride, const int tc)
   static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
   static const int8_t tc3[3] = { 6, 4, 2 };
 
-  int16_t* srcP = src - stride;
-  int16_t* srcQ = src;
+  OVSample* srcP = src - stride;
+  OVSample* srcQ = src;
 
   __m128i srcP0  = _mm_loadl_epi64( ( const __m128i* ) &srcP[0] );
   __m128i srcP1  = _mm_loadl_epi64( ( const __m128i* ) &srcP[-stride] );
@@ -1556,8 +1556,8 @@ filter_v_3_5(OVSample *src, const int stride, const int tc)
   static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
   static const int8_t tc3[3] = { 6, 4, 2 };
 
-  int16_t* srcP = src - stride;
-  int16_t* srcQ = src;
+  OVSample* srcP = src - stride;
+  OVSample* srcQ = src;
 
   __m128i srcP0  = _mm_loadl_epi64( ( const __m128i* ) &srcP[0] );
   __m128i srcP1  = _mm_loadl_epi64( ( const __m128i* ) &srcP[-stride] );

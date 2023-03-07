@@ -13,7 +13,7 @@ rcn_ibc_l(OVCTUDec *const ctu_dec,
 {
     uint8_t ctb_msk = (256 * 128 >> (2*log2_ctu_s)) - 1;
     uint16_t ctb_pos = (ctu_dec->ctb_x & ctb_msk) << log2_ctu_s;
-    uint16_t msk_h = ((1 << 8 + 7) >> log2_ctu_s) - 1;
+    uint16_t msk_h = ((1 << (8 + 7)) >> log2_ctu_s) - 1;
     uint16_t msk_v = (1 << log2_ctu_s) - 1;
 
     int16_t ref_x = ctb_pos + x0 + mv.x;
@@ -67,7 +67,7 @@ rcn_ibc_c(OVCTUDec *const ctu_dec,
 {
     uint8_t ctb_msk = (256 * 128 >> (2*log2_ctu_s)) - 1;
     uint16_t ctb_pos = (ctu_dec->ctb_x & ctb_msk) << log2_ctu_s;
-    uint16_t msk_h = ((1 << 8 + 7) >> log2_ctu_s) - 1;
+    uint16_t msk_h = ((1 << (8 + 7)) >> log2_ctu_s) - 1;
     uint16_t msk_v = (1 << log2_ctu_s) - 1;
 
     int16_t ref_x = ctb_pos + x0 + mv.x;
@@ -87,14 +87,14 @@ rcn_ibc_c(OVCTUDec *const ctu_dec,
     ref_x &= msk_h;
     ref_y &= msk_v;
     if (!req_wrp) {
-        const OVSample *src = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cb) + (ref_x - ctb_pos  >> 1)+ (ref_y >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
+        const OVSample *src = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cb) + ((ref_x - ctb_pos)  >> 1)+ (ref_y >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
         OVSample *dst = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cb) + (x0 >> 1) + (y0 >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
         for(int i = 0; i < cu_h; ++i) {
             memcpy(dst, src, sizeof(OVSample) << log2_cu_w >> 1);
             dst += ctu_dec->rcn_ctx.ctu_buff.stride_c;
             src += ctu_dec->rcn_ctx.ctu_buff.stride_c;
         }
-        src = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cr) + (ref_x- ctb_pos >> 1) + (ref_y >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
+        src = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cr) + ((ref_x - ctb_pos) >> 1) + (ref_y >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
         dst = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cr) + (x0 >> 1) + (y0 >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
         for(int i = 0; i < cu_h; ++i) {
             memcpy(dst, src, sizeof(OVSample) << log2_cu_w >> 1);
@@ -104,7 +104,7 @@ rcn_ibc_c(OVCTUDec *const ctu_dec,
     } else {
         uint8_t size1 = (ref_x >> 1) + cu_w - (ibc_stride >> 1);
         uint8_t size0 = cu_w - size1;
-        const OVSample *src = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cb) + (ref_x - ctb_pos  >> 1)+ (ref_y >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
+        const OVSample *src = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cb) + ((ref_x - ctb_pos) >> 1)+ (ref_y >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
         OVSample *dst = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cb) + (x0 >> 1) + (y0 >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
         for(int i = 0; i < cu_h; ++i) {
             memcpy(dst, src, sizeof(OVSample) * size0);
@@ -120,7 +120,7 @@ rcn_ibc_c(OVCTUDec *const ctu_dec,
             src += ctu_dec->rcn_ctx.ctu_buff.stride_c;
         }
 
-        src = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cr) + (ref_x - ctb_pos >> 1) + (ref_y >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
+        src = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cr) + ((ref_x - ctb_pos) >> 1) + (ref_y >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
         dst = (OVSample *) (ctu_dec->rcn_ctx.ctu_buff.cr) + (x0 >> 1) + (y0 >> 1) * ctu_dec->rcn_ctx.ctu_buff.stride_c;
         for(int i = 0; i < cu_h; ++i) {
             memcpy(dst, src, sizeof(OVSample) * size0);

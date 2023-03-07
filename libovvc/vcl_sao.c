@@ -154,11 +154,11 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
 void
 ovcabac_read_ae_sao_ctu(OVCTUDec *const ctudec, int ctb_rs, uint16_t nb_ctu_w)
 {   
-    SAOParamsCtu* sao_ctu = &ctudec->sao_info.sao_params[ctb_rs];
     uint8_t sao_enabled_l = ctudec->tools.sao_luma_flag;
     uint8_t sao_enabled_c = ctudec->tools.sao_chroma_flag;
 
     if (sao_enabled_l | sao_enabled_c) {
+        SAOParamsCtu* sao_ctu = &ctudec->sao_info.sao_params[ctb_rs];
         OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
         uint64_t *const cabac_state = cabac_ctx->ctx_table;
         const uint8_t ctu_neighbour_flags = ctudec->ctu_ngh_flags;
