@@ -696,9 +696,10 @@ allocate_nalu_data(struct OVNALUnit *const nalu,
                    const struct EPBCacheInfo *const epb_info,
                    const struct RBSPCacheData *const rbsp_cache)
 {
-    size_t nalu_data_size = rbsp_cache->rbsp_size + OV_RBSP_PADDING;
+    size_t nalu_data_size = rbsp_cache->rbsp_size + OV_RBSP_PADDING ;
     size_t epb_data_size  = epb_info->nb_epb * sizeof(*nalu->epb_pos);
-    size_t alloc_size = nalu_data_size + epb_data_size;
+    size_t align_padding = sizeof(*nalu->epb_pos) - (nalu_data_size % sizeof(*nalu->epb_pos));
+    size_t alloc_size = nalu_data_size + epb_data_size + align_padding;
 
     uint8_t *data = ov_malloc(alloc_size);
     if (!data) {
@@ -714,13 +715,13 @@ allocate_nalu_data(struct OVNALUnit *const nalu,
     nalu->release = &free_nalu_data;
 
     /* Set padding area to zero */
-    memset(data + rbsp_cache->rbsp_size, 0, OV_RBSP_PADDING);
+    memset(data + rbsp_cache->rbsp_size, 0, OV_RBSP_PADDING + align_padding);
 
     nalu->nb_epb  = epb_info->nb_epb;
 
     if (epb_data_size) {
 
-        data += nalu_data_size;
+        data += nalu_data_size + align_padding;
 
         memcpy(data, epb_info->epb_pos, epb_data_size);
 
