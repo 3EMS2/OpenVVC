@@ -469,8 +469,8 @@ struct SubpicInfo {
     uint8_t y;
     uint8_t w;
     uint8_t h;
-    uint16_t map_offset;
-    uint16_t nb_slices;
+    uint16_t map_offset; /* Offset to this subpicture first slice in slice map*/
+    uint16_t nb_slices; /* Number of slices expected in subpicture */
 };
 
 struct Entry {
@@ -478,8 +478,8 @@ struct Entry {
     uint8_t y;
     uint8_t w;
     uint8_t h;
-    uint16_t slice_id;
-    uint16_t subpic_id;
+    uint16_t slice_id; /* Slice this entry belongs to */
+    uint16_t subpic_id; /* Subpicture id this entry belongs to */
 };
 
 struct SliceMap {
