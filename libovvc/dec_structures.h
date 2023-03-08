@@ -181,7 +181,6 @@ typedef struct SAOParamsCtu
 
 } SAOParamsCtu;
 
-
 typedef struct ALFParamsCtu
 {
     uint8_t ctb_alf_flag;
@@ -191,7 +190,6 @@ typedef struct ALFParamsCtu
     uint8_t cb_ccalf;
     uint8_t cr_ccalf;
 } ALFParamsCtu;
-
 
 struct MainThread
 {
