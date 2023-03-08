@@ -995,6 +995,14 @@ update_pic_params(OVPicture *pic, const OVPS *const ps)
     pic->scale_info.scaling_win_bottom = ps->pps->pps_scaling_win_bottom_offset;
     pic->scale_info.chroma_hor_col_flag = ps->sps->sps_chroma_horizontal_collocated_flag;
     pic->scale_info.chroma_ver_col_flag = ps->sps->sps_chroma_vertical_collocated_flag;
+
+    pic->frame->scaling_window.offset_lft = ps->pps->pps_scaling_win_left_offset;
+    pic->frame->scaling_window.offset_rgt = ps->pps->pps_scaling_win_right_offset;
+    pic->frame->scaling_window.offset_abv = ps->pps->pps_scaling_win_top_offset;
+    pic->frame->scaling_window.offset_blw = ps->pps->pps_scaling_win_bottom_offset;
+
+    pic->frame->frame_info.chroma_hor_col_flag = ps->sps->sps_chroma_horizontal_collocated_flag;
+    pic->frame->frame_info.chroma_ver_col_flag = ps->sps->sps_chroma_vertical_collocated_flag;
 }
 
 void

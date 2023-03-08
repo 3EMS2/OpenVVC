@@ -697,7 +697,7 @@ ovdec_set_option(OVDec *ovdec, enum OVOptions opt_id, int value)
 
     switch (opt_id) {
         case OVDEC_RPR_UPSCALE:
-            ovdec->upscale_flag = !!value;
+            ovdec->ppctx.upscale_flag = !!value;
             break;
         case OVDEC_NB_ENTRY_THREADS:
             set_nb_entry_threads(ovdec, value);

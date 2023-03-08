@@ -48,7 +48,7 @@
 #endif
 
 void
-pp_init_functions(const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
+pp_init_functions(const struct PostProcessCtx *ppctx, const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
 {
     pp_funcs->pp_apply_flag = 0;
 
@@ -68,19 +68,20 @@ pp_init_functions(const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
  //printf ("NO FILTER\n");           pp_funcs->pp_sdr_to_hdr = pp_slhdr_no_filter;
         }
 #endif
-        if (sei->upscale_flag) {
-            pp_funcs->pp_apply_flag = 1;
-        }
+    }
+
+    if (ppctx->upscale_flag) {
+        pp_funcs->pp_apply_flag = 1;
     }
 }
 
 int
-pp_process_frame2(const OVSEI* sei, OVFrame **frame_p)
+pp_process_frame2(const struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **frame_p)
 {
     struct PostProcFunctions pp_funcs;
 
     /* FIXME  find another place to init this */
-    pp_init_functions(sei, &pp_funcs);
+    pp_init_functions(ppctx, sei, &pp_funcs);
 
     if (pp_funcs.pp_apply_flag) {
         OVFrame* src_frm = *frame_p;
@@ -92,9 +93,26 @@ pp_process_frame2(const OVSEI* sei, OVFrame **frame_p)
             goto no_writable_pic;
         }
 
-        pp_frm->width  = src_frm->width;
-        pp_frm->height = src_frm->height;
+        if (ppctx->upscale_flag){
+            for(int comp = 0; comp < 3; comp++){
+                uint16_t dst_w =  pp_frm->width  >> (!!comp);
+                uint16_t dst_h =  pp_frm->height >> (!!comp);
+                uint16_t src_w = src_frm->width  >> (!!comp);
+                uint16_t src_h = src_frm->height >> (!!comp);
 
+                uint16_t dst_stride =  pp_frm->linesize[comp] >> 1;
+                uint16_t src_stride = src_frm->linesize[comp] >> 1;
+
+                uint8_t is_luma = comp == 0;
+
+                pp_sample_rate_conv((uint16_t*) pp_frm->data[comp], dst_stride, dst_w, dst_h,
+                                    (uint16_t*)src_frm->data[comp], src_stride, src_w, src_h,
+                                    &src_frm->scaling_window, is_luma, &src_frm->frame_info);
+            }
+        }
+
+
+        if (sei) {
         int16_t *src_planes[3] = {
             (int16_t*)src_frm->data[0],
             (int16_t*)src_frm->data[1],
@@ -125,22 +143,6 @@ pp_process_frame2(const OVSEI* sei, OVFrame **frame_p)
             //printf ("NO FILTER\n");
 	}
 #endif
-        if (sei->upscale_flag){
-            for(int comp = 0; comp < 3; comp++){
-                uint16_t dst_w =  pp_frm->width  >> (!!comp);
-                uint16_t dst_h =  pp_frm->height >> (!!comp);
-                uint16_t src_w = src_frm->width  >> (!!comp);
-                uint16_t src_h = src_frm->height >> (!!comp);
-
-                uint16_t dst_stride =  pp_frm->linesize[comp] >> 1;
-                uint16_t src_stride = src_frm->linesize[comp] >> 1;
-
-                uint8_t is_luma = comp == 0;
-
-                pp_sample_rate_conv((uint16_t*) pp_frm->data[comp], dst_stride, dst_w, dst_h,
-                                    (uint16_t*)src_frm->data[comp], src_stride, src_w, src_h,
-                                    &sei->scaling_info, is_luma);
-            }
         }
 
         /* Replace pointer to output picture by post processed picture. */
@@ -191,7 +193,7 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
     }
     if (sei) sei->brightness = pctx->brightness;
     /* Check SEI SEI */
-    ret = pp_process_frame2(sei, frame_p);
+    ret = pp_process_frame2(pctx, sei, frame_p);
 
     if (sei) {
         if (sei->sei_fg) {

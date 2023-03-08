@@ -59,6 +59,9 @@ struct FrameInfo
 {
     enum ChromaFmt chroma_format;
     struct ColorDescription color_desc;
+
+    uint8_t chroma_hor_col_flag;
+    uint8_t chroma_ver_col_flag;
 };
 
 struct FramePool;
@@ -103,6 +106,10 @@ struct Frame
     /* Picture conformance window information
      */
     struct Window output_window;
+
+    /* Picture scaling window information
+     */
+    struct Window scaling_window;
 
     /* Picture Order Count
      */

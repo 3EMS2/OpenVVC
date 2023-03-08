@@ -40,6 +40,8 @@ struct OVSEIFGrain;
 struct OVVCDec;
 struct ScalingInfo;
 struct PostProcessCtx;
+struct FrameInfo;
+struct Window;
 
 typedef void (*FGFunc)(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain* fgrain, 
                           int pic_w, int pic_h, int poc, uint8_t isIdrPic, uint8_t enableDeblocking);
@@ -68,6 +70,6 @@ void fg_grain_no_filter(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain
 
 void pp_sample_rate_conv(uint16_t* scaled_dst, uint16_t scaled_stride, int scaledWidth, int scaledHeight, 
                         uint16_t* orgSrc, uint16_t org_stride, int orgWidth, int orgHeight, 
-                        const struct ScalingInfo *const scale_info, uint8_t luma_flag );
+                        const struct Window *const scale_info, uint8_t luma_flag, const struct FrameInfo *const finfo);
 #endif
 
