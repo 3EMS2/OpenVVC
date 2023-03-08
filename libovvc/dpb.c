@@ -869,7 +869,7 @@ tmvp_release_mv_planes(OVPicture *const pic)
 }
 
 static int
-tmvp_request_mv_plane(OVPicture *const pic, const OVVCDec *ovdec, uint8_t slice_type)
+tmvp_request_mv_plane(OVPicture *const pic, const OVDec *ovdec, uint8_t slice_type)
 {
     struct MVPool *pool = ovdec->mv_pool;
     int ret;
@@ -891,7 +891,7 @@ tmvp_request_mv_plane(OVPicture *const pic, const OVVCDec *ovdec, uint8_t slice_
 }
 
 static int
-init_tmvp_info(OVPicture *const pic, const OVPS *const ps, const OVVCDec *ovdec)
+init_tmvp_info(OVPicture *const pic, const OVPS *const ps, const OVDec *ovdec)
 {
     const OVSH *sh = ps->sh;
     const OVPH *ph = ps->ph;
@@ -1041,7 +1041,7 @@ map_subpic_id(const struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
 
 int
 ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t nalu_type,
-                   OVSliceDec *const sldec, const OVVCDec *ovdec)
+                   OVSliceDec *const sldec, const OVDec *ovdec)
 {
 
     const OVSH  *const sh  = ps->sh;

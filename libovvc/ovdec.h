@@ -64,7 +64,7 @@ enum OVOptions {
    OVDEC_NB_OPTIONS,
 };
 
-typedef OVVCDec OVDec;
+typedef OVDec OVDec;
 
 /**
  * Submit a new Picture Unit to the decoder.
@@ -175,7 +175,7 @@ int ovdec_close(OVDec *ovdec);
  * Note: references to xPSs are kept in the decoder so there is no need to submit
  * them again if you you are using this to navigate the same stream.
  */
-int ovdec_flush(OVVCDec *dec);
+int ovdec_flush(OVDec *dec);
 
 /**
  * Attempt to set a decoder options

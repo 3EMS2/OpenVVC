@@ -56,7 +56,7 @@
 typedef struct OVVCHdl
 {
     OVVCDmx *dmx;
-    OVVCDec *dec;
+    OVDec *dec;
     OVIO *io;
 } OVVCHdl;
 
@@ -205,7 +205,7 @@ faildmx:
 static int
 close_openvvc_hdl(OVVCHdl *const ovvc_hdl)
 {
-    OVVCDec *vvcdec = ovvc_hdl->dec;
+    OVDec *vvcdec = ovvc_hdl->dec;
     OVVCDmx *vvcdmx = ovvc_hdl->dmx;
     OVIO* io = ovvc_hdl->io;
     int ret;
@@ -360,7 +360,7 @@ end:
 static int
 probe_stream(OVVCHdl *const hdl)
 {
-    OVVCDec *const dec = hdl->dec;
+    OVDec *const dec = hdl->dec;
     int nb_pic = 0;
     int ret;
     OVNVCLCtx nvcl_ctx = {0};

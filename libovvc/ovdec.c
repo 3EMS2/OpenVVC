@@ -73,7 +73,7 @@ static const char *option_names[OVDEC_NB_OPTIONS] =
 static void ovdec_uninit_subdec_list(OVVCDec *vvcdec);
 
 static int
-ovdec_init_subdec_list(OVVCDec *dec)
+ovdec_init_subdec_list(OVDec *dec)
 {
     int ret;
     ov_log(NULL, OVLOG_TRACE, "Creating %d Slice decoders\n", dec->nb_frame_th);
@@ -124,7 +124,7 @@ set_max_pic_part_info(struct PicPartInfo *pic_info, const OVSPS *const sps, cons
 }
 
 static int
-init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const nvcl_ctx,
+init_vcl_decoder(OVDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const nvcl_ctx,
                 OVNALUnit * nalu, uint32_t nb_sh_bytes)
 {
 
@@ -194,7 +194,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 }
 
 static void
-ovdec_wait_entry_thread(OVVCDec *const dec, int i)
+ovdec_wait_entry_thread(OVDec *const dec, int i)
 {
     #if USE_THREADS
     struct MainThread* th_main = &dec->main_thread;
@@ -221,7 +221,7 @@ ovdec_wait_entry_thread(OVVCDec *const dec, int i)
 }
 
 OVSliceDec *
-ovdec_select_subdec(OVVCDec *const dec)
+ovdec_select_subdec(OVDec *const dec)
 {
     OVSliceDec **sldec_list = dec->subdec_list;
     int nb_threads = dec->nb_frame_th;
@@ -264,7 +264,7 @@ ovdec_select_subdec(OVVCDec *const dec)
 }
 
 static void
-ovdec_init_entry_fifo(OVVCDec *vvcdec, int nb_entry_th)
+ovdec_init_entry_fifo(OVDec *vvcdec, int nb_entry_th)
 {
     struct MainThread* main_thread = &vvcdec->main_thread;
     struct EntriesFIFO *fifo = &main_thread->entries_fifo;
@@ -281,7 +281,7 @@ ovdec_init_entry_fifo(OVVCDec *vvcdec, int nb_entry_th)
 }
 
 static void
-ovdec_uninit_entry_jobs(OVVCDec *vvcdec)
+ovdec_uninit_entry_jobs(OVDec *vvcdec)
 {
     struct MainThread* main_thread = &vvcdec->main_thread;
     ov_freep(&main_thread->entries_fifo);
@@ -300,7 +300,7 @@ ovdec_wait_entries(OVDec *ovdec)
 }
 
 static void
-ovdec_uninit_entry_threads(OVVCDec *vvcdec)
+ovdec_uninit_entry_threads(OVDec *vvcdec)
 {
     int i;
     void *ret;
@@ -330,7 +330,7 @@ ovdec_uninit_entry_threads(OVVCDec *vvcdec)
 }
 
 static int
-ovdec_init_entry_threads(OVVCDec *vvcdec, int nb_entry_th)
+ovdec_init_entry_threads(OVDec *vvcdec, int nb_entry_th)
 {
     int i, ret;
     ov_log(NULL, OVLOG_TRACE, "Creating %d entry threads\n", nb_entry_th);
@@ -355,7 +355,7 @@ failthread:
 }
 
 static int
-ovdec_init_main_thread(OVVCDec *vvcdec)
+ovdec_init_main_thread(OVDec *vvcdec)
 {
     struct MainThread* main_thread = &vvcdec->main_thread;
     int nb_entry_th = vvcdec->nb_entry_th;
@@ -374,7 +374,7 @@ ovdec_init_main_thread(OVVCDec *vvcdec)
 }
 
 static int
-ovdec_uninit_main_thread(OVVCDec *vvcdec)
+ovdec_uninit_main_thread(OVDec *vvcdec)
 {
     ovdec_uninit_entry_threads(vvcdec);
     ovdec_uninit_entry_jobs(vvcdec);
@@ -383,7 +383,7 @@ ovdec_uninit_main_thread(OVVCDec *vvcdec)
 }
 
 static int
-decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
+decode_nal_unit(OVDec *const vvcdec, OVNALUnit * nalu)
 {
     OVNVCLCtx *const nvcl_ctx = &vvcdec->nvcl_ctx;
     enum OVNALUType nalu_type = nalu->type;
@@ -457,7 +457,7 @@ failvcl:
 }
 
 static int
-vvc_decode_picture_unit(OVVCDec *dec, const OVPictureUnit *pu)
+vvc_decode_picture_unit(OVDec *dec, const OVPictureUnit *pu)
 {
     int i;
     int ret;
@@ -484,7 +484,7 @@ fail:
 }
 
 int
-ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
+ovdec_submit_picture_unit(OVDec *vvcdec, const OVPictureUnit *const pu)
 {
     int ret = 0;
 
@@ -494,7 +494,7 @@ ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
 }
 
 int
-ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
+ovdec_receive_picture(OVDec *dec, OVFrame **frame_p)
 {
     struct OVPictureUnit *punit;
     OVDPB *dpb = dec->dpb;
@@ -524,7 +524,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 }
 
 static void
-ovdec_wait_entry_threads(OVVCDec *vvcdec)
+ovdec_wait_entry_threads(OVDec *vvcdec)
 {
     struct MainThread *th_main = &vvcdec->main_thread;
     int i;
@@ -537,7 +537,7 @@ ovdec_wait_entry_threads(OVVCDec *vvcdec)
 }
 
 int
-ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
+ovdec_drain_picture(OVDec *dec, OVFrame **frame_p)
 {
     struct OVPictureUnit *punit;
     OVDPB *dpb = dec->dpb;
@@ -562,7 +562,7 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 }
 
 int
-ovdec_flush(OVVCDec *dec)
+ovdec_flush(OVDec *dec)
 {
     //ovdec_wait_entry_threads(dec);
     struct OVPictureUnit *punit;
@@ -589,7 +589,7 @@ ovdec_flush(OVVCDec *dec)
 }
 
 static int
-set_nb_entry_threads(OVVCDec *ovdec, int nb_threads)
+set_nb_entry_threads(OVDec *ovdec, int nb_threads)
 {
     ovdec->nb_entry_th = nb_threads;
     ovdec->main_thread.nb_entry_th = nb_threads;
@@ -598,7 +598,7 @@ set_nb_entry_threads(OVVCDec *ovdec, int nb_threads)
 }
 
 static int
-set_nb_frame_threads(OVVCDec *ovdec, int nb_threads)
+set_nb_frame_threads(OVDec *ovdec, int nb_threads)
 {
     ovdec->nb_frame_th = nb_threads;
 
@@ -606,7 +606,7 @@ set_nb_frame_threads(OVVCDec *ovdec, int nb_threads)
 }
 
 int
-ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
+ovdec_set_option(OVDec *ovdec, enum OVOptions opt_id, int value)
 {
 
     switch (opt_id) {
@@ -688,10 +688,10 @@ ovdec_start(OVDec *ovdec)
 }
 
 int
-ovdec_init(OVVCDec **ovdec_p)
+ovdec_init(OVDec **ovdec_p)
 {
 
-    *ovdec_p = ov_mallocz(sizeof(OVVCDec));
+    *ovdec_p = ov_mallocz(sizeof(OVDec));
 
     if (*ovdec_p == NULL) goto fail;
 
@@ -707,7 +707,7 @@ fail:
 }
 
 static void
-ovdec_uninit_subdec_list(OVVCDec *vvcdec)
+ovdec_uninit_subdec_list(OVDec *vvcdec)
 {
     OVSliceDec *sldec;
 
@@ -728,7 +728,7 @@ ovdec_uninit_subdec_list(OVVCDec *vvcdec)
 }
 
 int
-ovdec_close(OVVCDec *vvcdec)
+ovdec_close(OVDec *vvcdec)
 {
     int not_dec;
     if (vvcdec != NULL) {

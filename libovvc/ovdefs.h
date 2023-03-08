@@ -72,7 +72,7 @@ typedef struct OVNVCLReader OVNVCLReader;
 typedef struct OVNVCLCtx OVNVCLCtx;
 typedef struct OVNVCLUnit OVNVCLUnit;
 
-typedef struct OVVCDec OVVCDec;
+typedef struct OVDec OVDec;
 typedef struct SubDec OVSubDec;
 
 typedef struct OVPS OVPS;

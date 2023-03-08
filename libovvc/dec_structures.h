@@ -207,7 +207,7 @@ struct PicPartInfo
     uint8_t log2_ctu_s;
 };
 
-struct OVVCDec
+struct OVDec
 {
     const char *name;
 

@@ -51,7 +51,7 @@
 typedef struct OVVCHdl
 {
     OVVCDmx *dmx;
-    OVVCDec *dec;
+    OVDec *dec;
     OVIO *io;
 } OVVCHdl;
 
@@ -225,7 +225,7 @@ dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name)
 static int
 init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_frame_th, int nb_entry_th, int upscale_flag)
 {
-    OVVCDec **vvcdec = &ovvc_hdl->dec;
+    OVDec **vvcdec = &ovvc_hdl->dec;
     OVVCDmx **vvcdmx = &ovvc_hdl->dmx;
     int ret;
 
@@ -265,7 +265,7 @@ faildmx:
 static int
 close_openvvc_hdl(OVVCHdl *const ovvc_hdl)
 {
-    OVVCDec *vvcdec = ovvc_hdl->dec;
+    OVDec *vvcdec = ovvc_hdl->dec;
     OVVCDmx *vvcdmx = ovvc_hdl->dmx;
     OVIO* io = ovvc_hdl->io;
     int ret;
@@ -316,7 +316,7 @@ derive_pu_size(OVPictureUnit *pu)
 static int
 read_write_stream(OVVCHdl *const hdl, FILE *fout)
 {
-    OVVCDec *const dec = hdl->dec;
+    OVDec *const dec = hdl->dec;
     int nb_pic = 0;
     int ret;
 
