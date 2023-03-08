@@ -70,7 +70,93 @@ static const char *option_names[OVDEC_NB_OPTIONS] =
     "brightness"
 };
 
-static void ovdec_uninit_subdec_list(OVVCDec *vvcdec);
+static const struct OVOption ovdecopt[] = {
+   {"brightness", "Define the target peak luminance of SLHDR library", .type=OVOPT_INT, .min=0, .max=0,  .offset= offsetof(struct OVDec, ppctx.brightness)},
+   {"upscale", "Define if the decoder is responsible of upscaling output pictures when RPR is present", .type=OVOPT_FLAG, .min=0, .max=2,  .offset= offsetof(struct OVDec, ppctx.upscale_flag)},
+   {"test_str", "", .type=OVOPT_STR, .min=0, .max=0,  .offset= offsetof(struct OVDec, ppctx.test)},
+   { NULL },
+};
+
+static const struct OVOption *
+find_opt(const char *const opt_str)
+{
+    const struct OVOption *opt_list = ovdecopt;
+    while (opt_list->opt_str) {
+        if (!strcmp(opt_str, opt_list->opt_str)) {
+            return opt_list;
+        }
+        opt_list++;
+    }
+    return NULL;
+}
+
+static int
+set_opt_int(OVDec *const ovdec, const struct OVOption *const opt, void *opt_val)
+{
+    int32_t *dst = (int32_t*)((uint8_t *)ovdec + opt->offset);
+    *dst = *((int32_t *)opt_val);
+    ov_log(ovdec, OVLOG_ERROR, "Option %s set to %d.\n", opt->opt_str, *dst);
+    return 0;
+}
+
+static int
+set_opt_str(OVDec *const ovdec, const struct OVOption *const opt, void *opt_val)
+{
+    const char **const dst = (const char **const)((uint8_t *)ovdec + opt->offset);
+
+    *dst = (const char *) opt_val;
+    ov_log(ovdec, OVLOG_ERROR, "Option %s set to %s.\n", opt->opt_str, *dst);
+    return 0;
+}
+
+static int
+set_opt_flag(OVDec *const ovdec, const struct OVOption *const opt, void *opt_val)
+{
+    uint8_t *dst = (uint8_t *)ovdec + opt->offset;
+    *dst = *((uint8_t *)opt_val);
+    ov_log(ovdec, OVLOG_ERROR, "Option %s set to %d.\n", opt->opt_str, *dst);
+    return 0;
+}
+
+static int
+set_opt(OVDec *const ovdec, const struct OVOption *const opt, void *opt_val)
+{
+    enum OVOptionType type = opt->type;
+    if (!opt_val) goto novalue;
+    switch (type) {
+        case OVOPT_INT:
+            return set_opt_int(ovdec, opt, opt_val);
+            break;
+        case OVOPT_STR:
+            return set_opt_str(ovdec, opt, opt_val);
+            break;
+        case OVOPT_FLAG:
+            return set_opt_flag(ovdec, opt, opt_val);
+            break;
+    }
+    return 0;
+
+novalue:
+    ov_log(ovdec, OVLOG_ERROR, "No argument provided for option %s.\n", opt->opt_str);
+    return OVVC_EINDATA;
+}
+
+int
+ovdec_set_opt(OVDec *const ovdec, const char *const opt_str, void *opt_val)
+{
+    const struct OVOption *opt = find_opt(opt_str);
+    if (opt) {
+        ov_log(ovdec, OVLOG_ERROR, "Found option %s.\n", opt_str);
+        return set_opt(ovdec, opt, opt_val);
+    } else {
+        ov_log(ovdec, OVLOG_ERROR, "Could not find options in %s.\n", opt_str);
+
+        return OVVC_EINDATA;
+    }
+    return 0;
+}
+
+static void ovdec_uninit_subdec_list(OVDec *vvcdec);
 
 static int
 ovdec_init_subdec_list(OVDec *dec)

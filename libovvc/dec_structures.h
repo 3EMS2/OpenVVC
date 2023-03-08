@@ -50,6 +50,29 @@
 
 struct MVPool;
 
+enum OVOptionType{
+    OVOPT_INT,
+    OVOPT_STR,
+    OVOPT_FLAG,
+};
+
+struct OVOption
+{
+    const char *const opt_str;
+    const char *const desc;
+    enum OVOptionType type;
+    union {
+        uint8_t flag;
+        const char *const string;
+        int32_t integer;
+    } default_value;
+
+    int32_t min;
+    int32_t max;
+
+    size_t offset;
+};
+
 struct RectEntryInfo {
     int tile_x;
     int tile_y;
