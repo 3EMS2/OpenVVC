@@ -4,16 +4,16 @@ noinst_LTLIBRARIES = libx86optim.la \
 
 X86ASM = nasm
 X86ASMFLAGS = -g -f elf64 -prefer-non-pic -I$(srcdir)
-#SUFFIXES = .asm
+SUFFIXES = .asm
 
 LTASCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=compile $(X86ASM) $(DEFS) \
 	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 	$(X86ASMFLAGS)
 
-AM_V_ASM = $(am__v_ASM_$(V))
-am__v_ASM_ = $(am__v_ASM_$(AM_DEFAULT_VERBOSITY))
-am__v_ASM_0 = @echo "  $(CCAS)   " $@;
+AM_V_ASM = $(am__v_ASM_@AM_V@)
+am__v_ASM_ = $(am__v_ASM_@AM_DEFAULT_VERBOSITY@)
+am__v_ASM_0 = @echo "  @CCAS@   " $@;
 am__v_ASM_1 =
 
 .asm.lo:
