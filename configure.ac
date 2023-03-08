@@ -69,6 +69,11 @@ AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm asse
 			[as_arm64="no"  h_as_arm64=0]) ],
                 [as_arm64=$is_64bits h_as_arm64=0]
 )
+AC_ARG_WITH([simde], [AS_HELP_STRING([--with-simde], [enables arm simde optimisation [no]])],
+		[AC_SUBST([SIMDE_INCDIR], -I[$with_simde])],
+		[AC_SUBST([SIMDE_INCDIR], [])]
+)
+
 
 AC_ARG_ENABLE([arm-simde], [AS_HELP_STRING([--enable-arm-simde], [enables arm simde optimisation [no]])],
 		[ AS_IF([test $enable_arm_simde = "yes"],

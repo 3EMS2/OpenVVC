@@ -1,12 +1,14 @@
 if HAVE_NEON
-noinst_LTLIBRARIES = libarmoptim.la
+noinst_LTLIBRARIES = libarmoptim.la libsimde.la
 libarmoptim_la_CPPFLAGS = -I${srcdir}/../ -DBITDEPTH=10
 
 libarmoptim_la_SOURCES =
+libsimde_la_SOURCES =
 
 
 if HAVE_NEON_SIMDE
-libarmoptim_la_SOURCES +=	rcn_transform_sse.c                   \
+libsimde_la_CPPFLAGS =  -I${srcdir}/../ -DBITDEPTH=10 @SIMDE_INCDIR@
+libsimde_la_SOURCES +=	rcn_transform_sse.c                   \
 							vvc_utils_sse.c                       \
 							rcn_mc_sse.c                          \
 							rcn_transform_add_sse.c               \
@@ -37,3 +39,4 @@ endif
 endif
 
 noinst_HEADERS = rcn_neon.h
+
