@@ -768,7 +768,6 @@ ovdec_start(OVDec *ovdec)
     if (ret < 0) {
         return ret;
     }
-    ovdec->ppctx.brightness = 10000;
 
     return 0;
 }
@@ -784,6 +783,9 @@ ovdec_init(OVDec **ovdec_p)
     (*ovdec_p)->name = decname;
 
     ov_log(NULL, OVLOG_TRACE, "OpenVVC init at %p\n", *ovdec_p);
+
+    (*ovdec_p)->ppctx.brightness = 10000;
+
     return 0;
 
 fail:
