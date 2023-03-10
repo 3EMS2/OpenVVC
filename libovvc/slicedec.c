@@ -1690,7 +1690,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     const int nb_ctu_h = einfo->nb_ctu_h;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
-    ov_log(NULL, OVLOG_WARNING, "Decode entry slice %d in subpicture %d at (%d,%d), %dx%d\n",
+    ov_log(NULL, OVLOG_TRACE, "Decode entry slice %d in subpicture %d at (%d,%d), %dx%d\n",
            prms->sh->sh_slice_address, prms->sh->sh_subpic_id,
            einfo->ctb_x, einfo->ctb_y, einfo->nb_ctu_w, einfo->nb_ctu_h);
 

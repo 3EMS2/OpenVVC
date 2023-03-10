@@ -816,7 +816,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         }
     }
     uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
-    ov_log(NULL, OVLOG_WARNING, "Read slice address %d , subpic_id %d, subpic idx %d\n", sh->sh_slice_address, sh->sh_subpic_id, actual_subpic_id);
+    ov_log(NULL, OVLOG_TRACE, "Read slice address %d , subpic_id %d, subpic idx %d\n", sh->sh_slice_address, sh->sh_subpic_id, actual_subpic_id);
 
     const struct SubpicInfo *subpic = &pps->part_info.subpictures[actual_subpic_id];
     uint16_t slice_address = sh->sh_slice_address;

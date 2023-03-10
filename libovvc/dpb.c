@@ -1025,7 +1025,7 @@ init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu, const struc
     sync->nb_slices = &sync->internal.nb_slices;
 
     atomic_init(sync->nb_slices, nb_slices);
-    ov_log(NULL, OVLOG_WARNING, "BEGIN pic : %d, nb slices : %d\n", pic->poc, nb_slices);
+    ov_log(NULL, OVLOG_TRACE, "BEGIN pic : %d, nb slices : %d\n", pic->poc, nb_slices);
 }
 
 static int16_t
