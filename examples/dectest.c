@@ -48,11 +48,18 @@
 #include "ovmem.h"
 #include "ovtime.h"
 
+struct PicInfoFormat
+{
+    const char *fmt_str;
+    FILE *file;
+};
+
 typedef struct OVVCHdl
 {
     OVVCDmx *dmx;
     OVDec *dec;
     OVIO *io;
+    struct PicInfoFormat *pinfo_fmt;
 } OVVCHdl;
 
 static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name);
@@ -69,7 +76,6 @@ static void print_version(void);
 
 static void print_usage(void);
 
-
 int
 main(int argc, char** argv)
 {
@@ -82,10 +88,17 @@ main(int argc, char** argv)
     int nb_frame_th = 0;
     int nb_entry_th = 0;
     int upscale_flag = 0;
+    static const char *const default_info_fmt = "POC : %P %T µs  %R bytes %V\n";
+    struct PicInfoFormat pinfo_fmt =
+    {
+        .fmt_str = NULL,
+        .file = stdout,
+    };
 
     uint8_t options_flag=0;
 
     OVVCHdl ovvc_hdl;
+    ovvc_hdl.pinfo_fmt = &pinfo_fmt;
     int ret = 0;
 
     while (1) {
@@ -99,6 +112,7 @@ main(int argc, char** argv)
             {"framethr",  required_argument, 0, 't'},
             {"entrythr",  required_argument, 0, 'e'},
             {"upscale",   required_argument, 0, 'u'},
+            {"info",      optional_argument, 0, 'i'},
         };
 
         int option_index = 0;
@@ -138,6 +152,13 @@ main(int argc, char** argv)
 
             case 'e':
                 nb_entry_th = atoi(optarg);
+                break;
+
+            case 'i':
+                if (optarg)
+                    pinfo_fmt.fmt_str = strdup(optarg);
+                else
+                    pinfo_fmt.fmt_str = default_info_fmt;
                 break;
 
             case '?':
@@ -200,6 +221,9 @@ failattach:
     fclose(fout);
 
 failinit:
+    if (pinfo_fmt.fmt_str && pinfo_fmt.fmt_str != default_info_fmt) {
+        free(pinfo_fmt.fmt_str);
+    }
     return ret;
 }
 
@@ -313,6 +337,57 @@ derive_pu_size(OVPictureUnit *pu)
     return sum;
 }
 
+static inline uint64_t 
+compute_decoding_time(OVFrame *frame)
+{
+    uint64_t start = frame->time_info.start;
+    uint64_t end = frame->time_info.end;
+    uint64_t out = frame->time_info.out;
+
+    return NS_TO_US((int64_t)end - start);
+}
+
+static void
+output_pictures_info(const struct PicInfoFormat *pinfo_fmt, OVFrame *frame)
+{
+    uint64_t pu_size = 0;
+
+    if (frame->pu)  pu_size = derive_pu_size(frame->pu);
+
+    const char *fmt = pinfo_fmt->fmt_str;
+    while (*fmt) {
+        switch (*fmt) {
+            case '%':
+                if (*++fmt)
+                    switch (*fmt++) {
+                        case 'R':
+                            fprintf(pinfo_fmt->file, "%ld", pu_size);
+                            break;
+                        case 'T':
+                            fprintf(pinfo_fmt->file, "%ld", compute_decoding_time(frame));
+                            break;
+                        case 'P' :
+                            fprintf(pinfo_fmt->file, "%d", frame->poc);
+                            break;
+                        case 'V' :
+                            fprintf(pinfo_fmt->file, "%ldx%ld", frame->width, frame->height);
+                            break;
+                    }
+            case '\\':
+                    if (*++fmt == 'n')
+                        fprintf(pinfo_fmt->file,"\n");
+                    else
+                        fprintf(pinfo_fmt->file,"%c", *--fmt);
+                    fmt++;
+                break;
+            default:
+                fprintf(pinfo_fmt->file,"%c", *fmt);
+                fmt++;
+                break;
+        }
+    }
+}
+
 static int
 read_write_stream(OVVCHdl *const hdl, FILE *fout)
 {
@@ -344,17 +419,9 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
                     }
 
                     ov_log(NULL, OVLOG_DEBUG, "Got output picture with POC %d.\n", frame->poc);
-                    uint64_t start = frame->time_info.start;
-                    uint64_t end = frame->time_info.end;
-                    uint64_t out = frame->time_info.out;
 
-                    int dec_time = NS_TO_US((int64_t)end - start);
-
-                    uint64_t pu_size = 0;
-
-                    if (frame->pu)  pu_size = derive_pu_size(frame->pu);
-
-//                    printf("%d %ld\n", dec_time, pu_size);
+                    if (hdl->pinfo_fmt->fmt_str)
+                        output_pictures_info(hdl->pinfo_fmt, frame);
 
                     ovframe_unref(&frame);
 
@@ -380,6 +447,9 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
             }
 
             ov_log(NULL, OVLOG_DEBUG, "Drain picture with POC %d.\n", frame->poc);
+
+            if (hdl->pinfo_fmt->fmt_str)
+                output_pictures_info(hdl->pinfo_fmt, frame);
 
             ovframe_unref(&frame);
 
