@@ -190,6 +190,8 @@ int ovdec_flush(OVDec *dec);
  */
 int ovdec_set_option(OVDec *ovdec, enum OVOptions opt_id, int value);
 
+int ovdec_set_opt(OVDec *const ovdec, const char *const opt_str, void *opt_val);
+
 void ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl));
 
 const char* ovdec_version(void);

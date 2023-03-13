@@ -72,8 +72,7 @@ static const char *option_names[OVDEC_NB_OPTIONS] =
 
 static const struct OVOption ovdecopt[] = {
    {"brightness", "Define the target peak luminance of SLHDR library", .type=OVOPT_INT, .min=0, .max=0,  .offset= offsetof(struct OVDec, ppctx.brightness)},
-   {"upscale", "Define if the decoder is responsible of upscaling output pictures when RPR is present", .type=OVOPT_FLAG, .min=0, .max=2,  .offset= offsetof(struct OVDec, ppctx.upscale_flag)},
-   {"test_str", "", .type=OVOPT_STR, .min=0, .max=0,  .offset= offsetof(struct OVDec, ppctx.test)},
+   {"upscale", "Define if the decoder is responsible of upscaling output pictures when RPR is present", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ppctx.upscale_flag)},
    { NULL },
 };
 
