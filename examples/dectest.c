@@ -88,6 +88,7 @@ main(int argc, char** argv)
     int nb_frame_th = 0;
     int nb_entry_th = 0;
     int upscale_flag = 0;
+    int pp_disable = 0;
     static const char *const default_info_fmt = "POC : %P %T µs  %R bytes %V\n";
     struct PicInfoFormat pinfo_fmt =
     {
@@ -113,6 +114,7 @@ main(int argc, char** argv)
             {"entrythr",  required_argument, 0, 'e'},
             {"upscale",   required_argument, 0, 'u'},
             {"info",      optional_argument, 0, 'i'},
+            {"nopostproc", no_argument,       0, 'p'},
         };
 
         int option_index = 0;
@@ -160,6 +162,9 @@ main(int argc, char** argv)
                 else
                     pinfo_fmt.fmt_str = default_info_fmt;
                 break;
+            case 'p':
+                pp_disable = 1;
+                break;
 
             case '?':
                 options_flag += 0x10;
@@ -205,6 +210,10 @@ main(int argc, char** argv)
     }
 
     ret = init_openvvc_hdl(&ovvc_hdl, output_file_name, nb_frame_th, nb_entry_th, upscale_flag);
+    if (pp_disable) {
+        int val = 1;
+        ovdec_set_opt(ovvc_hdl.dec, "nopostproc", &val);
+    }
 
     if (ret < 0) goto failinit;
 

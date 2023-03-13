@@ -271,6 +271,7 @@ struct OVDec
     struct PostProcessCtx {
         //Boolean: output video upscaled to max resolution
         uint8_t upscale_flag;
+        uint8_t pp_disable;
         int brightness;
 
     } ppctx;

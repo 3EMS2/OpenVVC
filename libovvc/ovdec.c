@@ -73,6 +73,7 @@ static const char *option_names[OVDEC_NB_OPTIONS] =
 static const struct OVOption ovdecopt[] = {
    {"brightness", "Define the target peak luminance of SLHDR library", .type=OVOPT_INT, .min=0, .max=0,  .offset= offsetof(struct OVDec, ppctx.brightness)},
    {"upscale", "Define if the decoder is responsible of upscaling output pictures when RPR is present", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ppctx.upscale_flag)},
+   {"nopostproc", "Disable picture post processing", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ppctx.pp_disable)},
    { NULL },
 };
 
@@ -600,8 +601,9 @@ ovdec_receive_picture(OVDec *dec, OVFrame **frame_p)
     }
 
     if (*frame_p) {
-        if (punit)
-        pp_process_frame(&dec->ppctx, punit, frame_p);
+        if (punit && !dec->ppctx.pp_disable) {
+            pp_process_frame(&dec->ppctx, punit, frame_p);
+        }
         ovpu_unref(&punit);
     }
 
@@ -638,8 +640,9 @@ ovdec_drain_picture(OVDec *dec, OVFrame **frame_p)
     ret = ovdpb_drain_frame(dpb, frame_p, &punit);
 
     if (*frame_p) {
-        if (punit)
-        pp_process_frame(&dec->ppctx, punit, frame_p);
+        if (punit && !dec->ppctx.pp_disable) {
+            pp_process_frame(&dec->ppctx, punit, frame_p);
+        }
         ovpu_unref(&punit);
     }
 
