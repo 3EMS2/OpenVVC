@@ -210,20 +210,10 @@ set_max_pic_part_info(struct PicPartInfo *pic_info, const OVSPS *const sps, cons
 }
 
 static int
-init_vcl_decoder(OVDec *const ovdec, OVSliceDec *sldec, const OVNVCLCtx *const nvcl_ctx,
-                OVNALUnit * nalu, uint32_t nb_sh_bytes)
+update_decoder_buffers(OVDec *ovdec)
 {
-
-    int ret;
-
-    ret = decinit_update_params(&ovdec->active_params, nvcl_ctx);
-    if (ret < 0) {
-        ov_log(ovdec, OVLOG_ERROR, "Failed to activate parameters\n");
-        return ret;
-    }
-
     if (!ovdec->dpb) {
-         ret = ovdpb_init(&ovdec->dpb, &ovdec->active_params);
+         int ret = ovdpb_init(&ovdec->dpb, &ovdec->active_params);
          ovdec->active_params.sps_info.req_dpb_realloc = 0;
          if (ret < 0) {
              ov_log(NULL, OVLOG_ERROR, "Failed DPB init\n");
@@ -231,7 +221,7 @@ init_vcl_decoder(OVDec *const ovdec, OVSliceDec *sldec, const OVNVCLCtx *const n
          }
     } else if (ovdec->active_params.sps_info.req_dpb_realloc) {
          dpbpriv_uninit_framepool(&ovdec->dpb->internal);
-         ret = dpbpriv_init_framepool(&ovdec->dpb->internal, ovdec->active_params.sps);
+         int ret = dpbpriv_init_framepool(&ovdec->dpb->internal, ovdec->active_params.sps);
          if (ret < 0) {
              ov_log(NULL, OVLOG_ERROR, "Failed frame pool init\n");
              return ret;
@@ -245,12 +235,30 @@ init_vcl_decoder(OVDec *const ovdec, OVSliceDec *sldec, const OVNVCLCtx *const n
         }
         struct PicPartInfo pic_info_max;
         set_max_pic_part_info(&pic_info_max, ovdec->active_params.sps, ovdec->active_params.pps);
-        ret = mvpool_init(&ovdec->mv_pool, &pic_info_max);
+        int ret = mvpool_init(&ovdec->mv_pool, &pic_info_max);
         if (ret < 0) {
             ov_log(NULL, OVLOG_ERROR, "Failed pool TMVP buffer pool init\n");
             return ret;
         }
         ovdec->active_params.sps_info.req_mvpool_realloc = 0;
+    }
+
+    return 0;
+}
+
+static int
+init_vcl_decoder(OVDec *const ovdec, OVSliceDec *sldec, const OVNVCLCtx *const nvcl_ctx,
+                OVNALUnit * nalu, uint32_t nb_sh_bytes)
+{
+    int ret = decinit_update_params(&ovdec->active_params, nvcl_ctx);
+    if (ret < 0) {
+        ov_log(ovdec, OVLOG_ERROR, "Failed to activate parameters\n");
+        return ret;
+    }
+
+    ret = update_decoder_buffers(ovdec);
+    if (ret < 0) {
+        return ret;
     }
 
     //Temporary: copy active parameters
@@ -468,55 +476,58 @@ ovdec_uninit_main_thread(OVDec *ovdec)
 }
 
 static int
-decode_nal_unit(OVDec *const ovdec, OVNALUnit * nalu)
+submit_slice(OVDec *ovdec, OVNALUnit *nalu, int nb_bytes)
+{
+    /* Select the first available slice decoder, or wait until one is available */
+    OVNVCLCtx *const nvcl_ctx = &ovdec->nvcl_ctx;
+    OVSliceDec *sldec = ovdec_select_subdec(ovdec);
+
+    /* Beyond this point unref current picture on failure */
+    int ret = init_vcl_decoder(ovdec, sldec, nvcl_ctx, nalu, nb_bytes);
+
+    if (ret < 0) {
+        ov_log(NULL, OVLOG_ERROR, "Error in slice init.\n");
+        if (!sldec->pic && ovdec->dpb && ovdec->dpb->active_pic) {
+            ovdpb_report_decoded_frame(ovdec->dpb->active_pic);
+        }
+        slicedec_finish_decoding(sldec);
+        goto failvcl;
+    }
+
+    ret = slicedec_submit_rect_entries(sldec, &sldec->active_params, ovdec->main_thread.entry_threads_list);
+failvcl:
+    return ret;
+}
+
+static int
+decode_nal_unit(OVDec *const ovdec, OVNALUnit *nalu)
 {
     enum OVNALUType nalu_type = nalu->type;
     OVNVCLCtx *const nvcl_ctx = &ovdec->nvcl_ctx;
+    int ret = 0;
 
-    int ret = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
-
-    if (ovnalu_is_vcl(nalu_type)) {
-        if (ret < 0) {
-            ov_log(NULL, OVLOG_ERROR, "Error in slice reading.\n");
-            if (ovdec->dpb && ovdec->dpb->active_pic) {
-                ovdpb_report_decoded_frame(ovdec->dpb->active_pic);
-            }
-            return ret;
-        } else {
-            /* Select the first available slice decoder, or wait until one is available */
-            OVSliceDec *sldec = ovdec_select_subdec(ovdec);
-
-            uint32_t nb_sh_bytes = ret;
-
-            /* Beyond this point unref current picture on failure */
-            ret = init_vcl_decoder(ovdec, sldec, nvcl_ctx, nalu, nb_sh_bytes);
-
-            if (ret < 0) {
-                ov_log(NULL, OVLOG_ERROR, "Error in slice init.\n");
-                if (!sldec->pic && ovdec->dpb && ovdec->dpb->active_pic) {
-                    ovdpb_report_decoded_frame(ovdec->dpb->active_pic);
-                }
-                slicedec_finish_decoding(sldec);
-                goto failvcl;
-            }
-
-            ret = slicedec_submit_rect_entries(sldec, &sldec->active_params, ovdec->main_thread.entry_threads_list);
-        }
-    } else {
-
-        if (ret < 0) {
-            goto fail;
-        }
+    int nb_bytes = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
+    if (nb_bytes < 0) {
+        goto failhls;
     }
 
-    return 0;
-
-fail:
-    return ret;
+    if (ovnalu_is_vcl(nalu_type)) {
+        ret = submit_slice(ovdec, nalu, nb_bytes);
+        if (ret < 0) return ret;
+    }
 
 failvcl:
-
     return ret;
+
+failhls:
+    if (ovnalu_is_vcl(nalu_type)) {
+        ov_log(NULL, OVLOG_ERROR, "Error in slice reading.\n");
+        if (ovdec->dpb && ovdec->dpb->active_pic) {
+            ovdpb_report_decoded_frame(ovdec->dpb->active_pic);
+        }
+        return OVVC_EINDATA;
+    }
+    return nb_bytes;
 }
 
 static int
@@ -532,6 +543,7 @@ vvc_decode_picture_unit(OVDec *ovdec, const OVPictureUnit *pu)
             //goto fail;
         }
     }
+
     if (ovdec->dpb)
         ovdec->dpb->active_pic = NULL;
 
