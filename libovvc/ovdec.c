@@ -246,8 +246,10 @@ update_decoder_buffers(OVDec *ovdec)
     return 0;
 }
 
+OVSliceDec * ovdec_select_subdec(OVDec *const ovdec);
+
 static int
-init_vcl_decoder(OVDec *const ovdec, OVSliceDec *sldec, const OVNVCLCtx *const nvcl_ctx,
+init_vcl_decoder(OVDec *const ovdec, OVSliceDec **sldec_p, const OVNVCLCtx *const nvcl_ctx,
                 OVNALUnit * nalu, uint32_t nb_sh_bytes)
 {
     int ret = decinit_update_params(&ovdec->active_params, nvcl_ctx);
@@ -261,6 +263,9 @@ init_vcl_decoder(OVDec *const ovdec, OVSliceDec *sldec, const OVNVCLCtx *const n
         return ret;
     }
 
+    OVSliceDec *sldec = ovdec_select_subdec(ovdec);
+
+    *sldec_p = sldec;
     //Temporary: copy active parameters
     slicedec_ref_params(sldec, &ovdec->active_params);
 
@@ -480,10 +485,10 @@ submit_slice(OVDec *ovdec, OVNALUnit *nalu, int nb_bytes)
 {
     /* Select the first available slice decoder, or wait until one is available */
     OVNVCLCtx *const nvcl_ctx = &ovdec->nvcl_ctx;
-    OVSliceDec *sldec = ovdec_select_subdec(ovdec);
+    OVSliceDec *sldec = NULL;
 
     /* Beyond this point unref current picture on failure */
-    int ret = init_vcl_decoder(ovdec, sldec, nvcl_ctx, nalu, nb_bytes);
+    int ret = init_vcl_decoder(ovdec, &sldec, nvcl_ctx, nalu, nb_bytes);
 
     if (ret < 0) {
         ov_log(NULL, OVLOG_ERROR, "Error in slice init.\n");
