@@ -231,7 +231,7 @@ failattach:
 
 failinit:
     if (pinfo_fmt.fmt_str && pinfo_fmt.fmt_str != default_info_fmt) {
-        free(pinfo_fmt.fmt_str);
+        free((void *)pinfo_fmt.fmt_str);
     }
     return ret;
 }
