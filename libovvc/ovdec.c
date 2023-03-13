@@ -470,21 +470,12 @@ ovdec_uninit_main_thread(OVDec *ovdec)
 static int
 decode_nal_unit(OVDec *const ovdec, OVNALUnit * nalu)
 {
-    OVNVCLCtx *const nvcl_ctx = &ovdec->nvcl_ctx;
     enum OVNALUType nalu_type = nalu->type;
+    OVNVCLCtx *const nvcl_ctx = &ovdec->nvcl_ctx;
 
     int ret = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
 
-    switch (nalu_type) {
-    case OVNALU_TRAIL:
-    case OVNALU_STSA:
-    case OVNALU_RADL:
-    case OVNALU_RASL:
-    case OVNALU_IDR_W_RADL:
-    case OVNALU_IDR_N_LP:
-    case OVNALU_CRA:
-    case OVNALU_GDR:
-
+    if (ovnalu_is_vcl(nalu_type)) {
         if (ret < 0) {
             ov_log(NULL, OVLOG_ERROR, "Error in slice reading.\n");
             if (ovdec->dpb && ovdec->dpb->active_pic) {
@@ -511,24 +502,11 @@ decode_nal_unit(OVDec *const ovdec, OVNALUnit * nalu)
 
             ret = slicedec_submit_rect_entries(sldec, &sldec->active_params, ovdec->main_thread.entry_threads_list);
         }
+    } else {
 
-        break;
-    case OVNALU_PREFIX_SEI:
-    case OVNALU_SUFFIX_SEI:
-    case OVNALU_SUFFIX_APS:
-    case OVNALU_PREFIX_APS:
-    case OVNALU_VPS:
-    case OVNALU_SPS:
-    case OVNALU_PPS:
-    case OVNALU_PH:
-    case OVNALU_EOS:
-    case OVNALU_EOB:
-    case OVNALU_AUD:
-    default:
         if (ret < 0) {
             goto fail;
         }
-        break;
     }
 
     return 0;

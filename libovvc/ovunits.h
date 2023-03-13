@@ -209,6 +209,14 @@ void ovnalu_unref(OVNALUnit **nalu_p);
 /* Allocate a new OVNAUnit and set all its parameters to default */
 int ovnalu_create(OVNALUnit **nalu_p);
 
+/* Test whether an OVNALU type is a VCL NALU
+ */
+static inline uint8_t
+ovnalu_is_vcl(enum OVNALUType nalu_type)
+{
+    return nalu_type < OVNALU_OPI;
+}
+
 /* Reference an OVPictureUnit pointer
  *
  * Add a new reference to an OVPictureUnit pointed by src and increase its
