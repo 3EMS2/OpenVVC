@@ -156,23 +156,23 @@ ovdec_set_opt(OVDec *const ovdec, const char *const opt_str, void *opt_val)
     return 0;
 }
 
-static void ovdec_uninit_subdec_list(OVDec *vvcdec);
+static void ovdec_uninit_subdec_list(OVDec *ovdec);
 
 static int
-ovdec_init_subdec_list(OVDec *dec)
+ovdec_init_subdec_list(OVDec *ovdec)
 {
     int ret;
-    ov_log(NULL, OVLOG_TRACE, "Creating %d Slice decoders\n", dec->nb_frame_th);
-    if (!dec->subdec_list)
-        dec->subdec_list = ov_mallocz(sizeof(OVSliceDec*) * dec->nb_frame_th);
+    ov_log(NULL, OVLOG_TRACE, "Creating %d Slice decoders\n", ovdec->nb_frame_th);
+    if (!ovdec->subdec_list)
+        ovdec->subdec_list = ov_mallocz(sizeof(OVSliceDec*) * ovdec->nb_frame_th);
 
-    for (int i = 0; i < dec->nb_frame_th; ++i){
-        dec->subdec_list[i] = ov_mallocz(sizeof(OVSliceDec));
-        ret = slicedec_init(dec->subdec_list[i]);
+    for (int i = 0; i < ovdec->nb_frame_th; ++i){
+        ovdec->subdec_list[i] = ov_mallocz(sizeof(OVSliceDec));
+        ret = slicedec_init(ovdec->subdec_list[i]);
         if (ret < 0) {
             return OVVC_ENOMEM;
         }
-        dec->subdec_list[i]->slice_sync.main_thread = &dec->main_thread;
+        ovdec->subdec_list[i]->slice_sync.main_thread = &ovdec->main_thread;
     }
 
     return 0;
@@ -210,53 +210,53 @@ set_max_pic_part_info(struct PicPartInfo *pic_info, const OVSPS *const sps, cons
 }
 
 static int
-init_vcl_decoder(OVDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const nvcl_ctx,
+init_vcl_decoder(OVDec *const ovdec, OVSliceDec *sldec, const OVNVCLCtx *const nvcl_ctx,
                 OVNALUnit * nalu, uint32_t nb_sh_bytes)
 {
 
     int ret;
 
-    ret = decinit_update_params(&dec->active_params, nvcl_ctx);
+    ret = decinit_update_params(&ovdec->active_params, nvcl_ctx);
     if (ret < 0) {
-        ov_log(dec, OVLOG_ERROR, "Failed to activate parameters\n");
+        ov_log(ovdec, OVLOG_ERROR, "Failed to activate parameters\n");
         return ret;
     }
 
-    if (!dec->dpb) {
-         ret = ovdpb_init(&dec->dpb, &dec->active_params);
-         dec->active_params.sps_info.req_dpb_realloc = 0;
+    if (!ovdec->dpb) {
+         ret = ovdpb_init(&ovdec->dpb, &ovdec->active_params);
+         ovdec->active_params.sps_info.req_dpb_realloc = 0;
          if (ret < 0) {
              ov_log(NULL, OVLOG_ERROR, "Failed DPB init\n");
              return ret;
          }
-    } else if (dec->active_params.sps_info.req_dpb_realloc) {
-         dpbpriv_uninit_framepool(&dec->dpb->internal);
-         ret = dpbpriv_init_framepool(&dec->dpb->internal, dec->active_params.sps);
+    } else if (ovdec->active_params.sps_info.req_dpb_realloc) {
+         dpbpriv_uninit_framepool(&ovdec->dpb->internal);
+         ret = dpbpriv_init_framepool(&ovdec->dpb->internal, ovdec->active_params.sps);
          if (ret < 0) {
              ov_log(NULL, OVLOG_ERROR, "Failed frame pool init\n");
              return ret;
          }
-         dec->active_params.sps_info.req_dpb_realloc = 0;
+         ovdec->active_params.sps_info.req_dpb_realloc = 0;
     }
 
-    if (dec->active_params.sps_info.req_mvpool_realloc) {
-        if (dec->mv_pool) {
-            mvpool_uninit(&dec->mv_pool);
+    if (ovdec->active_params.sps_info.req_mvpool_realloc) {
+        if (ovdec->mv_pool) {
+            mvpool_uninit(&ovdec->mv_pool);
         }
         struct PicPartInfo pic_info_max;
-        set_max_pic_part_info(&pic_info_max, dec->active_params.sps, dec->active_params.pps);
-        ret = mvpool_init(&dec->mv_pool, &pic_info_max);
+        set_max_pic_part_info(&pic_info_max, ovdec->active_params.sps, ovdec->active_params.pps);
+        ret = mvpool_init(&ovdec->mv_pool, &pic_info_max);
         if (ret < 0) {
             ov_log(NULL, OVLOG_ERROR, "Failed pool TMVP buffer pool init\n");
             return ret;
         }
-        dec->active_params.sps_info.req_mvpool_realloc = 0;
+        ovdec->active_params.sps_info.req_mvpool_realloc = 0;
     }
 
     //Temporary: copy active parameters
-    slicedec_ref_params(sldec, &dec->active_params);
+    slicedec_ref_params(sldec, &ovdec->active_params);
 
-    ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &sldec->active_params, nalu->type, sldec, dec);
+    ret = ovdpb_init_picture(ovdec->dpb, &sldec->pic, &sldec->active_params, nalu->type, sldec, ovdec);
     if (ret < 0) {
         ov_log(NULL, OVLOG_ERROR, "Failed picture init\n");
         return ret;
@@ -280,13 +280,13 @@ init_vcl_decoder(OVDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const nvc
 }
 
 static void
-ovdec_wait_entry_thread(OVDec *const dec, int i)
+ovdec_wait_entry_thread(OVDec *const ovdec, int i)
 {
     #if USE_THREADS
-    struct MainThread* th_main = &dec->main_thread;
+    struct MainThread* th_main = &ovdec->main_thread;
     struct EntryThread *entry_th_list = th_main->entry_threads_list;
     struct EntryThread *entry_th;
-    int nb_threads = dec->nb_frame_th;
+    int nb_threads = ovdec->nb_frame_th;
     do {
 
         entry_th = &entry_th_list[i];
@@ -307,11 +307,11 @@ ovdec_wait_entry_thread(OVDec *const dec, int i)
 }
 
 OVSliceDec *
-ovdec_select_subdec(OVDec *const dec)
+ovdec_select_subdec(OVDec *const ovdec)
 {
-    OVSliceDec **sldec_list = dec->subdec_list;
-    int nb_threads = dec->nb_frame_th;
-    struct MainThread* th_main = &dec->main_thread;
+    OVSliceDec **sldec_list = ovdec->subdec_list;
+    int nb_threads = ovdec->nb_frame_th;
+    struct MainThread* th_main = &ovdec->main_thread;
 
     OVSliceDec * slicedec;
     struct SliceSynchro* slice_sync;
@@ -350,9 +350,9 @@ ovdec_select_subdec(OVDec *const dec)
 }
 
 static void
-ovdec_init_entry_fifo(OVDec *vvcdec, int nb_entry_th)
+ovdec_init_entry_fifo(OVDec *ovdec, int nb_entry_th)
 {
-    struct MainThread* main_thread = &vvcdec->main_thread;
+    struct MainThread* main_thread = &ovdec->main_thread;
     struct EntriesFIFO *fifo = &main_thread->entries_fifo;
 
     pthread_mutex_lock(&main_thread->io_mtx);
@@ -367,9 +367,9 @@ ovdec_init_entry_fifo(OVDec *vvcdec, int nb_entry_th)
 }
 
 static void
-ovdec_uninit_entry_jobs(OVDec *vvcdec)
+ovdec_uninit_entry_jobs(OVDec *ovdec)
 {
-    struct MainThread* main_thread = &vvcdec->main_thread;
+    struct MainThread* main_thread = &ovdec->main_thread;
     ov_freep(&main_thread->entries_fifo);
 }
 
@@ -386,23 +386,23 @@ ovdec_wait_entries(OVDec *ovdec)
 }
 
 static void
-ovdec_uninit_entry_threads(OVDec *vvcdec)
+ovdec_uninit_entry_threads(OVDec *ovdec)
 {
     int i;
     void *ret;
-    ov_log(NULL, OVLOG_TRACE, "Deleting %d entry threads\n", vvcdec->nb_entry_th);
-    struct MainThread *th_main = &vvcdec->main_thread;
+    ov_log(NULL, OVLOG_TRACE, "Deleting %d entry threads\n", ovdec->nb_entry_th);
+    struct MainThread *th_main = &ovdec->main_thread;
 
     /* Wait for the job fifo to be empty before joining entry thread.
     */
-    ovdec_wait_entries(vvcdec);
+    ovdec_wait_entries(ovdec);
 
     struct EntryThread *entry_threads_list = th_main->entry_threads_list;
-    for (i = 0; i < vvcdec->nb_entry_th; ++i){
+    for (i = 0; i < ovdec->nb_entry_th; ++i){
         struct EntryThread *th_entry = &entry_threads_list[i];
 
         /* Signal and join entry thread.  */
-        ovdec_wait_entry_thread(vvcdec, i);
+        ovdec_wait_entry_thread(ovdec, i);
 
         pthread_mutex_lock(&th_entry->entry_mtx);
         th_entry->kill = 1;
@@ -416,15 +416,15 @@ ovdec_uninit_entry_threads(OVDec *vvcdec)
 }
 
 static int
-ovdec_init_entry_threads(OVDec *vvcdec, int nb_entry_th)
+ovdec_init_entry_threads(OVDec *ovdec, int nb_entry_th)
 {
     int i, ret;
     ov_log(NULL, OVLOG_TRACE, "Creating %d entry threads\n", nb_entry_th);
-    vvcdec->main_thread.entry_threads_list = ov_mallocz(nb_entry_th*sizeof(struct EntryThread));
+    ovdec->main_thread.entry_threads_list = ov_mallocz(nb_entry_th*sizeof(struct EntryThread));
     for (i = 0; i < nb_entry_th; ++i){
-        struct EntryThread *entry_th = &vvcdec->main_thread.entry_threads_list[i];
+        struct EntryThread *entry_th = &ovdec->main_thread.entry_threads_list[i];
 
-        entry_th->main_thread = &vvcdec->main_thread;
+        entry_th->main_thread = &ovdec->main_thread;
 
         ret = ovthread_init_entry_thread(entry_th);
         if (ret < 0)
@@ -435,16 +435,16 @@ ovdec_init_entry_threads(OVDec *vvcdec, int nb_entry_th)
 
 failthread:
     ov_log(NULL, OVLOG_ERROR,  "Entry threads creation failed\n");
-    ovdec_uninit_entry_threads(vvcdec);
+    ovdec_uninit_entry_threads(ovdec);
 
     return OVVC_ENOMEM;
 }
 
 static int
-ovdec_init_main_thread(OVDec *vvcdec)
+ovdec_init_main_thread(OVDec *ovdec)
 {
-    struct MainThread* main_thread = &vvcdec->main_thread;
-    int nb_entry_th = vvcdec->nb_entry_th;
+    struct MainThread* main_thread = &ovdec->main_thread;
+    int nb_entry_th = ovdec->nb_entry_th;
 
     main_thread->nb_entry_th = nb_entry_th;
 
@@ -453,25 +453,24 @@ ovdec_init_main_thread(OVDec *vvcdec)
     pthread_mutex_init(&main_thread->io_mtx, NULL);
     pthread_cond_init(&main_thread->io_cnd,  NULL);
 
-    ovdec_init_entry_fifo(vvcdec, nb_entry_th);
-    ovdec_init_entry_threads(vvcdec, nb_entry_th);
-    return 0;
-
-}
-
-static int
-ovdec_uninit_main_thread(OVDec *vvcdec)
-{
-    ovdec_uninit_entry_threads(vvcdec);
-    ovdec_uninit_entry_jobs(vvcdec);
-
+    ovdec_init_entry_fifo(ovdec, nb_entry_th);
+    ovdec_init_entry_threads(ovdec, nb_entry_th);
     return 0;
 }
 
 static int
-decode_nal_unit(OVDec *const vvcdec, OVNALUnit * nalu)
+ovdec_uninit_main_thread(OVDec *ovdec)
 {
-    OVNVCLCtx *const nvcl_ctx = &vvcdec->nvcl_ctx;
+    ovdec_uninit_entry_threads(ovdec);
+    ovdec_uninit_entry_jobs(ovdec);
+
+    return 0;
+}
+
+static int
+decode_nal_unit(OVDec *const ovdec, OVNALUnit * nalu)
+{
+    OVNVCLCtx *const nvcl_ctx = &ovdec->nvcl_ctx;
     enum OVNALUType nalu_type = nalu->type;
 
     int ret = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
@@ -488,29 +487,29 @@ decode_nal_unit(OVDec *const vvcdec, OVNALUnit * nalu)
 
         if (ret < 0) {
             ov_log(NULL, OVLOG_ERROR, "Error in slice reading.\n");
-            if (vvcdec->dpb && vvcdec->dpb->active_pic) {
-                ovdpb_report_decoded_frame(vvcdec->dpb->active_pic);
+            if (ovdec->dpb && ovdec->dpb->active_pic) {
+                ovdpb_report_decoded_frame(ovdec->dpb->active_pic);
             }
             return ret;
         } else {
             /* Select the first available slice decoder, or wait until one is available */
-            OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
+            OVSliceDec *sldec = ovdec_select_subdec(ovdec);
 
             uint32_t nb_sh_bytes = ret;
 
             /* Beyond this point unref current picture on failure */
-            ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, nb_sh_bytes);
+            ret = init_vcl_decoder(ovdec, sldec, nvcl_ctx, nalu, nb_sh_bytes);
 
             if (ret < 0) {
                 ov_log(NULL, OVLOG_ERROR, "Error in slice init.\n");
-                if (!sldec->pic && vvcdec->dpb && vvcdec->dpb->active_pic) {
-                    ovdpb_report_decoded_frame(vvcdec->dpb->active_pic);
+                if (!sldec->pic && ovdec->dpb && ovdec->dpb->active_pic) {
+                    ovdpb_report_decoded_frame(ovdec->dpb->active_pic);
                 }
                 slicedec_finish_decoding(sldec);
                 goto failvcl;
             }
 
-            ret = slicedec_submit_rect_entries(sldec, &sldec->active_params, vvcdec->main_thread.entry_threads_list);
+            ret = slicedec_submit_rect_entries(sldec, &sldec->active_params, ovdec->main_thread.entry_threads_list);
         }
 
         break;
@@ -543,66 +542,66 @@ failvcl:
 }
 
 static int
-vvc_decode_picture_unit(OVDec *dec, const OVPictureUnit *pu)
+vvc_decode_picture_unit(OVDec *ovdec, const OVPictureUnit *pu)
 {
     int i;
     int ret;
-    ovpu_ref(&dec->pu, pu);
+    ovpu_ref(&ovdec->pu, pu);
     ov_log(NULL, OVLOG_TRACE, "Picture Unit.\n");
     for (i = 0; i < pu->nb_nalus; ++i) {
-        ret = decode_nal_unit(dec, pu->nalus[i]);
+        ret = decode_nal_unit(ovdec, pu->nalus[i]);
         if (ret < 0) {
             //goto fail;
         }
     }
-    if (dec->dpb)
-        dec->dpb->active_pic = NULL;
+    if (ovdec->dpb)
+        ovdec->dpb->active_pic = NULL;
 
-    ovpu_unref(&dec->pu);
+    ovpu_unref(&ovdec->pu);
     //printf("PU END\n");
     return 0;
 
 fail:
     /* Error processing if needed */
-    dec->dpb->active_pic = NULL;
-    ovpu_unref(&dec->pu);
+    ovdec->dpb->active_pic = NULL;
+    ovpu_unref(&ovdec->pu);
     return ret;
 }
 
 int
-ovdec_submit_picture_unit(OVDec *vvcdec, const OVPictureUnit *const pu)
+ovdec_submit_picture_unit(OVDec *ovdec, const OVPictureUnit *const pu)
 {
     int ret = 0;
 
-    ret = vvc_decode_picture_unit(vvcdec, pu);
+    ret = vvc_decode_picture_unit(ovdec, pu);
 
     return ret;
 }
 
 int
-ovdec_receive_picture(OVDec *dec, OVFrame **frame_p)
+ovdec_receive_picture(OVDec *ovdec, OVFrame **frame_p)
 {
     struct OVPictureUnit *punit;
-    OVDPB *dpb = dec->dpb;
+    OVDPB *dpb = ovdec->dpb;
     int ret = 0;
 
     if (!dpb) {
-        ov_log(dec, OVLOG_TRACE, "No DPB on output request.\n");
+        ov_log(ovdec, OVLOG_TRACE, "No DPB on output request.\n");
         return 0;
     }
 
     ret = ovdpb_output_pic(dpb, frame_p, &punit);
 
     if (*frame_p) {
-        (*frame_p)->frame_info.color_desc.colour_primaries = dec->active_params.sps_info.color_desc.colour_primaries;
-        (*frame_p)->frame_info.color_desc.transfer_characteristics = dec->active_params.sps_info.color_desc.transfer_characteristics;
-        (*frame_p)->frame_info.color_desc.matrix_coeffs = dec->active_params.sps_info.color_desc.matrix_coeffs;
-        (*frame_p)->frame_info.color_desc.full_range = dec->active_params.sps_info.color_desc.full_range;
+        (*frame_p)->frame_info.color_desc.colour_primaries = ovdec->active_params.sps_info.color_desc.colour_primaries;
+        (*frame_p)->frame_info.color_desc.transfer_characteristics = ovdec->active_params.sps_info.color_desc.transfer_characteristics;
+        (*frame_p)->frame_info.color_desc.matrix_coeffs = ovdec->active_params.sps_info.color_desc.matrix_coeffs;
+        (*frame_p)->frame_info.color_desc.full_range = ovdec->active_params.sps_info.color_desc.full_range;
     }
 
     if (*frame_p) {
-        if (punit && !dec->ppctx.pp_disable) {
-            pp_process_frame(&dec->ppctx, punit, frame_p);
+        if (punit && !ovdec->ppctx.pp_disable) {
+            pp_process_frame(&ovdec->ppctx, punit, frame_p);
         }
         ovpu_unref(&punit);
     }
@@ -611,37 +610,37 @@ ovdec_receive_picture(OVDec *dec, OVFrame **frame_p)
 }
 
 static void
-ovdec_wait_entry_threads(OVDec *vvcdec)
+ovdec_wait_entry_threads(OVDec *ovdec)
 {
-    struct MainThread *th_main = &vvcdec->main_thread;
+    struct MainThread *th_main = &ovdec->main_thread;
     int i;
 
-    ovdec_wait_entries(vvcdec);
+    ovdec_wait_entries(ovdec);
 
-    for (i = 0; i < vvcdec->nb_entry_th; ++i){
-        ovdec_wait_entry_thread(vvcdec, i);
+    for (i = 0; i < ovdec->nb_entry_th; ++i){
+        ovdec_wait_entry_thread(ovdec, i);
     }
 }
 
 int
-ovdec_drain_picture(OVDec *dec, OVFrame **frame_p)
+ovdec_drain_picture(OVDec *ovdec, OVFrame **frame_p)
 {
     struct OVPictureUnit *punit;
-    OVDPB *dpb = dec->dpb;
+    OVDPB *dpb = ovdec->dpb;
     int ret;
 
-    ovdec_wait_entry_threads(dec);
+    ovdec_wait_entry_threads(ovdec);
 
     if (!dpb) {
-        ov_log(dec, OVLOG_TRACE, "No DPB on output request.\n");
+        ov_log(ovdec, OVLOG_TRACE, "No DPB on output request.\n");
         return 0;
     }
 
     ret = ovdpb_drain_frame(dpb, frame_p, &punit);
 
     if (*frame_p) {
-        if (punit && !dec->ppctx.pp_disable) {
-            pp_process_frame(&dec->ppctx, punit, frame_p);
+        if (punit && !ovdec->ppctx.pp_disable) {
+            pp_process_frame(&ovdec->ppctx, punit, frame_p);
         }
         ovpu_unref(&punit);
     }
@@ -650,16 +649,16 @@ ovdec_drain_picture(OVDec *dec, OVFrame **frame_p)
 }
 
 int
-ovdec_flush(OVDec *dec)
+ovdec_flush(OVDec *ovdec)
 {
-    //ovdec_wait_entry_threads(dec);
+    //ovdec_wait_entry_threads(ovdec);
     struct OVPictureUnit *punit;
     OVFrame *frame;
-    OVDPB *dpb = dec->dpb;
+    OVDPB *dpb = ovdec->dpb;
 
-    fifo_flush(&dec->main_thread);
+    fifo_flush(&ovdec->main_thread);
 
-    ovdec_wait_entry_threads(dec);
+    ovdec_wait_entry_threads(ovdec);
     if (dpb) {
         while (ovdpb_drain_frame(dpb, &frame, &punit)) {
             if (frame) {
@@ -667,10 +666,10 @@ ovdec_flush(OVDec *dec)
                 ovframe_unref(&frame);
             }
         }
-        ovdpb_uninit(&dec->dpb);
+        ovdpb_uninit(&ovdec->dpb);
     }
 
-    decinit_unref_params(&dec->active_params);
+    decinit_unref_params(&ovdec->active_params);
 
 
     return 0;
@@ -797,54 +796,54 @@ fail:
 }
 
 static void
-ovdec_uninit_subdec_list(OVDec *vvcdec)
+ovdec_uninit_subdec_list(OVDec *ovdec)
 {
     OVSliceDec *sldec;
 
-    if (vvcdec != NULL)
+    if (ovdec != NULL)
     {
-        if (vvcdec->subdec_list) {
+        if (ovdec->subdec_list) {
 
-            ovdec_uninit_main_thread(vvcdec);
+            ovdec_uninit_main_thread(ovdec);
 
-            for (int i = 0; i < vvcdec->nb_frame_th; ++i){
-                sldec = vvcdec->subdec_list[i];
+            for (int i = 0; i < ovdec->nb_frame_th; ++i){
+                sldec = ovdec->subdec_list[i];
                 slicedec_uninit(&sldec);
             }
-            ov_freep(&vvcdec->subdec_list);
+            ov_freep(&ovdec->subdec_list);
 
         }
     }
 }
 
 int
-ovdec_close(OVDec *vvcdec)
+ovdec_close(OVDec *ovdec)
 {
     int not_dec;
-    if (vvcdec != NULL) {
+    if (ovdec != NULL) {
 
-        not_dec = vvcdec->name != decname;
+        not_dec = ovdec->name != decname;
 
         if (not_dec) goto fail;
 
-        nvcl_free_ctx(&vvcdec->nvcl_ctx);
-        decinit_unref_params(&vvcdec->active_params);
+        nvcl_free_ctx(&ovdec->nvcl_ctx);
+        decinit_unref_params(&ovdec->active_params);
 
-        ovdec_uninit_subdec_list(vvcdec);
+        ovdec_uninit_subdec_list(ovdec);
 
-        ovdpb_uninit(&vvcdec->dpb);
+        ovdpb_uninit(&ovdec->dpb);
 
-        if (vvcdec->mv_pool) {
-            mvpool_uninit(&vvcdec->mv_pool);
+        if (ovdec->mv_pool) {
+            mvpool_uninit(&ovdec->mv_pool);
         }
 
-        ov_free(vvcdec);
+        ov_free(ovdec);
 
         return 0;
     }
 
 fail:
-    ov_log(vvcdec, 3, "Trying to close a something not a decoder.\n");
+    ov_log(ovdec, 3, "Trying to close a something not a decoder.\n");
     return -1;
 }
 
