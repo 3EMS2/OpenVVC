@@ -497,7 +497,7 @@ compute_lfnst_4x4_sse(const int16_t* const src, int16_t* const dst,
 {
     uint64_t scan_map = 0xfbe7ad369c258140;
 
-    int16_t tmp[16];
+    DECLARE_ALIGNED(32, int16_t,  tmp)[16];
     const __m128i z = _mm_setzero_si128();
 
     for (int i = 0; i < 16; ++i) {
@@ -529,7 +529,7 @@ compute_lfnst_8x8(const int16_t* const src, int16_t* const dst,
 
     uint64_t scan_map = 0xfbe7ad369c258140;
 
-    int16_t tmp[16];
+    DECLARE_ALIGNED(32, int16_t,  tmp)[16];
 
     for (int i = 0; i < 16; ++i) {
         tmp[i] = src[scan_map & 0xF];
@@ -560,7 +560,7 @@ compute_lfnst_4x4_tr(const int16_t* const src, int16_t* const dst,
     uint64_t scan_map = 0xfbe7ad369c258140;
     const __m128i z = _mm_setzero_si128();
 
-    int16_t tmp[16];
+    DECLARE_ALIGNED(32,int16_t,tmp)[16];
 
     for (int i = 0; i < 16; ++i) {
         tmp[i] = src[scan_map & 0xF];
@@ -602,7 +602,7 @@ compute_lfnst_8x8_tr(const int16_t* const src, int16_t* const dst,
 
     uint64_t scan_map = 0xfbe7ad369c258140;
 
-    int16_t tmp[16];
+    DECLARE_ALIGNED(32, int16_t,  tmp)[16];
 
     for (int i = 0; i < 16; ++i) {
         tmp[i] = src[scan_map & 0xF];

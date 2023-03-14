@@ -319,7 +319,7 @@ rcn_residual(OVCTUDec *const ctudec,
         int nb_col = derive_nb_cols(sig_sb_map);
 
         if (lfnst_flag) {
-            int16_t lfnst_sb[16];
+            DECLARE_ALIGNED(32, int16_t,  lfnst_sb)[16];
 
             int tmp_shift = OVMIN(5,log2_tb_w);
 
@@ -758,7 +758,7 @@ rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 
     if (tu_info->lfnst_flag) {
         uint8_t lfnst_idx = tu_info->lfnst_idx;
-        int16_t lfnst_sb[16];
+        DECLARE_ALIGNED(32, int16_t,  lfnst_sb)[16];
         uint8_t log2_stride = OVMIN(5, log2_tb_w);
         uint8_t is_8x8 = log2_tb_w >= 3 && log2_tb_h >= 3;
 
