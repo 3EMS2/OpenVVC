@@ -303,16 +303,18 @@ static void
 lfnst_8x8_16(const int16_t* const src, __m128i* r,
              const int8_t* const lfnst_matrix)
 {
-    const int32_t *_src = (const int32_t*) src;
+    __m128i *_src = (__m128i *) src;
     __m128i x[2], c[4], l[2], d[4], a[4];
+
+    __m128i m = _mm_loadu_si128((__m128i*)src);
 
     a[0] = _mm_set1_epi32(64);
     a[1] = _mm_set1_epi32(64);
     a[2] = _mm_set1_epi32(64);
     a[3] = _mm_set1_epi32(64);
 
-    x[0] = _mm_set1_epi32(_src[0]);
-    x[1] = _mm_set1_epi32(_src[1]);
+    x[0] = _mm_shuffle_epi32(m, 0x00);
+    x[1] = _mm_shuffle_epi32(m, 0x55);
 
     c[0] = _mm_loadu_si128((__m128i *)&lfnst_matrix[0 * 48]);
     c[1] = _mm_loadu_si128((__m128i *)&lfnst_matrix[1 * 48]);
@@ -353,8 +355,8 @@ lfnst_8x8_16(const int16_t* const src, __m128i* r,
     a[3] = _mm_add_epi32(a[3], d[1]);
     a[3] = _mm_add_epi32(a[3], d[3]);
 
-    x[0] = _mm_set1_epi32(_src[2]);
-    x[1] = _mm_set1_epi32(_src[3]);
+    x[0] = _mm_shuffle_epi32(m, 0xAA);
+    x[1] = _mm_shuffle_epi32(m, 0xFF);
 
     c[0] = _mm_loadu_si128((__m128i *)&lfnst_matrix[4 * 48]);
     c[1] = _mm_loadu_si128((__m128i *)&lfnst_matrix[5 * 48]);
@@ -395,8 +397,9 @@ lfnst_8x8_16(const int16_t* const src, __m128i* r,
     a[3] = _mm_add_epi32(a[3], d[1]);
     a[3] = _mm_add_epi32(a[3], d[3]);
 
-    x[0] = _mm_set1_epi32(_src[4]);
-    x[1] = _mm_set1_epi32(_src[5]);
+    m = _mm_loadu_si128(_src + 1);
+    x[0] = _mm_shuffle_epi32(m, 0x00);
+    x[1] = _mm_shuffle_epi32(m, 0x55);
 
     c[0] = _mm_loadu_si128((__m128i *)&lfnst_matrix[8 * 48]);
     c[1] = _mm_loadu_si128((__m128i *)&lfnst_matrix[9 * 48]);
@@ -437,8 +440,8 @@ lfnst_8x8_16(const int16_t* const src, __m128i* r,
     a[3] = _mm_add_epi32(a[3], d[1]);
     a[3] = _mm_add_epi32(a[3], d[3]);
 
-    x[0] = _mm_set1_epi32(_src[6]);
-    x[1] = _mm_set1_epi32(_src[7]);
+    x[0] = _mm_shuffle_epi32(m, 0xAA);
+    x[1] = _mm_shuffle_epi32(m, 0xFF);
 
     c[0] = _mm_loadu_si128((__m128i *)&lfnst_matrix[12 * 48]);
     c[1] = _mm_loadu_si128((__m128i *)&lfnst_matrix[13 * 48]);
