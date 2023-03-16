@@ -408,7 +408,6 @@ filter_h_3_5(OVSample *src, const int stride, const int tc)
 
     OVSample* _src = src;
     for (int i = 0; i < 4; ++i) {
-        OVSample* srcQ = _src;
         ref_p[i] = (_src[-4] + _src[-3] + 1) >> 1;
         ref_q[i] = (_src[ 4] + _src[ 5] + 1) >> 1;
 
@@ -1646,8 +1645,8 @@ filter_chroma_strong_c_v(OVSample* src, const int stride, const int tc, uint8_t 
     int j;
     if (is_ctb_b) {
         for (j = 0; j < 2; ++j) {
-            const int16_t p3 = src[-stride * 4];
-            const int16_t p2 = src[-stride * 3];
+            //const int16_t p3 = src[-stride * 4];
+            //const int16_t p2 = src[-stride * 3];
             const int16_t p1 = src[-stride * 2];
             const int16_t p0 = src[-stride    ];
             const int16_t q0 = src[0          ];
