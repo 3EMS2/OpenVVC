@@ -541,7 +541,7 @@ setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_inf
         int sl_h_tile = pps->pps_num_slices_in_pic_minus1 ? pps->pps_slice_height_in_tiles_minus1[i] + 1 : tinfo->nb_tile_rows;
 
         int nb_tiles_entries = pps->pps_single_slice_per_subpic_flag ? 1 : sl_w_tile * sl_h_tile;
-        if (pps->pps_single_slice_per_subpic_flag) {
+        if (part_info->nb_slices > 1 && pps->pps_single_slice_per_subpic_flag) {
         /* FIXME num tile in subpic */
             sl_w_tile = 1;
             sl_h_tile = 1;
@@ -832,6 +832,8 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     if (!pps->pps_rect_slice_flag && nb_tiles_pic - sh->sh_slice_address > 1) {
         sh->sh_num_tiles_in_slice_minus1 = nvcl_read_u_expgolomb(rdr);
         slice->nb_entries = sh->sh_num_tiles_in_slice_minus1 + 1;
+    } else if (pps->pps_num_slices_in_pic_minus1 > 1 && pps->pps_single_slice_per_subpic_flag && tiles_in_slice) {
+        slice->nb_entries = nb_tiles_pic;
     }
 
     sh->sh_slice_type = I;
