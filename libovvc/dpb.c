@@ -426,8 +426,7 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc, uint8_t ph_pic_ou
     pic->cvs_id = dpb->cvs_id;
     pic->frame->poc = poc;
 
-    if (pic != dpb->active_pic)
-        ovdpb_reset_decoded_ctus(pic);
+    ovdpb_reset_decoded_ctus(pic);
 
 end:
     *pic_p = pic;
