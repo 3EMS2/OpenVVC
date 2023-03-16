@@ -433,12 +433,12 @@ end:
     *pic_p = pic;
 
     if (pic != dpb->active_pic) {
-    if (ph_pic_output_flag) {
-        ovdpb_new_ref_pic(pic, OV_OUTPUT_PIC_FLAG);
-        ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
-    } else {
-        ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
-    }
+        if (ph_pic_output_flag) {
+            ovdpb_new_ref_pic(pic, OV_OUTPUT_PIC_FLAG);
+            ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
+        } else {
+            ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
+        }
     }
     dpb->active_pic = pic;
 
