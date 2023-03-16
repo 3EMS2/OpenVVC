@@ -1411,7 +1411,6 @@ dct2_32x8(__m128i *x, __m128i *r)
     __m128i e[32], o[32], d[32];
 
     dct2_16x8(x+0, e+0);
-    int k;
 
     static const int16_t DCT_II_32_8_sse[8 * 40] = {
         90, 90, 88, 85, 82, 78, 73, 67,
@@ -1582,7 +1581,7 @@ vvc_inverse_dct_ii_4_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
 
     for (int j = 0; j < num_lines / 8; j++) {
-        __m128i x[4], d[8], r[8];
+        __m128i x[4], r[8];
 
         x[0] = _mm_load_si128((__m128i*)(src + 0 * src_stride));
         x[1] = _mm_load_si128((__m128i*)(src + 1 * src_stride));
@@ -1610,7 +1609,7 @@ vvc_inverse_dct_ii_4_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
     if (!(num_lines & 0x7)) return;
 
     if (num_lines & 0x4){
-        __m128i x[2], d[4], r[4];
+        __m128i x[2], r[4];
 
         x[0] = _mm_unpacklo_epi64(
                 _mm_loadl_epi64((__m128i*)(src + 0 * src_stride)),
@@ -1642,7 +1641,7 @@ vvc_inverse_dct_ii_4_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
     }
 
     if (num_lines & 0x2){
-        __m128i x[2], d[2], r[2];
+        __m128i x[2], r[2];
 
         x[0] = _mm_unpacklo_epi32(
                 _mm_loadl_epi64((__m128i*)(src + 0 * src_stride)),
@@ -1682,7 +1681,7 @@ idct_ii_8_8lines_red4(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                       int line_brk, int shift)
 {
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
-    __m128i x[8], d[24], r[16];
+    __m128i x[8], r[16];
 
     x[0] = _mm_load_si128((__m128i*)(src + 0 * src_stride));
     x[1] = _mm_load_si128((__m128i*)(src + 2 * src_stride));
@@ -1719,7 +1718,7 @@ idct_ii_8_8lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                  int line_brk, int shift)
 {
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
-    __m128i x[8], d[24], r[16];
+    __m128i x[8], r[16];
 
     if (line_brk <= 4) {
         idct_ii_8_8lines_red4(src, dst, src_stride, line_brk, shift);
@@ -1756,7 +1755,7 @@ static void
 idct_ii_8_4lines_red4(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                       int line_brk, int shift)
 {
-    __m128i x[10], d[8], r[8];
+    __m128i x[10], r[8];
 
     x[0] = _mm_unpacklo_epi64(_mm_loadl_epi64((__m128i*)(src + 0 * src_stride)),
                               _mm_loadl_epi64((__m128i*)(src + 2 * src_stride)));
@@ -1809,7 +1808,7 @@ static void
 idct_ii_8_4lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                  int line_brk, int shift)
 {
-    __m128i x[10], d[8], r[8];
+    __m128i x[10], r[8];
 
     if (line_brk <= 4) {
         idct_ii_8_4lines_red4(src, dst, src_stride, line_brk, shift);
@@ -1862,7 +1861,6 @@ idct_ii_8_2lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                  int line_brk, int shift)
 {
     __m128i x[6];
-    __m128i d[6];
     __m128i r[4];
 
     x[0] = _mm_unpacklo_epi32(_mm_loadl_epi64((__m128i*)(src + 0 * src_stride)),
@@ -1908,8 +1906,6 @@ void
 vvc_inverse_dct_ii_8_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                          int num_lines, int line_brk, int shift)
 {
-    __m128i add = _mm_set1_epi32(1 << (shift - 1));
-
     for (int j = 0; j < num_lines / 8; j++) {
         idct_ii_8_8lines(src, dst, src_stride, line_brk, shift);
         src += 8;
@@ -1934,7 +1930,7 @@ idct_ii_16_8lines_red4(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                        int line_brk, int shift)
 {
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
-    __m128i x[72], d[32], r[32];
+    __m128i x[72], r[32];
 
     #if 0
     if (line_brk <= 8) {
@@ -1994,7 +1990,7 @@ idct_ii_16_8lines_red8(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                        int line_brk, int shift)
 {
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
-    __m128i x[72], d[32], r[32];
+    __m128i x[72], r[32];
 
     if (line_brk <= 4) {
         idct_ii_16_8lines_red4(src, dst, src_stride, line_brk, shift);
@@ -2054,7 +2050,7 @@ idct_ii_16_8lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                   int line_brk, int shift)
 {
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
-    __m128i x[72], d[32], r[32];
+    __m128i x[72], r[32];
 
     if (line_brk <= 8) {
         idct_ii_16_8lines_red8(src, dst, src_stride, line_brk, shift);
@@ -2106,7 +2102,7 @@ static void
 idct_ii_16_4lines_red4(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                        int line_brk, int shift)
 {
-    __m128i x[42], d[16], r[16];
+    __m128i x[42], r[16];
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
 
     x[0] = _mm_unpacklo_epi64(_mm_loadl_epi64((__m128i*)(src +  0 * src_stride)),
@@ -2192,7 +2188,7 @@ static void
 idct_ii_16_4lines_red8(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                        int line_brk, int shift)
 {
-    __m128i x[42], d[16], r[16];
+    __m128i x[42], r[16];
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
 
     if (line_brk <= 4){
@@ -2284,7 +2280,7 @@ static void
 idct_ii_16_4lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                   int line_brk, int shift)
 {
-    __m128i x[42], d[16], r[16];
+    __m128i x[42], r[16];
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
     if (line_brk <= 8){
         idct_ii_16_4lines_red8(src, dst, src_stride, line_brk, shift);
@@ -2320,28 +2316,6 @@ idct_ii_16_4lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
         }
     }
 
-    static const int16_t DCT_II_16_4_sse[8 * 16] = {
-        64, 64, 64, 64, 83, 36, 83, 36,
-        64, -64, 64, -64, 36, -83, 36, -83,
-        64, 64, 64, 64, 36, 83, 36, 83,
-        -64, 64, -64, 64, -83, 36, -83, 36,
-        89, 75, 18, 50, 89, 75, 18, 50,
-        75, -18, -50, -89, 75, -18, -50, -89,
-        50, -89, 75, 18, 50, -89, 75, 18,
-        18, -50, -89, 75, 18, -50, -89, 75,
-        90,  87,  80,  70,  57,  43,  25,   9,
-        87,  57,   9, -43, -80, -90, -70, -25,
-        80,   9, -70, -87, -25,  57,  90,  43,
-        70, -43, -87,   9,  90,  25, -80, -57,
-        57, -80, -25,  90,  -9, -87,  43,  70,
-        43, -90,  57,  25, -87,  70,   9, -80,
-        25, -70,  90, -80,  43,   9, -57,  87,
-        9, -25,  43, -57,  70, -80,  87, -90
-    };
-
-    for (int k = 0; k < 16; k++) {
-        d[k] = _mm_load_si128((__m128i*)(DCT_II_16_4_sse + 8 * k));
-    }
 
     dct2_16x4(x, r);
 
@@ -2364,7 +2338,7 @@ static void
 idct_ii_16_2lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                   int line_brk, int shift)
 {
-    __m128i x[24], d[14], r[8];
+    __m128i x[24], r[8];
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
 
     x[0] = _mm_unpacklo_epi32(_mm_loadl_epi64((__m128i*)(src +  0 * src_stride)),
@@ -2559,17 +2533,11 @@ dct2_8x8_red2(__m128i *x, __m128i *r)
 static inline void
 dct2_8x8_red1(__m128i *x, __m128i *r)
 {
-    __m128i e[8], o[8], oo[8], d[4];
-    __m128i m[8], z;//a[4],
+    __m128i e[8], o[8];
+    __m128i z;//a[4],
 
     dct2_4x8_red1(x+0, e);
 
-    d[0] = _mm_set1_epi16(DCT_II_16[32 + 0]);
-    d[1] = _mm_set1_epi16(DCT_II_16[32 + 1]);
-    d[2] = _mm_set1_epi16(DCT_II_16[32 + 2]);
-    d[3] = _mm_set1_epi16(DCT_II_16[32 + 3]);
-
-    __m128i tmp[4];
     z = _mm_setzero_si128();
 
     #if 0
@@ -2780,7 +2748,6 @@ dct2_32x8_red4(__m128i *x, __m128i *r)
         82, 88, 54, -4, -61, -90, -78, -31,
     };
 
-    __m128i z = _mm_setzero_si128();
     odd_d1[0] = _mm_load_si128((__m128i*)(DCT_II_32_8_sse + 8 * 0));
     odd_d1[1] = _mm_load_si128((__m128i*)(DCT_II_32_8_sse + 8 * 1));
     //odd_d1[2] = _mm_load_si128((__m128i*)(DCT_II_32_8_sse + 8 * 2));
@@ -3083,8 +3050,6 @@ dct2_32x8_red16(__m128i *x, __m128i *r){
 
     dct2_16x8_red8(evn_x, e+0);
 
-    int k;
-
     static const int16_t DCT_II_32_8_sse[8 * 32] = {
         90, 90, 88, 85, 82, 78, 73, 67,
         90, 82, 67, 46, 22, -4, -31, -54,
@@ -3239,7 +3204,6 @@ dct2_32_8lines_red8(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                int num_lines, int line_brk, int shift)
 {
     int rnd_add = 1 << (shift - 1);
-    __m128i d[64];
 
     for (int j = 0; j < num_lines / 8; j++) {
         __m128i x[56], r[64], rnd_add_v;
@@ -3273,7 +3237,6 @@ dct2_32_8lines_red4(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                int num_lines, int line_brk, int shift)
 {
     int rnd_add = 1 << (shift - 1);
-    __m128i d[64];
 
     for (int j = 0; j < num_lines / 8; j++) {
         __m128i x[56], r[64], rnd_add_v;
@@ -3307,7 +3270,6 @@ dct2_32_8lines_red16(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                     int num_lines, int line_brk, int shift)
 {
     int rnd_add = 1 << (shift - 1);
-    __m128i d[64];
     //load_dct_32x8(d);
     for (int j = 0; j < num_lines / 8; j++) {
         __m128i x[104], r[64], rnd_add_v;
@@ -3341,7 +3303,6 @@ dct2_32_8lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                int num_lines, int line_brk, int shift)
 {
     int rnd_add = 1 << (shift - 1);
-    __m128i d[64];
     //load_dct_32x8(d);
     for (int j = 0; j < num_lines / 8; j++) {
         __m128i x[200], r[64], rnd_add_v;
@@ -3660,7 +3621,7 @@ static void
 dct2_32_4lines_red4(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                int num_lines, int line_brk, int shift)
 {
-    __m128i x[202], d[48], r[32];
+    __m128i x[202], r[32];
 
     load_src_32x4_red4(src, src_stride, x);
 
@@ -3687,7 +3648,7 @@ static void
 dct2_32_4lines_red8(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                int num_lines, int line_brk, int shift)
 {
-    __m128i x[202], d[48], r[32];
+    __m128i x[202], r[32];
 
     load_src_32x4_red8(src, src_stride, x);
 
@@ -3712,7 +3673,7 @@ static void
 dct2_32_4lines_red16(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                int num_lines, int line_brk, int shift)
 {
-    __m128i x[202], d[48], r[32];
+    __m128i x[202], r[32];
 
     load_src_32x4_red16(src, src_stride, x);
 
@@ -3737,7 +3698,7 @@ static void
 dct2_32_4lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                int num_lines, int line_brk, int shift)
 {
-    __m128i x[202], d[48], r[32];
+    __m128i x[202], r[32];
 
     load_src_32x4(src, src_stride, x);
 
@@ -3795,7 +3756,7 @@ vvc_inverse_dct_ii_32_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride
     }
 
     if (num_lines & 0x2){
-        __m128i x[56], d[46], r[16];
+        __m128i x[56], r[16];
 
         x[0] = _mm_unpacklo_epi32(
                 _mm_loadl_epi64((__m128i*)(src + 0 * src_stride)),
@@ -4627,7 +4588,7 @@ vvc_inverse_dct_ii_64_sse_4lines_red8(const int16_t* src, int16_t* dst, ptrdiff_
 {
   __m128i add = _mm_set1_epi32(1 << (shift - 1));
 
-  int j, k;
+  int k;
         /* Utilizing symmetry properties to the maximum to minimize
         the
          * number of multiplications */
@@ -4756,7 +4717,7 @@ vvc_inverse_dct_ii_64_sse_4lines_red16(const int16_t* src, int16_t* dst, ptrdiff
 {
   __m128i add = _mm_set1_epi32(1 << (shift - 1));
 
-  int j, k;
+  int k;
         /* Utilizing symmetry properties to the maximum to minimize
         the
          * number of multiplications */
@@ -4933,7 +4894,7 @@ vvc_inverse_dct_ii_64_sse_4lines(const int16_t* src, int16_t* dst, ptrdiff_t src
 {
         __m128i add = _mm_set1_epi32(1 << (shift - 1));
 
-        int j, k;
+        int k;
         /* Utilizing symmetry properties to the maximum to minimize
         the number of multiplications */
                 __m128i x[16], d[16], di[8];
