@@ -4340,9 +4340,6 @@ put_weighted_ciip_pixels_avx2(uint16_t* dst, int dststride,
 {
     int x, y;
     int shift  = 2;
-    __m256i c1 = _mm256_set1_epi16(wt);
-    __m256i c2 = _mm256_set1_epi16(4-wt);
-
     __m256i x1l, x2l, t1l, t2l;
     __m256i c1l = _mm256_set1_epi16(wt);
     __m256i c2l = _mm256_set1_epi16(4-wt);
