@@ -40,12 +40,12 @@
 #include "data_rcn_angular.h"
 
 #define LOAD_GAUSS_FILTER() \
-        __m128i filter01 = _mm_set1_epi32((16 - (delta_frac >> 1))&0xFFFF | ((int32_t)(32 - (delta_frac >> 1))<<16)); \
-        __m128i filter23 = _mm_set1_epi32((16 + (delta_frac >> 1))&0xFFFF | ((int32_t)(delta_frac >> 1)<<16));
+        __m128i filter01 = _mm_set1_epi32(((16 - (delta_frac >> 1)) & 0xFFFF) | ((int32_t)(32 - (delta_frac >> 1))<<16)); \
+        __m128i filter23 = _mm_set1_epi32(((16 + (delta_frac >> 1)) & 0xFFFF) | ((int32_t)(delta_frac >> 1)<<16));
 
 #define LOAD_CUBIC_FILTER() \
-        __m128i filter01 = _mm_set1_epi32(filter[0]&0xFFFF | ((int32_t)filter[1]<<16)); \
-        __m128i filter23 = _mm_set1_epi32(filter[2]&0xFFFF | ((int32_t)filter[3]<<16));
+        __m128i filter01 = _mm_set1_epi32((filter[0] & 0xFFFF) | ((int32_t)filter[1]<<16)); \
+        __m128i filter23 = _mm_set1_epi32((filter[2] & 0xFFFF) | ((int32_t)filter[3]<<16));
 
 #define FILTER_8_SAMPLES() \
         __m128i ref0 = _mm_loadu_si128((__m128i *)&ref[0]);          \
