@@ -35,6 +35,7 @@
 #include <smmintrin.h>
 
 #include "rcn_structures.h"
+#include "ovmem.h"
 
 static void
 lfnst_4x4_16(const int16_t* const src, __m128i* r,
