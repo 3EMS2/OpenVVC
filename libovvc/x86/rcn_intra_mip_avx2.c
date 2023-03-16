@@ -107,7 +107,7 @@ mip_matmult_8_4(const int16_t *bndy_line, uint16_t *dst,
                 const uint8_t *matrix_mip, int16_t input_offset,
                 int rnd_mip, uint8_t log2_red_h)
 {
-    __m128i d[2], a[4], b, m[4], tmp[4];
+    __m128i a[4], b, m[4];
     uint8_t y;
 
     __m128i rnd = _mm_set1_epi32(rnd_mip);
