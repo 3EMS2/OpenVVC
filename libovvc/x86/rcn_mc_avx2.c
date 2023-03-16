@@ -4342,8 +4342,6 @@ put_weighted_ciip_pixels_avx2(uint16_t* dst, int dststride,
     int shift  = 2;
     __m256i c1 = _mm256_set1_epi16(wt);
     __m256i c2 = _mm256_set1_epi16(4-wt);
-    __m256i c = _mm256_unpacklo_epi16(c1, c2);
-    __m256i offset = _mm256_set1_epi32(1 << (shift - 1));
 
     __m256i x1l, x2l, t1l, t2l;
     __m256i c1l = _mm256_set1_epi16(wt);
@@ -4352,7 +4350,6 @@ put_weighted_ciip_pixels_avx2(uint16_t* dst, int dststride,
     __m256i offsetl = _mm256_set1_epi32(1 << (shift - 1));
     for (y = 0; y < height; y++) {
         for (x = 0; x < width ; x+=16) {
-            __m256i x1, x2, t1, t2;
             x1l = _mm256_loadu_si256((__m256i*)&src_intra[x]);
             x2l = _mm256_loadu_si256((__m256i*)&src_inter[x]);
 
