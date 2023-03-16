@@ -178,7 +178,6 @@ intra_angular_v_gauss_sse_4(const OVSample* ref_abv, OVSample* dst,
                       int8_t log2_pb_h, int angle_val)
 {
     int delta_pos = angle_val;
-    int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     OVSample* _dst = dst;
     __m128i offset = _mm_set1_epi32(32);
@@ -274,7 +273,6 @@ intra_angular_v_cubic_sse_4(const OVSample* ref_abv, OVSample* dst,
                       int8_t log2_pb_h, int angle_val)
 {
     int delta_pos = angle_val;
-    int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     OVSample* _dst = dst;
     __m128i offset = _mm_set1_epi32(32);
@@ -388,7 +386,6 @@ intra_angular_v_c_sse_4(const OVSample* ref_abv, OVSample* dst,
                   int8_t log2_pb_h, int angle_val)
 {
     OVSample* _dst = dst;
-    int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     __m128i offset = _mm_set1_epi32(16);
 
@@ -427,9 +424,7 @@ intra_angular_v_c_sse(const OVSample* ref_abv, OVSample* dst,
                   ptrdiff_t dst_stride, int8_t log2_pb_w,
                   int8_t log2_pb_h, int angle_val)
 {
-    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
-    int pb_h = 1 << log2_pb_h;
 
     if (pb_w >=8){
         intra_angular_v_c_sse_8(ref_abv, dst, dst_stride, log2_pb_w, log2_pb_h, angle_val);
@@ -708,7 +703,6 @@ intra_angular_v_c_pdpc_sse_8(const OVSample* const ref_abv,
     OVSample* _dst = dst;
     int angle_val = angle_table[mode_idx];
     int inv_angle = inverse_angle_table[mode_idx];
-    int delta_pos = angle_val;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
@@ -765,7 +759,6 @@ intra_angular_v_c_pdpc_sse_4(const OVSample* const ref_abv,
     OVSample* _dst = dst;
     int angle_val = angle_table[mode_idx];
     int inv_angle = inverse_angle_table[mode_idx];
-    int delta_pos = angle_val;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
@@ -815,9 +808,7 @@ intra_angular_v_c_pdpc_sse(const OVSample* const ref_abv,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
                        int8_t log2_pb_h, int mode_idx)
 {
-    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
-    int pb_h = 1 << log2_pb_h;
 
     if (pb_w >=8){
         intra_angular_v_c_pdpc_sse_8(ref_abv, ref_lft, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
@@ -891,7 +882,6 @@ intra_angular_v_cubic_mref_sse_4(const OVSample* const ref_abv, OVSample* const 
 {
     int delta_pos = angle_val * (mrl_idx + 1);
     OVSample* _dst = dst;
-    int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     __m128i offset = _mm_set1_epi32(32);
     for (int y = 0; y < pb_h; y++) {
