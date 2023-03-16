@@ -421,7 +421,6 @@ tmp_prof_mrg_w_sse(OVSample* _dst, ptrdiff_t _dststride,
                intptr_t my, int width, int denom, int16_t wt0,
                int16_t wt1, int16_t offset0, int16_t offset1)
 {
-    int x, y;
     const int16_t* src0 = (int16_t *)_src0;
     const int16_t* src1 = (int16_t *)_src1;
     ptrdiff_t srcstride = _srcstride;
@@ -433,7 +432,8 @@ tmp_prof_mrg_w_sse(OVSample* _dst, ptrdiff_t _dststride,
     shift = log2Wd + 1;
 
     __m128i offset = _mm_set1_epi32((offset0 + offset1 + 1) << log2Wd);
-    __m128i wt = _mm_set1_epi32(wt0&0xFFFF | ((uint32_t)wt1<<16));
+    __m128i wt = _mm_set1_epi32((wt0 & 0xFFFF) | ((uint32_t)wt1<<16));
+
 
     __m128i src00 = _mm_loadl_epi64((__m128i *)&src0[0*srcstride]);
     __m128i src01 = _mm_loadl_epi64((__m128i *)&src0[1*srcstride]);
@@ -498,7 +498,7 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
     int wgt_y = 0;
     int16_t var[8];
 
-    int i, j;
+    int i;
     __m128i rnd = _mm_set1_epi16(PROF_PREC_RND);
 
     __m128i z = _mm_setzero_si128();
