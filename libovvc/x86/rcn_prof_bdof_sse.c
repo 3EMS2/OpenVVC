@@ -348,7 +348,6 @@ tmp_prof_mrg_sse(OVSample* _dst, ptrdiff_t _dststride,
              const int16_t* _src1, int height, intptr_t mx,
              intptr_t my, int width)
 {
-    int x, y;
     const int16_t* src0 = (int16_t *)_src0;
     const int16_t* src1 = (int16_t *)_src1;
     ptrdiff_t srcstride = _srcstride;

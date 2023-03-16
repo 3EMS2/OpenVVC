@@ -113,7 +113,7 @@ sao_edge_filter_10_sse(OVSample* _dst,
     { { -1, -1 }, { 1, 1 } },
     { { 1, -1 }, { -1, 1 } },
   };
-  __m128i x0, x1, x2, x3, offset0, offset1, offset2, offset3, offset4;
+  __m128i x0, x1, x2, x3, offset0, offset1, offset3, offset4;
   __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
   uint16_t* dst = (uint16_t*)_dst;
   uint16_t* src = (uint16_t*)_src;
@@ -180,7 +180,7 @@ sao_edge_filter_7_10_sse(OVSample* _dst,
     { { -1, -1 }, { 1, 1 } },
     { { 1, -1 }, { -1, 1 } },
   };
-  __m128i x0, x1, x2, x3, offset0, offset1, offset2, offset3, offset4;
+  __m128i x0, x1, x2, x3, offset0, offset1, offset3, offset4;
   __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
   uint16_t* dst = (uint16_t*)_dst;
   uint16_t* src = (uint16_t*)_src;
@@ -272,7 +272,7 @@ sao_edge_filter_v_sse(OVSample *dst, OVSample *src_row, OVSample *src_col,
                       uint8_t eo_dir)
 {
     int x, y;
-    __m128i x0, x1, x2, x3;
+    __m128i x1, x2, x3;
     __m128i r0, r1, r2, r3, r4;
 
     const __m128i offset0 = _mm_set1_epi16(offset_val[0]);
@@ -340,8 +340,8 @@ sao_edge_filter_d_sse(OVSample *dst, OVSample *src_row, OVSample *src_col,
                       uint8_t eo_dir)
 {
     int x, y;
-    __m128i x0, x1, x2, x3;
-    __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
+    __m128i x1, x2, x3;
+    __m128i r0, r1, r2, r3, r4;
 
     const __m128i offset0 = _mm_set1_epi16(offset_val[0]);
     const __m128i offset1 = _mm_set1_epi16(offset_val[1]);
@@ -411,8 +411,8 @@ sao_edge_filter_b_sse(OVSample *dst, OVSample *src_row, OVSample *src_col,
                       uint8_t eo_dir)
 {
     int x, y;
-    __m128i x0, x1, x2, x3;
-    __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
+    __m128i x1, x2, x3;
+    __m128i r0, r1, r2, r3, r4;
 
     const __m128i offset0 = _mm_set1_epi16(offset_val[0]);
     const __m128i offset1 = _mm_set1_epi16(offset_val[1]);
@@ -485,8 +485,8 @@ sao_edge_filter_h_sse(OVSample *dst, OVSample *src_row, OVSample *src_col,
                       uint8_t eo_dir)
 {
     int x, y;
-    __m128i x0, x1, x2, x3;
-    __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
+    __m128i x1, x2, x3;
+    __m128i r0, r1, r2, r3, r4;
     OVSample *src = dst;
 
     const __m128i offset0 = _mm_set1_epi16(offset_val[0]);
