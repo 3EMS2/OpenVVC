@@ -43,7 +43,6 @@ int
 ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
 {
     const OVSPS *const sps = prms->sps;
-    const OVPPS *const pps = prms->pps;
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
 
@@ -72,8 +71,6 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
 
         struct ALFInfo* alf_info  = &ctudec->alf_info;
         RCNALF* alf = &alf_info->rcn_alf;
-        uint8_t luma_flag   = tools->alf_luma_enabled_flag;
-        uint8_t chroma_flag = tools->alf_cb_enabled_flag || tools->alf_cr_enabled_flag;
 
         for (int i = 0; i < tools->num_alf_aps_ids_luma; i++) {
             alf_info->aps_alf_data[i] = prms->aps_alf[i] ? &prms->aps_alf[i]->aps_alf_data : NULL;

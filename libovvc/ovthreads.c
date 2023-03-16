@@ -88,6 +88,7 @@ struct SliceInfo
     uint16_t h;
 };
 
+#if 0
 static void
 setup_subpic_prms(const OVSPS *const sps, struct PicPartitionInfo *const part_info, const struct TileInfo *const tinfo, uint8_t log2_ctb_s)
 {
@@ -95,7 +96,6 @@ setup_subpic_prms(const OVSPS *const sps, struct PicPartitionInfo *const part_in
     int pic_h = sps->sps_pic_height_max_in_luma_samples;
     int nb_ctu_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     int nb_ctu_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-    int ctb_s = 1 << log2_ctb_s;
 
     int subpic_w = sps->sps_subpic_width_minus1[0]  + 1;
     int subpic_h = sps->sps_subpic_height_minus1[0] + 1;
@@ -104,7 +104,6 @@ setup_subpic_prms(const OVSPS *const sps, struct PicPartitionInfo *const part_in
 
     if (sps->sps_subpic_same_size_flag) {
         int nb_subpic_w = (nb_ctu_w / subpic_w) + !!(nb_ctu_w % subpic_w);
-        int nb_subpic_h = (nb_ctu_h / subpic_h) + !!(nb_ctu_h % subpic_h);
 
         int subpic_x = sps->sps_subpic_ctu_top_left_x[0];
         int subpic_y = sps->sps_subpic_ctu_top_left_y[0];
@@ -163,21 +162,21 @@ setup_slice_prms(const OVPPS *const pps, const struct PicPartitionInfo *const pa
     int tile_id = 0;
     int i;
 
-    int entry_idx = 0;
+    //int entry_idx = 0;
 
     for (i = 0; i < pps->pps_num_slices_in_pic_minus1 + 1; i++) {
         struct SliceInfo *sl = &slice_info[i];
 
-        int tile_x = tile_id % tinfo->nb_tile_cols;
+        //int tile_x = tile_id % tinfo->nb_tile_cols;
         int tile_y = tile_id / tinfo->nb_tile_cols;
-        int ctu_x = tinfo->ctu_x[tile_x];
-        int ctu_y = tinfo->ctu_y[tile_y];
+        //int ctu_x = tinfo->ctu_x[tile_x];
+        //int ctu_y = tinfo->ctu_y[tile_y];
 
 
         sl->tile_idx = tile_id;
 
-        int sl_w = 0;
-        int sl_h = 0;
+        //int sl_w = 0;
+        //int sl_h = 0;
 
         int sl_w_tile = pps->pps_num_slices_in_pic_minus1 ? pps->pps_slice_width_in_tiles_minus1[i] + 1 : tinfo->nb_tile_cols;
         int sl_h_tile = pps->pps_num_slices_in_pic_minus1 ? pps->pps_slice_height_in_tiles_minus1[i] + 1 : tinfo->nb_tile_rows;
@@ -186,18 +185,18 @@ setup_slice_prms(const OVPPS *const pps, const struct PicPartitionInfo *const pa
 
         for (int j = 0; j < sl_w_tile; ++j) {
                 for (int k = 0; k < sl_h_tile; ++k) {
-                    int tmp_tile_x = tile_x + j;
+                    //int tmp_tile_x = tile_x + j;
                     int tmp_tile_y = tile_y + k;
                     int tmp_tile_id = tile_id + j + k * tinfo->nb_tile_cols;
-                    int x = tinfo->ctu_x[tmp_tile_x];
+                    //int x = tinfo->ctu_x[tmp_tile_x];
                     int y = tinfo->ctu_y[tmp_tile_y];
-                    int w = tinfo->nb_ctu_w[tmp_tile_x];
+                    //int w = tinfo->nb_ctu_w[tmp_tile_x];
                     int h = tinfo->nb_ctu_h[tmp_tile_y];
                     if (nb_tiles_entries == 1 && pps->pps_num_exp_slices_in_tile[tmp_tile_id]) {
                         int nb_exp_slices = pps->pps_num_exp_slices_in_tile[tmp_tile_id];
                         int pos_y = y;
                         for (int l = 0; l < nb_exp_slices; l++) {
-                            int tmp_h = pps->pps_exp_slice_height_in_ctus_minus1[i + l] + 1;
+                            //int tmp_h = pps->pps_exp_slice_height_in_ctus_minus1[i + l] + 1;
                             //printf("slice %d in tile %d : x %d y %d, wxh %dx%d\n", i + l, tmp_tile_id, x, pos_y, w, tmp_h);
                             pos_y += pps->pps_exp_slice_height_in_ctus_minus1[i + l] + 1;
                             /* store height , w = tile_w*/
@@ -251,7 +250,7 @@ setup_slice_prms(const OVPPS *const pps, const struct PicPartitionInfo *const pa
         if (pps->pps_tile_idx_delta_present_flag && i < pps->pps_num_slices_in_pic_minus1) {
             tile_id += pps->pps_tile_idx_delta_val[i];
         } else {
-            int offset_y;
+            //int offset_y;
             tile_id  += pps->pps_slice_width_in_tiles_minus1[i] + 1;
             if (tile_id % tinfo->nb_tile_cols == 0) {
                 tile_id += pps->pps_slice_height_in_tiles_minus1[i] * tinfo->nb_tile_cols;
@@ -259,11 +258,12 @@ setup_slice_prms(const OVPPS *const pps, const struct PicPartitionInfo *const pa
         }
     }
 }
+#endif
 
 static int16_t
 map_subpic_id(const struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
 {
-    uint16_t slice_map_id = 0;
+    //uint16_t slice_map_id = 0;
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
         if (sh_subpic_id == part_info->subpic_id[subpic_id]) {
 
@@ -288,7 +288,7 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
     const struct TileInfo *const tile_info = &pps_info->tile_info;
 
     const OVSPS *const sps = prms->sps;
-    uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
+    //uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
 
     int tile_x = (entry_idx + prms->sh->sh_slice_address) % tile_info->nb_tile_cols;
     int tile_y = (entry_idx + prms->sh->sh_slice_address) / tile_info->nb_tile_cols;
@@ -299,7 +299,7 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
     //setup_slice_prms(pps, &pps->part_info, tile_info, log2_ctb_s);
     uint16_t slice_address = prms->sh->sh_slice_address;
     uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, prms->sh->sh_subpic_id) : prms->sh->sh_subpic_id;
-    uint16_t subpic_id = prms->sh->sh_subpic_id;
+    //uint16_t subpic_id = prms->sh->sh_subpic_id;
     const struct SubpicInfo *subpic = &prms->pps->part_info.subpictures[actual_subpic_id];
     uint16_t slice_id =  prms->pps->part_info.slice_id[subpic->map_offset + slice_address];
     const struct SliceMap *slice = &prms->pps->part_info.slices[slice_id];
@@ -345,7 +345,6 @@ void
 fifo_flush(struct MainThread* main_thread)
 {
     struct EntriesFIFO *fifo = &main_thread->entries_fifo;
-    struct EntryJob *entry_job = NULL;
     pthread_mutex_lock(&main_thread->io_mtx);
 
     fifo->first = fifo->last;
@@ -537,7 +536,6 @@ ovthread_slice_sync_init(struct SliceSynchro *slice_sync)
 void
 ovthread_slice_sync_uninit(struct SliceSynchro *slice_sync)
 {   
-    OVSliceDec * slicedec = slice_sync->owner;
 
     pthread_mutex_destroy(&slice_sync->gnrl_mtx);
     pthread_cond_destroy(&slice_sync->gnrl_cnd);

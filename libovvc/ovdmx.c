@@ -375,9 +375,9 @@ extract_nal_unit(OVDemux *const dmx, struct NALUnitListElem **dst_nalup)
 
             struct ReaderCache *const rdr_cache = &dmx->rdr_cache;
 
-            int nb_bytes_read = refill_reader_cache(rdr_cache, dmx->io_str);
+            int ret = refill_reader_cache(rdr_cache, dmx->io_str);
 
-            int ret = extract_cache_segments(dmx, rdr_cache);
+            ret = extract_cache_segments(dmx, rdr_cache);
 
             if (ret < 0) {
                 return ret;
@@ -416,6 +416,7 @@ clear_nalu_list(struct NALUnitsList *list)
     list->last_nalu = NULL;
 }
 
+#if 0
 static int
 count_list_nal_units(struct NALUnitsList *const src)
 {
@@ -428,6 +429,7 @@ count_list_nal_units(struct NALUnitsList *const src)
     }
     return nb_nalus;
 }
+#endif
 
 static const char *nalu_name[32] =
 {
@@ -761,7 +763,8 @@ process_start_code(OVDemux *const dmx)
 
         struct OVNALUnit *const nalu = nalu_pending->nalu;
 
-        int rbsp_stop = adjust_rbsp_size(&dmx->rbsp_cache);
+        //int rbsp_stop = adjust_rbsp_size(&dmx->rbsp_cache);
+        adjust_rbsp_size(&dmx->rbsp_cache);
 
         int ret = allocate_nalu_data(nalu, &dmx->epb_info, &dmx->rbsp_cache);
 

@@ -297,13 +297,14 @@ check_cand_available(uint64_t abv_row, uint64_t lft_col, uint8_t pb_x, uint8_t p
 
     uint8_t mrg_a0 = ((y0 + cb_h)     >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
     uint8_t mrg_a1 = ((y0 + cb_h - 1) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
-    uint8_t mrg_a2 = ((y0           ) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
     uint8_t mrg_a3 = ((y0 - 1       ) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
 
     uint8_t mrg_b0 = ((x0 + cb_w)     >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
     uint8_t mrg_b1 = ((x0 + cb_w - 1) >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
     uint8_t mrg_b2 = ((x0 - 1)        >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
-    uint8_t mrg_b3 = ((x0    )        >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+
+    uint8_t mrg_a2 = 0; // ((y0           ) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+    uint8_t mrg_b3 = 0; // ((x0    )        >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
 
     mrg_a0 |= ((x0 - 1) >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
     mrg_a1 |= ((x0 - 1) >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
@@ -437,7 +438,6 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 
     if (plane1 && plane1->dirs) {
         uint64_t *src_dirs = plane1->dirs + ctb_addr_rs * nb_pb_ctb_w;
-        int i;
 
         int32_t nb_tmvp_unit = nb_pb_ctb_w >> 1;
         int32_t pln_stride = nb_tmvp_unit * nb_ctb_w;
@@ -1241,8 +1241,6 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     uint64_t rpl0_abv_row = mv_ctx0->map.hfield[y_pb];
     uint64_t rpl1_lft_col = mv_ctx1->map.vfield[x_pb];
     uint64_t rpl1_abv_row = mv_ctx1->map.hfield[y_pb];
-
-    uint8_t log2_pmerge_lvl = inter_ctx->inter_params.log2_parallel_merge_level;
 
     const uint8_t aff_cand_list = check_cand_available(aff_abv_row, aff_lft_col, x_pb, y_pb,
                                                        nb_pb_w, nb_pb_h, 2);
@@ -3088,7 +3086,6 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         const struct AffineDeltaMV dmv_1 = derive_affine_delta_mvs(&cinfo[1],
                                                                    log2_cu_w, log2_cu_h,
                                                                    affine_type);
@@ -3104,7 +3101,6 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
                                                                    log2_cu_w, log2_cu_h,
                                                                    affine_type);

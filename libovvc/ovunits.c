@@ -171,7 +171,7 @@ int
 ovpu_init(OVPictureUnit **ovpu_p, uint8_t nb_nalus)
 {
     OVPictureUnit *pu = ov_mallocz(sizeof(*pu));
-    int ret;
+    int ret = 0;
 
     *ovpu_p = pu;
 
@@ -195,7 +195,7 @@ ovpu_init(OVPictureUnit **ovpu_p, uint8_t nb_nalus)
 
     ov_log(NULL, OVLOG_ERROR, "Cannot create an empty Picture Unit\n");
 
-fail:
+//fail:
     ov_freep(ovpu_p);
     return ret;
 }

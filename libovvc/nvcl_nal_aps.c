@@ -49,7 +49,6 @@ enum APSType {
 static uint8_t
 probe_aps_id(OVNVCLReader *const rdr)
 {
-    uint8_t aps_type = fetch_bits(rdr, 3);
     uint8_t aps_id = fetch_bits(rdr, 8) & 0x1F;
     return aps_id;
 }

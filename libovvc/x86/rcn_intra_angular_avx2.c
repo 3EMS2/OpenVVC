@@ -1112,7 +1112,6 @@ intra_angular_v_c_pdpc_avx2(const OVSample* const ref_abv,
                        int8_t log2_pb_h, int mode_idx)
 {
     int pb_w = 1 << log2_pb_w;
-    int pb_h = 1 << log2_pb_h;
 
     if (pb_w >=16){
         intra_angular_v_c_pdpc_avx2_16(ref_abv, ref_lft, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);

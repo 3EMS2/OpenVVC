@@ -300,17 +300,36 @@ general_timing_hrd_parameters(OVNVCLReader *const rdr, struct HRDTiming *hrd)
     }
 }
 
+struct SubLayerHRDParams
+{
+    uint16_t bit_rate_value_minus1;
+    uint16_t cpb_size_value_minus1;
+    uint16_t cpb_size_du_value_minus1;
+    uint16_t bit_rate_du_value_minus1;
+    uint8_t cbr_flag;
+};
+
+struct OLSTimingParams
+{
+    struct SubLayerHRDParams sbl_hrd_prms;
+    struct SubLayerHRDParams sbl_hrd_vcl_prms;
+    uint32_t elemental_duration_in_tc_minus1;
+    uint8_t fixed_pic_rate_general_flag;
+    uint8_t fixed_pic_rate_within_cvs_flag;
+    uint8_t low_delay_hrd_flag;
+};
+
 static void
-sublayer_hrd_parameters(OVNVCLReader *const rdr, const struct HRDTiming *const hrd, uint8_t i) {
+sublayer_hrd_parameters(OVNVCLReader *const rdr, const struct HRDTiming *const hrd, struct SubLayerHRDParams *const sbl_hrd_prms) {
     int j;
     for (j = 0; j <= hrd->hrd_cpb_cnt_minus1; ++j) {
-        uint16_t bit_rate_value_minus1 = nvcl_read_u_expgolomb(rdr);
-        uint16_t cpb_size_value_minus1 = nvcl_read_u_expgolomb(rdr);
+        sbl_hrd_prms->bit_rate_value_minus1 = nvcl_read_u_expgolomb(rdr);
+        sbl_hrd_prms->cpb_size_value_minus1 = nvcl_read_u_expgolomb(rdr);
         if (hrd->general_du_hrd_params_present_flag) {
-            uint16_t cpb_size_du_value_minus1 = nvcl_read_u_expgolomb(rdr);
-            uint16_t bit_rate_du_value_minus1 = nvcl_read_u_expgolomb(rdr);
+            sbl_hrd_prms->cpb_size_du_value_minus1 = nvcl_read_u_expgolomb(rdr);
+            sbl_hrd_prms->bit_rate_du_value_minus1 = nvcl_read_u_expgolomb(rdr);
         }
-        uint8_t cbr_flag = nvcl_read_flag(rdr);
+        sbl_hrd_prms->cbr_flag = nvcl_read_flag(rdr);
     }
 }
 
@@ -318,27 +337,30 @@ static void
 ols_timing_hrd_parameters(OVNVCLReader *const rdr, const struct HRDTiming *const hrd, uint8_t first_sublayer, uint8_t max_sublayer_min1)
 {
     int i;
-    for (i = first_sublayer; i <= max_sublayer_min1; ++i) {
-        uint8_t fixed_pic_rate_general_flag = nvcl_read_flag(rdr);
 
-        uint8_t fixed_pic_rate_within_cvs_flag = fixed_pic_rate_general_flag;
-        if (!fixed_pic_rate_general_flag) {
-            fixed_pic_rate_within_cvs_flag = nvcl_read_flag(rdr);
+    struct OLSTimingParams ols_prms_tab[8];
+    for (i = first_sublayer; i <= max_sublayer_min1; ++i) {
+        struct OLSTimingParams *const ols_prms = &ols_prms_tab[i];
+        ols_prms->fixed_pic_rate_general_flag = nvcl_read_flag(rdr);
+
+        ols_prms->fixed_pic_rate_within_cvs_flag = ols_prms->fixed_pic_rate_general_flag;
+        if (!ols_prms->fixed_pic_rate_general_flag) {
+            ols_prms->fixed_pic_rate_within_cvs_flag = nvcl_read_flag(rdr);
         }
 
-        if (fixed_pic_rate_within_cvs_flag) {
-            uint32_t elemental_duration_in_tc_minus1 = nvcl_read_s_expgolomb(rdr);
+        if (ols_prms->fixed_pic_rate_within_cvs_flag) {
+            ols_prms->elemental_duration_in_tc_minus1 = nvcl_read_s_expgolomb(rdr);
         } else if ((hrd->general_nal_hrd_params_present_flag || hrd->general_vcl_hrd_params_present_flag)
                    && !hrd->hrd_cpb_cnt_minus1) {
-            uint8_t low_delay_hrd_flag = nvcl_read_flag(rdr);
+            ols_prms->low_delay_hrd_flag = nvcl_read_flag(rdr);
         }
 
         if (hrd->general_nal_hrd_params_present_flag) {
-            sublayer_hrd_parameters(rdr, hrd, i);
+            sublayer_hrd_parameters(rdr, hrd, &ols_prms->sbl_hrd_prms);
         }
 
         if (hrd->general_vcl_hrd_params_present_flag) {
-            sublayer_hrd_parameters(rdr, hrd, i);
+            sublayer_hrd_parameters(rdr, hrd, &ols_prms->sbl_hrd_vcl_prms);
         }
     }
 }

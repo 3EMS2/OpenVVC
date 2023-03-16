@@ -170,8 +170,6 @@ hlsdataref_create(union HLSData *data, void (*free)(struct HLSDataRef **ref, voi
 int
 hlsdata_newref(struct HLSDataRef **dst_p, struct HLSDataRef *src)
 {
-    struct HLSDataRef *dst;
-
     atomic_fetch_add_explicit(&src->ref_count, 1, memory_order_acq_rel);
 
     *dst_p = src;
@@ -339,10 +337,10 @@ static int decode_nvcl_hls(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
     return 0;
 }
 
+#if 0
 static int tmp_sei_wrap(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
 {
     uint8_t nalu_type = nalu->type & 0x1F;
-    const struct HLSReader *const hls_reader = nalu_reader[nalu->type & 0x1F];
     OVNVCLReader rdr;
 
     nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
@@ -351,6 +349,7 @@ static int tmp_sei_wrap(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
 
     return nvcl_decode_nalu_sei(nvcl_ctx, &rdr, nalu_type);
 }
+#endif
 
 static const NALUnitAction nalu_action[32] =
 {

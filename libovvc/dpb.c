@@ -67,8 +67,6 @@ static void ovdpb_reset_decoded_ctus(OVPicture *const pic);
 
 static void ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps);
 
-static void ovdpb_uninit_decoded_ctus(OVPicture *const pic);
-
 int
 ovdpb_init(OVDPB **dpb_p, const OVPS *ps)
 {
@@ -299,7 +297,6 @@ ovdpb_clear_refs(OVDPB *dpb)
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int nb_used_pic = nb_used_slots(dpb->status);
     int min_cvs_id = find_min_cvs_id(dpb);
-    int i;
 
     while (nb_used_pic >= dpb->max_nb_dpb_pic) {
         int min_poc = INT_MAX;
@@ -334,6 +331,7 @@ ovdpb_clear_refs(OVDPB *dpb)
     }
 }
 
+#if 0
 static void print_dpb(OVDPB *const dpb)
 {
     for (int i = 0; i < 64; ++i) {
@@ -342,6 +340,7 @@ static void print_dpb(OVDPB *const dpb)
         //printf("POC : %d, cvs %d nb_slices %d, nb_ref%d\n", pic->poc, pic->cvs_id, *pic->sync.nb_slices, pic->ref_count);
     }
 }
+#endif
 
 /* All pictures are removed from the DPB */
 void
@@ -385,9 +384,9 @@ alloc_frame(OVDPB *dpb, int poc)
         return pic;
     }
 
-full:
+//full:
     ov_log(NULL, OVLOG_ERROR, "DPB full\n");
-    print_dpb(dpb);
+    //print_dpb(dpb);
 
 
     return NULL;
@@ -629,7 +628,7 @@ vvc_unmark_refs(OVPicture * current_pic, OVPicture **dst_rpl, uint8_t nb_active_
         OVPicture *ref_pic = dst_rpl[i];
         if (ref_pic) {
             int16_t ref_poc  = ref_pic->poc;
-            int16_t ref_type = ST_REF;
+            //int16_t ref_type = ST_REF;
             uint8_t flag = 0;//ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
             ov_log(NULL, OVLOG_TRACE, "Unmark active reference %d from picture %d RPL\n", ref_poc, current_pic->poc);
             ovdpb_unref_pic(ref_pic, flag);
@@ -640,7 +639,7 @@ vvc_unmark_refs(OVPicture * current_pic, OVPicture **dst_rpl, uint8_t nb_active_
         OVPicture *ref_pic = dst_rpl[i];
         if(ref_pic){
             int16_t ref_poc  = ref_pic->poc;
-            int16_t ref_type = ST_REF;
+            //int16_t ref_type = ST_REF;
             uint8_t flag = 0;//ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
             ov_log(NULL, OVLOG_TRACE, "Unmark non active reference %d from picture %d RPL\n", ref_poc, current_pic->poc);
             ovdpb_unref_pic(ref_pic, flag);
@@ -667,6 +666,7 @@ dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst, struct OVPictureUnit **punit
     ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
 }
 
+#if 0
 static void print_pic_time(const OVPicture *const pic)
 {
     uint64_t start = pic->time_info.start;
@@ -674,8 +674,9 @@ static void print_pic_time(const OVPicture *const pic)
     uint64_t out = pic->time_info.out;
     int dec_time = NS_TO_US((int64_t)end - start);
 
-    //printf("POC : %d  dec_time : %d us\n", pic->poc, dec_time);
+    printf("POC : %d  dec_time : %d us\n", pic->poc, dec_time);
 }
+#endif
 
 int
 ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
@@ -709,7 +710,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
         if (nb_output) {
             OVPicture *pic = &dpb->pictures[min_idx];
             pic->time_info.out = ovtime_ns();
-            print_pic_time(pic);
+            //print_pic_time(pic);
             dpb->pts += dpb->nb_units_in_ticks;
             pic->frame->pts = dpb->pts;
             dpb_pic_to_frame_ref(pic, out, punit_p);
@@ -776,7 +777,7 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
     if (min_idx < nb_dpb_pic) {
         OVPicture *pic = &dpb->pictures[min_idx];
         pic->time_info.out = ovtime_ns();
-        print_pic_time(pic);
+        //print_pic_time(pic);
         dpb->pts += dpb->nb_units_in_ticks;
         pic->frame->pts = dpb->pts;
         dpb_pic_to_frame_ref(pic, out, punit_p);
@@ -807,7 +808,6 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int32_t poc = dpb->poc;
     int i, ret;
-    OVPicture *current_pic = NULL;
 
     /* This is the same as clear_refs except we do not remove
      * flags on current picture
@@ -816,7 +816,6 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
         OVPicture *pic = &dpb->pictures[i];
 
         if (pic->cvs_id == dpb->cvs_id && pic->poc == dpb->poc) {
-            current_pic = pic;
             continue;
         }
 
@@ -1034,8 +1033,6 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
 
     const OVSH  *const sh  = ps->sh;
     const OVPH  *const ph  = ps->ph;
-    const OVPPS  *const pps  = ps->pps;
-    const OVSPS  *const sps  = ps->sps;
     int ret = 0;
     int32_t poc = dpb->poc;
     uint8_t cra_flag = 0;
@@ -1159,7 +1156,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
 fail:
     ovdpb_clear_refs(dpb);
 
-failnoclear:
+//failnoclear:
     //atomic_init((*pic_p)->sync->nb_slices, 1);
     return ret;
 }

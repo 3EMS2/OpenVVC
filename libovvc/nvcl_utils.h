@@ -92,6 +92,8 @@ nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
     rdr->str_end   = bytestream_start + buffer_size;
 
     rdr->cursor       = bytestream_start;
+    rdr->cache = 0;
+    rdr->nb_cached_bits = 0;
 
     fill_cache64(rdr);
 

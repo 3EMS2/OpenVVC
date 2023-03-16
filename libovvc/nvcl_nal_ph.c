@@ -53,12 +53,6 @@ enum OVChromaFormat{
     OV_NUM_CHROMA_FORMAT = 4,
 };
 
-static uint8_t
-probe_ph_id(OVNVCLReader *const rdr)
-{
-    return 0;
-}
-
 static struct HLSDataRef **
 storage_in_nvcl_ctx(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 {

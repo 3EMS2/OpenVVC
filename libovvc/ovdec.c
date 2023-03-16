@@ -299,7 +299,6 @@ ovdec_wait_entry_thread(OVDec *const ovdec, int i)
     struct MainThread* th_main = &ovdec->main_thread;
     struct EntryThread *entry_th_list = th_main->entry_threads_list;
     struct EntryThread *entry_th;
-    int nb_threads = ovdec->nb_frame_th;
     do {
 
         entry_th = &entry_th_list[i];
@@ -326,8 +325,6 @@ ovdec_select_subdec(OVDec *const ovdec)
     int nb_threads = ovdec->nb_frame_th;
     struct MainThread* th_main = &ovdec->main_thread;
 
-    OVSliceDec * slicedec;
-    struct SliceSynchro* slice_sync;
     do {
         pthread_mutex_lock(&th_main->io_mtx);
 
@@ -521,7 +518,7 @@ decode_nal_unit(OVDec *const ovdec, OVNALUnit *nalu)
         if (ret < 0) return ret;
     }
 
-failvcl:
+//failvcl:
     return ret;
 
 failhls:
@@ -556,7 +553,7 @@ vvc_decode_picture_unit(OVDec *ovdec, const OVPictureUnit *pu)
     //printf("PU END\n");
     return 0;
 
-fail:
+//fail:
     /* Error processing if needed */
     ovdec->dpb->active_pic = NULL;
     ovpu_unref(&ovdec->pu);
@@ -607,7 +604,6 @@ ovdec_receive_picture(OVDec *ovdec, OVFrame **frame_p)
 static void
 ovdec_wait_entry_threads(OVDec *ovdec)
 {
-    struct MainThread *th_main = &ovdec->main_thread;
     int i;
 
     ovdec_wait_entries(ovdec);
