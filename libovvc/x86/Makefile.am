@@ -27,7 +27,7 @@ am__v_ASM_1 =
 libx86optim_la_CPPFLAGS = -I${srcdir}/../ -DBITDEPTH=10
 libx86optim2_la_CPPFLAGS = -I${srcdir}/../ -DBITDEPTH=10
 noinst_HEADERS =
-libx86optim_la_SOURCES = fg_compute_block_avg.asm
+libx86optim_la_SOURCES = fg_compute_block_avg.asm fg_blend_stripe.asm
 libx86optim2_la_SOURCES =
 
 if HAVE_SSE4_1
