@@ -274,10 +274,9 @@ static const uint8_t vvc_pdpc_w_sh[3][16] = {
                         const int16_t l_val = src_left[y + 1];                  \
                         l_v  = _mm_set1_epi16(l_val);                           \
                                                                                 \
-                        __m128i xl1, yt1, yt2;                                  \
-                        __m128i pdpc_rnd1;                                      \
+                        __m128i xl1;                                            \
                         __m128i out_v1, out_v2;                                 \
-                        __m128i tst1, tst2;                                     \
+                        __m128i tst1;                                           \
                                                                                 \
                         xl1 = _mm_mullo_epi16(l_v, x_v);                        \
                                                                                 \
@@ -302,7 +301,7 @@ static const uint8_t vvc_pdpc_w_sh[3][16] = {
                             l_v  = _mm_set1_epi16(l_val);                          \
                                                                                    \
                             __m128i xl1, xl2;                                      \
-                            __m128i pdpc_rnd1, pdpc_rnd2, out_v1, out_v2;          \
+                            __m128i out_v1, out_v2;                                \
                             __m128i tst1, tst2;                                    \
                                                                                    \
                             xl1 = _mm_mullo_epi16(l_v, x_v1);                      \
@@ -465,7 +464,7 @@ static const uint8_t vvc_pdpc_w_sh[3][16] = {
                             l_v  = _mm_set1_epi16(l_val);                          \
                                                                                    \
                             __m128i xl1, xl2;                                      \
-                            __m128i pdpc_rnd1, pdpc_rnd2, out_v1, out_v2, out_v3;  \
+                            __m128i out_v1, out_v2, out_v3;                        \
                             __m128i tst1, tst2;                                    \
                                                                                    \
                             xl1 = _mm_mullo_epi16(l_v, x_v1);                      \
@@ -702,7 +701,7 @@ static const uint8_t vvc_pdpc_w_sh[3][16] = {
                             l_v  = _mm_set1_epi16(l_val);                          \
                                                                                    \
                             __m128i xl1, xl2;                                      \
-                            __m128i pdpc_rnd1, pdpc_rnd2, out_v1, out_v2, out_v3;  \
+                            __m128i out_v1, out_v2, out_v3;                        \
                             __m128i tst1, tst2;                                    \
                                                                                    \
                             xl1 = _mm_mullo_epi16(l_v, x_v1);                      \
@@ -739,7 +738,6 @@ vvc_intra_dc_pdpc_w4_h4_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 3;
@@ -766,7 +764,6 @@ vvc_intra_dc_pdpc_w4_h8_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 3;
@@ -796,7 +793,6 @@ vvc_intra_dc_pdpc_w4_h16_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 4;
@@ -827,7 +823,6 @@ vvc_intra_dc_pdpc_w4_h32_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 5;
@@ -860,7 +855,6 @@ vvc_intra_dc_pdpc_w4_h64_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 6;
@@ -897,7 +891,6 @@ vvc_intra_dc_pdpc_w8_h4_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 3;
@@ -923,7 +916,6 @@ vvc_intra_dc_pdpc_w8_h8_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 4;
@@ -954,7 +946,6 @@ vvc_intra_dc_pdpc_w8_h16_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 4;
@@ -985,7 +976,6 @@ vvc_intra_dc_pdpc_w8_h32_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 5;
@@ -1018,7 +1008,6 @@ vvc_intra_dc_pdpc_w8_h64_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 6;
@@ -1055,7 +1044,6 @@ vvc_intra_dc_pdpc_w16_h4_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 4;
@@ -1084,7 +1072,6 @@ vvc_intra_dc_pdpc_w16_h8_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 4;
@@ -1114,7 +1101,6 @@ vvc_intra_dc_pdpc_w16_h16_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 5;
@@ -1147,7 +1133,6 @@ vvc_intra_dc_pdpc_w16_h32_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 5;
@@ -1180,7 +1165,6 @@ vvc_intra_dc_pdpc_w16_h64_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 6;
@@ -1217,7 +1201,6 @@ vvc_intra_dc_pdpc_w32_h4_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 5;
@@ -1246,7 +1229,6 @@ vvc_intra_dc_pdpc_w32_h8_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 5;
@@ -1278,7 +1260,6 @@ vvc_intra_dc_pdpc_w32_h32_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 6;
@@ -1316,7 +1297,6 @@ vvc_intra_dc_pdpc_w32_h64_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 6;
@@ -1354,7 +1334,6 @@ vvc_intra_dc_pdpc_w64_h4_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 6;
@@ -1388,7 +1367,6 @@ vvc_intra_dc_pdpc_w64_h8_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 6;
@@ -1425,7 +1403,6 @@ vvc_intra_dc_pdpc_w64_h16_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 6;
@@ -1462,7 +1439,6 @@ vvc_intra_dc_pdpc_w64_h64_sse(const uint16_t *const src_above,
                       uint16_t *const dst, ptrdiff_t dst_stride,
                       int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t *_dst = dst;
     uint32_t dc_val = 0;
     const int shift  = 7;
@@ -1659,8 +1635,6 @@ vvc_intra_planar_pdpc_w4_h4_sse(const uint16_t *const src_above,
     int max_scale = 2;
     int rc_scale = 0;
     int tr_scale = 0;
-
-    const uint8_t pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
 
     int16_t r_col[4], l_col[4];
 
