@@ -110,6 +110,7 @@ clip_mv(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV mv)
     return mv;
 }
 
+#if 0
 static OVMV
 clip_mv_rpr(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV mv)
 {
@@ -125,6 +126,7 @@ clip_mv_rpr(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV
 
     return mv;
 }
+#endif
 
 static void
 gpm_weights_and_steps(uint8_t split_dir, uint8_t log2_pb_w, uint8_t log2_pb_h, int* step_x, int* step_y,
@@ -3192,7 +3194,6 @@ rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
           uint8_t gpm_part_idx)
 {
     struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
-    const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     OVMV mv0 = gpm_ctx->mv0;
     OVMV mv1 = gpm_ctx->mv1;

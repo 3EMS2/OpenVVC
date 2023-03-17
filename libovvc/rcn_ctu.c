@@ -526,10 +526,6 @@ rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t l
         fb->filter_region_stride[comp]   = ctu_s / ratio + 2 * margin ;
         fb->filter_region_offset[comp]   = margin * fb->filter_region_stride[comp] + margin;
 
-        if (!filter_region[comp]) {
-            int ext_size = fb->filter_region_stride[comp] * (fb->filter_region_h[comp] + 2 * margin + 1);
-        }
-
         fb->saved_rows_stride[comp] = nb_ctu_w * ctu_s / ratio; ;
         if (saved_rows_sao[comp]) {
             ov_freep(&saved_rows_sao[comp]);

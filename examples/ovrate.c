@@ -205,7 +205,6 @@ faildmx:
 static int
 close_openvvc_hdl(OVVCHdl *const ovvc_hdl)
 {
-    OVDec *vvcdec = ovvc_hdl->dec;
     OVVCDmx *vvcdmx = ovvc_hdl->dmx;
     OVIO* io = ovvc_hdl->io;
     int ret;
@@ -336,7 +335,7 @@ hls(struct OVPS *const ps, OVNVCLCtx *const nvcl_ctx, OVPictureUnit *pu, int32_t
 
     return 0;
 
-fail:
+//fail:
     /* Error processing if needed */
     return ret;
 }
@@ -360,8 +359,6 @@ end:
 static int
 probe_stream(OVVCHdl *const hdl)
 {
-    OVDec *const dec = hdl->dec;
-    int nb_pic = 0;
     int ret;
     OVNVCLCtx nvcl_ctx = {0};
     struct OVPS ps = {0};
@@ -380,7 +377,7 @@ probe_stream(OVVCHdl *const hdl)
 	    hls(&ps, &nvcl_ctx, pu, poc);
 
             poc = pu->dts;
-            const OVSPS *const sps = ps.sps;
+            //const OVSPS *const sps = ps.sps;
             const OVPPS *const pps = ps.pps;
             const OVSH *const sh = ps.sh;
             const OVPH *const ph = ps.ph;

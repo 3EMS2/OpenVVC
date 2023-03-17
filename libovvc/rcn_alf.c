@@ -198,7 +198,6 @@ alf_init_filter_l(const struct OVALFData* alf_data, int16_t *dst_coeff, int16_t 
     int nb_coeff_min1 = 13 - 1;
     if (!alf_data) return;
 
-    int nb_filters = alf_data->alf_luma_num_filters_signalled_minus1 + 1;
     const int8_t* coeff = alf_data->alf_luma_coeff[0];
     const uint8_t* clip = alf_data->alf_luma_clip_idx[0];
 
@@ -254,9 +253,7 @@ ccalf_init_filter_cb(RCNALF* alf, const struct OVALFData* alf_data)
 
     for (int alt_idx = 0; alt_idx < nb_alternatives; ++alt_idx) {
         const int8_t *coeff = alf_data->alf_cc_mapped_coeff[0][alt_idx];
-        const uint8_t *clip  = alf_data->alf_chroma_clip_idx[alt_idx];
         for (int coeff_idx = 0; coeff_idx < nb_coeffs_min1; ++coeff_idx) {
-            int clip_idx = alf_data->alf_chroma_clip_flag ? clip[coeff_idx] : 0;
             //alf->coeff_c[alt_idx][coeff_idx] = coeff[coeff_idx];
             //alf->clip_c [alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
 
@@ -276,9 +273,7 @@ ccalf_init_filter_cr(RCNALF* alf, const struct OVALFData* alf_data)
 
     for (int alt_idx = 0; alt_idx < nb_alternatives; ++alt_idx) {
         const int8_t *coeff = alf_data->alf_cc_mapped_coeff[1][alt_idx];
-        const uint8_t *clip  = alf_data->alf_chroma_clip_idx[alt_idx];
         for (int coeff_idx = 0; coeff_idx < nb_coeffs_min1; ++coeff_idx) {
-            int clip_idx = alf_data->alf_chroma_clip_flag ? clip[coeff_idx] : 0;
             //alf->coeff_c[alt_idx][coeff_idx] = coeff[coeff_idx];
             //alf->clip_c [alt_idx][coeff_idx] = alf_clip_lut[clip_idx];
 
@@ -907,8 +902,6 @@ cc_alf_filterBlk(OVSample * chroma_dst, OVSample * luma_src, const int chr_strid
                 row <<= scaleY;
                 col <<= scaleX;
                 const OVSample *srcCross = luma_src + col + row * luma_stride;
-
-                int pos = ((blk_dst.y + i + ii) << scaleY) & (vbCTUHeight - 1);
 
                 for (int jj = 0; jj < clsSizeX; jj++) {
                     const int jj2     = (jj << scaleX);

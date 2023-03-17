@@ -59,6 +59,7 @@ derive_wide_angular_mode2(int8_t log2_pb_w, int8_t log2_pb_h, int pred_mode)
     return pred_mode;
 }
 
+#if 0
 /* FIXME move pare to mode derviation */
 static int8_t
 derive_lfnst_mode_l(OVCTUDec *const ctudec, int log2_tb_w, int log2_tb_h,
@@ -73,6 +74,7 @@ derive_lfnst_mode_l(OVCTUDec *const ctudec, int log2_tb_w, int log2_tb_h,
 
     return intra_mode;
 }
+#endif
 
 int8_t
 drv_lfnst_mode_l(uint8_t log2_tb_w, uint8_t log2_tb_h,

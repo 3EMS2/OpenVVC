@@ -344,7 +344,6 @@ const uint8_t diag_scan_8x8[64] = {
 static void
 derive_scaling_tb(const int16_t *mat, int16_t *dst,  uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
-    const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
     uint8_t log2_max_wh = OVMAX(log2_tb_w, log2_tb_h);
 
     uint8_t log2_matrix_s = OVMIN(log2_max_wh, 3);
@@ -418,7 +417,6 @@ derive_tbs_chroma(struct ScalingLists *sl_ctx, int16_t *intra_luts_cb, int16_t *
 {
     for (int log2_tb_w = 0; log2_tb_w < 7; ++log2_tb_w) {
         for (int log2_tb_h = 0; log2_tb_h < 7; ++log2_tb_h) {
-            uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
             if ((log2_tb_h >= 1 || log2_tb_w >= 1)) {
                 uint8_t log2_max_wh = OVMAX(log2_tb_w, log2_tb_h);
 
@@ -861,7 +859,6 @@ slicedec_finish_decoding(OVSliceDec *sldec)
 static int16_t
 map_subpic_id(const struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
 {
-    uint16_t slice_map_id = 0;
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
         if (sh_subpic_id == part_info->subpic_id[subpic_id]) {
 
@@ -886,7 +883,6 @@ slicedec_submit_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct E
     const OVSPS *const sps = prms->sps;
 
     uint16_t slice_address = prms->sh->sh_slice_address;
-    uint16_t subpic_id = prms->sh->sh_subpic_id;
     uint16_t actual_subpic_id = sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&pps->part_info, sh->sh_subpic_id) : sh->sh_subpic_id;
     const struct SubpicInfo *subpic = &prms->pps->part_info.subpictures[actual_subpic_id];
     uint16_t slice_id =  prms->pps->part_info.slice_id[subpic->map_offset + slice_address];
@@ -1317,7 +1313,6 @@ find_tmvp_collocated_ref(const OVSliceDec *const sldec, const OVPS *const ps)
     const OVPH *ph = ps->ph;
     const OVSH *sh = ps->sh;
 
-    uint8_t slice_type = sh->sh_slice_type;
     if(ph->ph_temporal_mvp_enabled_flag) {
         if (ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag || sh->sh_slice_type == SLICE_P) {
             int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
@@ -1339,7 +1334,6 @@ tmvp_collocated_ref_dist(const OVSliceDec *const sldec, const OVPS *const ps)
     const OVPH *ph = ps->ph;
     const OVSH *sh = ps->sh;
 
-    uint8_t slice_type = sh->sh_slice_type;
     if(ph->ph_temporal_mvp_enabled_flag) {
         if (ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag || sh->sh_slice_type == SLICE_P) {
             int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
@@ -1391,8 +1385,6 @@ init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo
 
     uint32_t nb_ctb_pic_w = einfo->nb_ctb_pic_w;
     const struct TileInfo *tinfo = &prms->pps_info.tile_info;
-
-    uint16_t ctb_offset = nb_ctb_pic_w * einfo->tile_y + einfo->ctb_x;
 
     *drv_lines = sldec->drv_lines;
 
@@ -1951,7 +1943,6 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->tmp_slice_type = sh->sh_slice_type;
 
     if (tools->scaling_list_enabled) {
-        uint8_t aps_id = ph->ph_scaling_list_aps_id;
 
         const OVAPS *aps = prms->aps_scaling_list;
         if (aps)

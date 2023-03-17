@@ -382,7 +382,6 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
             const uint64_t *src_map = plane0->dirs + ctb_addr_rs * nb_unit_ctb;
                   uint64_t *dst_map = tmvp_ctx->dir_map_v0;
             const struct TMVPMV *src_mvs = plane0->mvs + ctb_offset;
-            int i;
 
             tmvp_ctx->ctb_mv0 = src_mvs;
             tmvp_ctx->pln0_stride = pln_stride;
@@ -393,7 +392,6 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
             const uint64_t *src_map = plane1->dirs + ctb_addr_rs * nb_unit_ctb;
                   uint64_t *dst_map = tmvp_ctx->dir_map_v1;
             const struct TMVPMV *src_mvs = plane1->mvs + ctb_offset;
-            int i;
 
             /*FIXME memory could be spared with smaller map size when possible */
             memcpy(dst_map, src_map, sizeof(uint64_t) * (nb_unit_ctb + !is_border_pic));
@@ -1432,7 +1430,6 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
     } else if (inter_dir & 0x2) {
-        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
 
@@ -1442,7 +1439,6 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1475,7 +1471,6 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
     uint8_t log2_pmerge_lvl = inter_ctx->inter_params.log2_parallel_merge_level;
     uint8_t enable_hmvp = enable_hmvp_storage(pb_x, pb_y, nb_pb_w, nb_pb_h, log2_pmerge_lvl);
     if (inter_dir & 0x2) {
-        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         struct TMVPMV tmvpmv = {.mv.x=mv.x, .mv.y=mv.y, .z=inter_ctx->inter_params.dist_ref_1[mv.ref_idx]};
 
@@ -1485,7 +1480,6 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         struct TMVPMV tmvpmv = {.mv.x=mv.x, .mv.y=mv.y, .z=inter_ctx->inter_params.dist_ref_0[mv.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv, pb_x, pb_y, nb_pb_w, nb_pb_h);

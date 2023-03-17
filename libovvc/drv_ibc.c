@@ -119,6 +119,7 @@ ibc_update_hmvp_lut(struct IBCMVCtx *const ibc_ctx, const IBCMV mv)
     }
 }
 
+#if 0
 static IBCMV
 ibc_hmvp_mvp_cand(const struct IBCMVCtx *const ibc_ctx, int8_t mvp_idx, int8_t nb_cand)
 {
@@ -129,6 +130,7 @@ ibc_hmvp_mvp_cand(const struct IBCMVCtx *const ibc_ctx, int8_t mvp_idx, int8_t n
     }
     return cand;
 }
+#endif
 
 #define A1_MSK 0x1
 #define B1_MSK 0x2
@@ -139,7 +141,6 @@ ibc_derive_hmvp_merge_cand(const struct IBCMVCtx *const ibc_ctx,
                            uint8_t status_msk, int8_t nb_cand,
                            int8_t merge_idx)
 {
-    int i;
     IBCMV cand = { 0 };
     int8_t nb_lut_cand = ibc_ctx->nb_hmvp_cand;
     int8_t target_idx = merge_idx - nb_cand;
@@ -160,6 +161,7 @@ ibc_derive_hmvp_merge_cand(const struct IBCMVCtx *const ibc_ctx,
     return cand;
 }
 
+#if 0
 static IBCMV
 ibc_derive_mvp_mv(struct IBCMVCtx *const ibc_ctx,
                   uint8_t x0_unit, uint8_t y0_unit,
@@ -211,6 +213,7 @@ found:
     //cand = drv_round_to_precision_mv(cand, MV_PRECISION_INTERNAL, prec_amvr);
     return cand;
 }
+#endif
 
 static IBCMV
 ibc_derive_merge_mv(const struct IBCMVCtx *const ibc_ctx,

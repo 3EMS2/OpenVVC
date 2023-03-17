@@ -834,7 +834,6 @@ intra_mdlm_lft(const struct OVRCNCtx *const rcn_ctx,
 
     uint8_t status = derive_availibilty_status(abv_map, lft_map, x0, y0, log2_pb_w, log2_pb_h);
 
-    uint8_t abv_avail = !!(status & ABV_AVAIL);
     uint8_t lft_avail = !!(status & LFT_AVAIL);
 
     struct CCLMParams lm_params = {

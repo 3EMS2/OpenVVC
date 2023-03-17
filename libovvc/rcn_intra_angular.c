@@ -479,7 +479,7 @@ intra_angular_h_nofrac(const OVSample* ref_lft, OVSample* dst,
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     int delta_pos = angle_val >> 5;
-    int y, x;
+    int y;
 
     for (y = 0; y < pb_w; ++y) {
         memcpy(_tmp, &ref_lft[delta_pos + 1], sizeof(OVSample) * pb_h);
@@ -606,7 +606,7 @@ intra_angular_v_nofrac(const OVSample* ref_abv, OVSample* dst,
     int pb_h = 1 << log2_pb_h;
     int delta_pos = angle_val;
 
-    int y, x;
+    int y;
     for (y = 0; y < pb_h; y++) {
         const int delta_int = delta_pos >> 5;
         memcpy(_dst, &ref_abv[delta_int + 1], sizeof(OVSample) * pb_w);

@@ -351,7 +351,6 @@ compute_decoding_time(OVFrame *frame)
 {
     uint64_t start = frame->time_info.start;
     uint64_t end = frame->time_info.end;
-    uint64_t out = frame->time_info.out;
 
     return NS_TO_US((int64_t)end - start);
 }
@@ -413,8 +412,10 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
 
         if (pu) {
             int nb_pic2;
-            int dec_ret;
-            dec_ret = ovdec_submit_picture_unit(dec, pu);
+            int dec_ret = ovdec_submit_picture_unit(dec, pu);
+            if (dec_ret < 0) {
+                ov_log(NULL, OVLOG_DEBUG, "Submit picture failed with value %d.\n", dec_ret);
+            }
 
             ovpu_unref(&pu);
 

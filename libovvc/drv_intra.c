@@ -339,8 +339,6 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
     uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
 
-    uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
-
     uint8_t mip_flag = cu.cu_flags & flg_mip_flag;
 
     /* Note PLANAR is the default for other modes derivaion */

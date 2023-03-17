@@ -228,7 +228,6 @@ filter_h_7_7(OVSample *src, const int stride, const int tc)
     static const int8_t db7_q[7] = { 59, 50, 41, 32, 23, 14, 5 };
     static const int8_t db7_p[7] = { 5, 14, 23, 32, 41, 50, 59 };
     static const int8_t tc7_q[7] = { 6, 5, 4, 3, 2, 1, 1 };
-    static const int8_t tc7_p[7] = { 1, 1, 2, 3, 4, 5, 6 };
 
     int16_t clp_q[7];
     int16_t clp_p[7];
@@ -286,7 +285,6 @@ filter_h_7_5(OVSample *src, const int stride, const int tc)
     static const int8_t db7_p[7] = { 5, 14, 23, 32, 41, 50, 59 };
     static const int8_t tc7_p[7] = { 1, 1, 2, 3, 4, 5, 6 };
     static const int8_t db5_q[5] = { 58, 45, 32, 19, 6 };
-    static const int8_t tc5_q[7] = { 6, 5, 4, 3, 2 };
 
     int16_t clp_p[7];
     int16_t clp_q[5];
@@ -375,9 +373,7 @@ filter_h_5_5(OVSample *src, const int stride, const int tc)
     OVSample* srcQ = src;
 
     static const int8_t db5_q[5] = { 58, 45, 32, 19, 6};
-    static const int8_t db_c5_p[5] = { 6, 19, 32, 45, 58 };
     static const int8_t tc5[5] = { 6, 5, 4, 3, 2 };
-    static const int8_t tc5_p[5] = { 2, 3, 4, 5, 6 };
 
     int ref_p = (srcP[-4 * 1] + srcP[-5 * 1] + 1) >> 1;
     int ref_q = (srcQ[ 4 * 1] + srcQ[ 5 * 1] + 1) >> 1;
@@ -826,11 +822,9 @@ filter_v_3_5(OVSample *src, const int stride, const int tc)
     OVSample* srcQ = src;
 
     static const int8_t db3_q[3] = { 53, 32, 11 };
-    static const int8_t db3_p[3] = { 11, 32, 53 };
     static const int8_t db5_q[5] = { 58, 45, 32, 19, 6};
     static const int8_t tc7_q[7] = { 6, 5, 4, 3, 2, 1, 1};
     static const int8_t tc3_q[3] = { 6, 4, 2 };
-    static const int8_t tc3_p[3] = { 2, 4, 6 };
 
     int ref_p = (srcP[-2 * stride] + srcP[-3 * stride] + 1) >> 1;
     int ref_q = (srcQ[ 4 * stride] + srcQ[ 5 * stride] + 1) >> 1;
@@ -1626,7 +1620,7 @@ dbf_mv_set_hedges(const struct InterDRVCtx *const inter_ctx,
     chk_p0 &= (~(bs1_map_h | (ibc_p_msk & ibc_q_msk))) & unit_msk_h;
     chk_p1 &= (~(bs1_map_h | (ibc_p_msk & ibc_q_msk))) & unit_msk_h;
 
-    uint64_t dst_map_h = (ibc_p_msk & ibc_q_msk) ^ (~(chk_p0 | chk_p1 | chk_b)) & unit_msk_h;
+    uint64_t dst_map_h = ((ibc_p_msk & ibc_q_msk) ^ (~(chk_p0 | chk_p1 | chk_b))) & unit_msk_h;
 
     if (chk_b) {
         const OVMV *mv0_p = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
@@ -1748,7 +1742,7 @@ dbf_mv_set_vedges(const struct InterDRVCtx *const inter_ctx,
     chk_p0 &= (~(bs1_map_v | (ibc_p_msk & ibc_q_msk))) & unit_msk_v;
     chk_p1 &= (~(bs1_map_v | (ibc_p_msk & ibc_q_msk))) & unit_msk_v;
 
-    uint64_t dst_map_v = (ibc_p_msk & ibc_q_msk) ^ (~(chk_p0 | chk_p1 | chk_b)) & unit_msk_v;
+    uint64_t dst_map_v = ((ibc_p_msk & ibc_q_msk) ^ (~(chk_p0 | chk_p1 | chk_b))) & unit_msk_v;
 
     if (chk_b) {
         const OVMV *mv0_p = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
@@ -1856,8 +1850,6 @@ static void
 dbf_ctu_preproc_v(const struct InterDRVCtx *const inter_ctx, struct DBFInfo *const dbf_info,
                   uint8_t nb_unit_h, uint8_t nb_unit_w)
 {
-    const uint64_t vedge_mask = ((uint64_t)1 << nb_unit_h) - (uint64_t)1;
-
     const uint64_t *cu_edg_map = &dbf_info->cu_edge.ver[0];
     const uint64_t *sb_edg_map = &dbf_info->aff_edg_ver[8];
 

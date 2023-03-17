@@ -224,8 +224,6 @@ static void
 dequant_4x4_ts(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp)
 {
     struct IQScale deq_prms;
-    int nb_cols = 1 << log2_tb_w; //derive_nb_cols(sig_sb_map);
-    int nb_rows = 1 << log2_tb_h; //derive_nb_rows(sig_sb_map);
 
     deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
 
@@ -243,8 +241,6 @@ static void
 dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, CUFlags cu_flags, uint8_t is_intra, uint8_t comp_idx, uint8_t is_lfnst)
 {
     const struct ToolsInfo *tools = &ctudec->tools;
-    int nb_cols = derive_nb_cols(sig_sb_map);
-    int nb_rows = derive_nb_rows(sig_sb_map);
 
     struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
 
@@ -429,19 +425,6 @@ rcn_residual_c(OVCTUDec *const ctudec,
     if (log2_tb_h > 1 && log2_tb_w > 1) {
         dequant_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp, cu_flags, 1, comp_id, lfnst_flag);
     } else {
-        int log2_sb_w = 2;
-        int log2_sb_h = 2;
-
-        if (log2_tb_w < 2 || log2_tb_h < 2) {
-            log2_sb_w = 1;
-            log2_sb_h = 1;
-            if (log2_tb_h > 2) log2_sb_h = 3;
-            if (log2_tb_w > 2) log2_sb_w = 3;
-        }
-
-        int nb_col = (derive_nb_cols(sig_sb_map) >> 2) << log2_sb_h;
-        int nb_row = (derive_nb_rows(sig_sb_map) >> 2) << log2_sb_w;
-
         dequant_non_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp, cu_flags, comp_id);
     }
 
@@ -820,7 +803,6 @@ rcn_1xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
     const uint8_t log2_tb_w = 0;
     DECLARE_ALIGNED(32, int16_t, dequant_coeffs)[2*64];
 
-    int tb_h = 1 << log2_tb_h;
     int tb_w = 1 << log2_tb_w;
 
     int qp = ctudec->dequant_luma;
@@ -840,7 +822,6 @@ rcn_tu_isp_v(OVCTUDec *const ctudec,
              const struct ISPTUInfo *const tu_info, uint8_t i,
              uint8_t type_v, uint8_t type_h, uint8_t offset)
 {
-    const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
     const struct RCNFunctions *const rcn_func = &ctudec->rcn_funcs;
     const struct TBInfo *const tb_info = &tu_info->tb_info[i];
     const struct OVBuffInfo *const ctu_buff = &ctudec->rcn_ctx.ctu_buff;
@@ -906,7 +887,6 @@ rcn_Xx1_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
     const uint8_t log2_tb_h = 0;
 
     int tb_h = 1 << log2_tb_h;
-    int tb_w = 1 << log2_tb_w;
 
     int qp = ctudec->dequant_luma;
 
@@ -924,7 +904,6 @@ rcn_tu_isp_h(OVCTUDec *const ctudec,
              const struct ISPTUInfo *const tu_info, uint8_t i,
              uint8_t type_v, uint8_t type_h, uint8_t offset)
 {
-    const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
     const struct RCNFunctions *const rcn_func = &ctudec->rcn_funcs;
     const struct TBInfo *const tb_info = &tu_info->tb_info[i];
     const struct OVBuffInfo *const ctu_buff = &ctudec->rcn_ctx.ctu_buff;
@@ -1026,8 +1005,6 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                     const struct ISPTUInfo *const tu_info)
 {
     const struct ToolsInfo *tools = &ctudec->tools;
-    const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
-    const struct RCNFunctions *const rcn_func = &ctudec->rcn_funcs;
 
     int log2_pb_h = log2_cb_h - 2;
     int nb_pb;
@@ -1114,7 +1091,6 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
         int16_t *tr_buff = ctu_dec->transform_buff;
 
         if (!(tu_info->tr_skip_mask & 0x10)) {
-            int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
             uint8_t is_intra = !!(cu_flags & flg_pred_mode_flag);
@@ -1187,7 +1163,6 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
         int16_t dst_stride = ctu_buff->stride;
 
         if (!(tu_info->tr_skip_mask & 0x10)) {
-            int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
             uint8_t is_intra = !!(cu_flags & flg_pred_mode_flag);

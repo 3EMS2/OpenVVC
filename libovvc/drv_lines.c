@@ -725,12 +725,10 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      uint8_t slice_type = sldec->slice_type;
     const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
                                                           : &prms->sps_info.part_info[1];
-     const struct TileInfo *tinfo = &prms->pps_info.tile_info;
 
      struct DRVLines *const lns = &sldec->drv_lines;
 
      uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
-     uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
 
      /* TODO use active parameters such as generic pic info
       * or something instead of this since this could be
@@ -745,8 +743,6 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
 
      nb_ctb_pic_w += prms->pps->part_info.nb_tile_w * 2;
      nb_ctb_pic_w *= prms->pps->part_info.nb_tile_h;
-
-     uint16_t nb_pb_pic_w = (nb_ctb_pic_w << log2_ctb_s) >> log2_min_cb_s;
 
      uint16_t nb_pb_pic_w2 = (nb_ctb_pic_w << log2_ctb_s) >> LOG2_MIN_CU_S;
      uint8_t nb_pb_ctb2 = (1 << 7) >> LOG2_MIN_CU_S;
@@ -793,7 +789,6 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      uint8_t slice_type = sldec->slice_type;
     const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
                                                           : &prms->sps_info.part_info[1];
-     const struct TileInfo *tinfo = &prms->pps_info.tile_info;
 
     struct DRVLines *const lns = &sldec->drv_lines;
 

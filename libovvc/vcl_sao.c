@@ -103,7 +103,6 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
                              uint8_t sao_enabled_c, uint8_t bitdepth_minus8)
 {
 
-    int i, k;
     uint8_t nb_bits = (0x1F >> ((bitdepth_minus8 <= 1) + !bitdepth_minus8)) | 0x7;
 
     memset(sao_ctu, 0 ,sizeof(SAOParamsCtu));

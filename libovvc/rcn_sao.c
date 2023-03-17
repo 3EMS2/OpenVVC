@@ -254,7 +254,6 @@ sao_call(const struct SAOFunctions *saofunc, struct SAOBuff *tmp, OVSample *dst,
             int y_start = bnd_abv && eo_dir != 0;
 
             int dst_offset = y_start * dst_stride + x_start;
-            int src_offset = y_start * src_stride + x_start;
 
             /* Not vertical */
             width -= bnd_lft && eo_dir != 1;
@@ -406,7 +405,6 @@ rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
 
         if (not_bnd_lft) {
             OVSample *dst = dst_0 - stride_filter - 1;
-            const OVSample *src = src_pic;
             const int width2  = fb->filter_region_w[comp];
 
             dst[0] = dst[width2];
@@ -423,7 +421,6 @@ rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
             dst[0 + stride_filter] = dst[1];
         } else {
             OVSample *dst = dst_0 - 1;
-            const OVSample *src = src_pic;
             for (int i = 0; i < height; ++i) {
                 dst[0] = src_pic[0];
                 dst[1] = src_pic[width - 1];

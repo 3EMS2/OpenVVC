@@ -429,7 +429,6 @@ setup_subpic_prms(const OVSPS *const sps, struct PicPartitionInfo *const part_in
     int pic_h = sps->sps_pic_height_max_in_luma_samples;
     int nb_ctu_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     int nb_ctu_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-    int ctb_s = 1 << log2_ctb_s;
 
     int subpic_w = sps->sps_subpic_width_minus1[0]  + 1;
     int subpic_h = sps->sps_subpic_height_minus1[0] + 1;
@@ -439,7 +438,6 @@ setup_subpic_prms(const OVSPS *const sps, struct PicPartitionInfo *const part_in
 
     if (sps->sps_subpic_same_size_flag) {
         int nb_subpic_w = (nb_ctu_w / subpic_w) + !!(nb_ctu_w % subpic_w);
-        int nb_subpic_h = (nb_ctu_h / subpic_h) + !!(nb_ctu_h % subpic_h);
 
         int subpic_x = sps->sps_subpic_ctu_top_left_x[0];
         int subpic_y = sps->sps_subpic_ctu_top_left_y[0];
@@ -514,8 +512,6 @@ setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_inf
     int tile_id = 0;
     int i;
 
-    int entry_idx = 0;
-
     if (part_info->nb_entries) return;
     part_info->nb_slices = pps->pps_single_slice_per_subpic_flag ? part_info->nb_subpics : pps->pps_num_slices_in_pic_minus1 + 1;
     part_info->nb_entries = 0;
@@ -528,14 +524,8 @@ setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_inf
 
         int tile_x = tile_id % tinfo->nb_tile_cols;
         int tile_y = tile_id / tinfo->nb_tile_cols;
-        int ctu_x = tinfo->ctu_x[tile_x];
-        int ctu_y = tinfo->ctu_y[tile_y];
-
 
         sl->tile_idx = tile_id;
-
-        int sl_w = 0;
-        int sl_h = 0;
 
         int sl_w_tile = pps->pps_num_slices_in_pic_minus1 ? pps->pps_slice_width_in_tiles_minus1[i] + 1 : tinfo->nb_tile_cols;
         int sl_h_tile = pps->pps_num_slices_in_pic_minus1 ? pps->pps_slice_height_in_tiles_minus1[i] + 1 : tinfo->nb_tile_rows;
@@ -665,7 +655,6 @@ setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_inf
         if (pps->pps_tile_idx_delta_present_flag && i < pps->pps_num_slices_in_pic_minus1) {
             tile_id += pps->pps_tile_idx_delta_val[i];
         } else {
-            int offset_y;
             tile_id  += pps->pps_slice_width_in_tiles_minus1[i] + 1;
             if (tile_id % tinfo->nb_tile_cols == 0) {
                 tile_id += pps->pps_slice_height_in_tiles_minus1[i] * tinfo->nb_tile_cols;
@@ -688,7 +677,7 @@ setup_suppic_slice_map(struct PicPartitionInfo *part_info)
                 //printf("    Slice %d:\n", slice_id, subpic->x, subpic->y, subpic->w, subpic->h);
                 part_info->slice_id[slice_map_id++] = slice_id;
                 for (int entry_id = slice->entry_idx; entry_id < slice->entry_idx + slice->nb_entries; entry_id++) {
-                    struct Entry *entry = &part_info->entries[entry_id];
+                    //struct Entry *entry = &part_info->entries[entry_id];
                     //printf("        Entry %d: (%d, %d) %dx%d\n", entry_id, entry->x, entry->y, entry->w, entry->h);
                 }
             }
@@ -728,7 +717,6 @@ setup_subpic_id_map(struct PicPartitionInfo *part_info, const OVPPS *const pps, 
 static int16_t
 map_subpic_id(const struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
 {
-    uint16_t slice_map_id = 0;
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
         if (sh_subpic_id == part_info->subpic_id[subpic_id]) {
 

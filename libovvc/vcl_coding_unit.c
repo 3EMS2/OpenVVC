@@ -789,10 +789,6 @@ coding_unit(OVCTUDec *const ctu_dec,
                 cu.cu_mode_idx = luma_mode;
             } else {
                 struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
-                uint8_t x0_unit = (x0 << 1) >> LOG2_MIN_CU_S;
-                uint8_t y0_unit = (y0 << 1) >> LOG2_MIN_CU_S;
-                uint8_t nb_unit_w = (2 << log2_cb_w) >> LOG2_MIN_CU_S;
-                uint8_t nb_unit_h = (2 << log2_cb_h) >> LOG2_MIN_CU_S;
 
                 uint8_t luma_mode = i_info->luma_modes[(x_cb + ((y_cb + (nb_cb_h >> 1)) << 5) + (nb_cb_w >> 1))];
 
@@ -1016,8 +1012,6 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
             uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
             uint8_t x_cb = x0 >> log2_min_cb_s;
             uint8_t y_cb = y0 >> log2_min_cb_s;
-            uint8_t nb_cb_w = (1 << log2_cu_w) >> log2_min_cb_s;
-            uint8_t nb_cb_h = (1 << log2_cu_h) >> log2_min_cb_s;
 
             uint8_t ibc_abv = part_map->cu_mode_x[x_cb];
             uint8_t ibc_lft = part_map->cu_mode_y[y_cb];
@@ -1051,7 +1045,6 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
         }
         /* FIXME cu_skip_flag activation force merge_flag so we only need to read
            merge_idx */
-        uint8_t merge_flag = 1;
         cu_type = ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_skip_flag, 1);
 
         if (cu_type == OV_AFFINE) {
@@ -1072,8 +1065,6 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                 uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
                 uint8_t x_cb = x0 >> log2_min_cb_s;
                 uint8_t y_cb = y0 >> log2_min_cb_s;
-                uint8_t nb_cb_w = (1 << log2_cu_w) >> log2_min_cb_s;
-                uint8_t nb_cb_h = (1 << log2_cu_h) >> log2_min_cb_s;
 
                 uint8_t ibc_abv = part_map->cu_mode_x[x_cb];
                 uint8_t ibc_lft = part_map->cu_mode_y[y_cb];
@@ -1139,8 +1130,6 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                 uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
                 uint8_t x_cb = x0 >> log2_min_cb_s;
                 uint8_t y_cb = y0 >> log2_min_cb_s;
-                uint8_t nb_cb_w = (1 << log2_cu_w) >> log2_min_cb_s;
-                uint8_t nb_cb_h = (1 << log2_cu_h) >> log2_min_cb_s;
 
                 uint8_t ibc_abv = part_map->cu_mode_x[x_cb];
                 uint8_t ibc_lft = part_map->cu_mode_y[y_cb];
@@ -1420,13 +1409,6 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
                                && log2_cb_h <= tools->max_log2_transform_skip_size) {
         uint8_t intra_bdpcm_chroma_flag = ovcabac_read_ae_intra_bdpcm_flag_c(cabac_ctx);
         if (intra_bdpcm_chroma_flag) {
-            struct PartMap *part_map = &ctu_dec->part_map;
-            uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
-            uint8_t x_cb = x0 >> log2_min_cb_s;
-            uint8_t y_cb = y0 >> log2_min_cb_s;
-            uint8_t nb_cb_w = (1 << log2_cb_w) >> log2_min_cb_s;
-            uint8_t nb_cb_h = (1 << log2_cb_h) >> log2_min_cb_s;
-
             uint8_t intra_bdpcm_chroma_dir = ovcabac_read_ae_intra_bdpcm_dir_c(cabac_ctx);
 
             FLG_STORE(intra_bdpcm_chroma_flag, cu.cu_flags);
@@ -1826,7 +1808,7 @@ drv_rcn_wrap_mvp_p(OVCTUDec *const ctu_dec,
     uint8_t ref_idx1 = 0;
     uint8_t cu_type = OV_INTER;
     if (mvp_info.cu_type == OV_AFFINE) {
-        struct AffineMVPDataP *const mvp_data = &mvp_info.data.cp_mvd_info;
+        //struct AffineMVPDataP *const mvp_data = &mvp_info.data.cp_mvd_info;
 
         drv_affine_mvp_p(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
                          &mvp_info, inter_dir);
@@ -2034,7 +2016,6 @@ inter_skip_data_b(OVCTUDec *const ctu_dec,
                   uint8_t x0, uint8_t y0,
                   uint8_t log2_cb_w, uint8_t log2_cb_h)
 {
-    const struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
     const struct ToolsInfo *tools = &ctu_dec->tools;
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     struct MergeData mrg_data;
@@ -2303,7 +2284,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
     mvp_info.bcw_idx = bcw_idx;
 
     if (affine_flag) {
-        const struct AffineMVPDataB *const mvp_data = &mvp_info.data.aff_mvp;
+        //const struct AffineMVPDataB *const mvp_data = &mvp_info.data.aff_mvp;
 
         drv_affine_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
                          &mvp_info, 0x3);
