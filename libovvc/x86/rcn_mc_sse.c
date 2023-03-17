@@ -614,7 +614,7 @@ DECLARE_ALIGNED(16, const int16_t, oh_hevc_qpel_filters_sse[16][4][8]) = {
     { 3, 0, 3, 0, 3, 0, 3, 0 } }
 };
 
-DECLARE_ALIGNED(16, static const int16_t, ov_mc_filters_4_sse[15][4][8]) =
+DECLARE_ALIGNED(16, static const int16_t, ov_mc_filters_4_sse[16][4][8]) =
 {
     {{  0, 1,  0, 1,  0, 1,  0, 1},
         {-3, 63, -3, 63, -3, 63, -3, 63},

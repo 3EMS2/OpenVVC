@@ -3530,14 +3530,16 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
                            log2_cu_w, log2_cu_h,
                            inter_dir);
     } else {
-        const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
-                                                                   log2_cu_w, log2_cu_h,
-                                                                   affine_type);
+        struct AffineDeltaMV dmv_0;
+        struct AffineDeltaMV dmv_1;
+        if (prof_dir & 0x1) {
+            dmv_0 = derive_affine_delta_mvs(&cinfo[0], log2_cu_w, log2_cu_h, affine_type);
+        }
 
         /*FIXME might be unused */
-        const struct AffineDeltaMV dmv_1 = derive_affine_delta_mvs(&cinfo[1],
-                                                                   log2_cu_w, log2_cu_h,
-                                                                   affine_type);
+        if (prof_dir & 0x2) {
+            dmv_1 = derive_affine_delta_mvs(&cinfo[1], log2_cu_w, log2_cu_h, affine_type);
+        }
 
         rcn_affine_prof_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
                                 log2_cu_w, log2_cu_h,
@@ -3705,14 +3707,15 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                            log2_cu_w, log2_cu_h,
                            inter_dir);
     } else {
-        const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
-                                                                   log2_cu_w, log2_cu_h,
-                                                                   affine_type);
+        struct AffineDeltaMV dmv_0;
+        struct AffineDeltaMV dmv_1;
+        if (prof_dir & 0x1) {
+            dmv_0 = derive_affine_delta_mvs(&cinfo[0], log2_cu_w, log2_cu_h, affine_type);
+        }
 
-        /*FIXME might be unused */
-        const struct AffineDeltaMV dmv_1 = derive_affine_delta_mvs(&cinfo[1],
-                                                                   log2_cu_w, log2_cu_h,
-                                                                   affine_type);
+        if (prof_dir & 0x2) {
+            dmv_1 = derive_affine_delta_mvs(&cinfo[1], log2_cu_w, log2_cu_h, affine_type);
+        }
 
         rcn_affine_prof_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
                                 log2_cu_w, log2_cu_h,
@@ -3982,13 +3985,16 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                                log2_cu_w, log2_cu_h,
                                mv_info.inter_dir);
         } else {
-            const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
-                                                                       log2_cu_w, log2_cu_h,
-                                                                       affine_type);
+            struct AffineDeltaMV dmv_0;
+            struct AffineDeltaMV dmv_1;
+            if (prof_dir & 0x1) {
+                dmv_0 = derive_affine_delta_mvs(&cinfo[0], log2_cu_w, log2_cu_h, affine_type);
+            }
 
-            const struct AffineDeltaMV dmv_1 = derive_affine_delta_mvs(&cinfo[1],
-                                                                       log2_cu_w, log2_cu_h,
-                                                                       affine_type);
+            if (prof_dir & 0x2) {
+                dmv_1 = derive_affine_delta_mvs(&cinfo[1], log2_cu_w, log2_cu_h, affine_type);
+            }
+
             rcn_affine_prof_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
                                     log2_cu_w, log2_cu_h,
                                     mv_info.inter_dir, prof_dir, &dmv_0, &dmv_1);
