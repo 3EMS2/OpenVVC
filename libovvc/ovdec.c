@@ -537,7 +537,7 @@ vvc_decode_picture_unit(OVDec *ovdec, const OVPictureUnit *pu)
 {
     int i;
     int ret;
-    ovpu_ref(&ovdec->pu, pu);
+    ovpu_ref(&ovdec->pu, (OVPictureUnit *)pu);
     ov_log(NULL, OVLOG_TRACE, "Picture Unit.\n");
     for (i = 0; i < pu->nb_nalus; ++i) {
         ret = decode_nal_unit(ovdec, pu->nalus[i]);

@@ -222,6 +222,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
 
   #ifndef NO_SIMD
     #if HAVE_X86_OPTIM
+#if 0
       #if HAVE_SSE4_1
       if (__builtin_cpu_supports("sse4.1") && bitdepth == 10) {
           rcn_init_mc_functions_sse(rcn_func);
@@ -261,6 +262,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
           rcn_init_intra_angular_functions_10_avx2(rcn_func);
         }
       #endif
+#endif
     #elif __ARM_ARCH
       #if __ARM_NEON
         #if ARM_SIMDE

@@ -119,17 +119,12 @@ init_ctu_bitfield(struct OVRCNCtx *const rcn_ctx,
     uint64_t internal_mask = ~(((1llu << nb_ctb_pb) - 1llu) << 1);
     uint64_t tr_mask = ~((1llu << (nb_ctb_pb)) - 1llu);
 
-    uint64_t internal_mask_h = internal_mask;
-    uint64_t internal_mask_v = internal_mask;
-
     uint64_t lft_mask = !!(ctb_ngh_flags & CTU_LFT_FLG);
     uint64_t abv_mask = !!(ctb_ngh_flags & CTU_UP_FLG);
     uint64_t tr = !!(ctb_ngh_flags & CTU_UPRGT_FLG);
     /* Remove first bit if ctb_left/above from mask is not available
      * This way we reset the field whenever left CTU is unavailable
      */
-    internal_mask_h &= lft_mask;
-    internal_mask_v &= abv_mask;
 
     for (i = 1; i < nb_ctb_pb + 1; ++i) {
         /* Set internal bits to zero */

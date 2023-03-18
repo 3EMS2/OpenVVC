@@ -2902,18 +2902,18 @@ store_sb_coeff_4x4(int16_t *tb_coeff, const int16_t *sb_coeffs,
                    uint8_t log2_tb_w)
 {
     const uint8_t log2_sb_w = 2;
-    const uint8_t log2_sb_h = 2;
     #if 0
+    const uint8_t log2_sb_h = 2;
     int16_t sb_pos = (sb_x << log2_sb_w) + (sb_y << (log2_sb_h + log2_tb_w));
     #else
     uint16_t sb_pos = (sb_x + (sb_y << (log2_tb_w - 2))) << 4;
     #endif
     int16_t cpy_w = sizeof(*sb_coeffs) << log2_sb_w;
-    int16_t dst_stride = 1 << log2_tb_w;
-    int16_t src_stride = 1 << log2_sb_w;
     int16_t *dst = tb_coeff + sb_pos;
 
     #if 0
+    int16_t dst_stride = 1 << log2_tb_w;
+    int16_t src_stride = 1 << log2_sb_w;
     memcpy(dst              , sb_coeffs              , cpy_w);
     memcpy(dst += dst_stride, sb_coeffs += src_stride, cpy_w);
     memcpy(dst += dst_stride, sb_coeffs += src_stride, cpy_w);
@@ -2929,7 +2929,6 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                     uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    int16_t *const _dst = dst;
     uint8_t tmp_red_w =   (ctu_dec->tmp_red & 0x1);
     uint8_t tmp_red_h = !!(ctu_dec->tmp_red & 0x2);
     /*FIXME we can reduce LUT based on the fact it cannot be greater than 5 */
@@ -2975,7 +2974,6 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     };
 
     uint64_t sig_sb_map = 0;
-    int sb_pos;
 
     if (!last_pos){
         ovcabac_read_ae_sb_dc_coeff_sdh(cabac_ctx, sb_coeffs);
@@ -3007,7 +3005,6 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     sig_sb_map |= 1llu << (last_sb_x + (last_sb_y << 3));
 
-    sb_pos    = (last_sb_x << 2) + ((last_sb_y << log2_red_w) << 2);
     sb_offset = (last_sb_x << 2) + (last_sb_y << 2) * VVC_TR_CTX_STRIDE;
 
     d_sb = last_sb_x + last_sb_y;
@@ -3041,7 +3038,6 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         if (sig_sb_flg) {
 
-            sb_pos    = (x_sb << 2) + ((y_sb << log2_red_w) << 2);
             sb_offset = (x_sb << 2) + (y_sb << 2) * (VVC_TR_CTX_STRIDE);
 
             sig_sb_map |= 1llu << (x_sb + (y_sb << 3));
@@ -3090,9 +3086,9 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     int nb_sb;
     uint8_t sig_sb_flg = 1;
     int16_t sb_coeffs[16] = {0};
-    uint8_t nb_significant [VVC_TR_CTX_SIZE];
-    uint8_t sum_abs_level   [VVC_TR_CTX_SIZE];
-    uint8_t sum_abs_level2 [VVC_TR_CTX_SIZE];
+    uint8_t nb_significant [VVC_TR_CTX_SIZE] = {0};
+    uint8_t sum_abs_level   [VVC_TR_CTX_SIZE] = {0};
+    uint8_t sum_abs_level2 [VVC_TR_CTX_SIZE] = {0};
     uint8_t log2_red_h = OVMIN(log2_tb_h, 5);
     uint8_t log2_red_w = OVMIN(log2_tb_w, 5);
 
@@ -3275,9 +3271,9 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     int nb_sb;
     uint8_t sig_sb_flg = 1;
     int16_t sb_coeffs[16] = {0};
-    uint8_t  nb_significant[VVC_TR_CTX_SIZE];
-    uint8_t  sum_abs_level  [VVC_TR_CTX_SIZE];
-    uint8_t sum_abs_level2 [VVC_TR_CTX_SIZE];
+    uint8_t  nb_significant[VVC_TR_CTX_SIZE] = {0};
+    uint8_t  sum_abs_level  [VVC_TR_CTX_SIZE] = {0};
+    uint8_t sum_abs_level2 [VVC_TR_CTX_SIZE] = {0};
     uint8_t log2_red_h = OVMIN(log2_tb_h, 5);
     uint8_t log2_red_w = OVMIN(log2_tb_w, 5);
     uint16_t max_nb_bins = ((1 << (log2_red_w + log2_red_h)) * 28) >> 4;
@@ -3723,7 +3719,6 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t tmp_red_w =   (ctu_dec->tmp_red & 0x1);
     uint8_t tmp_red_h = !!(ctu_dec->tmp_red & 0x2);
-    int16_t *const _dst = dst;
     /*FIXME we can reduce LUT based on the fact it cannot be greater than 5 */
     uint8_t lim_log2_w = OVMIN(log2_tb_w - tmp_red_w, 5);
     uint8_t lim_log2_h = OVMIN(log2_tb_h - tmp_red_h, 5);
@@ -3751,9 +3746,9 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     int16_t sb_coeffs[16] = {0};
 
     //TODO avoid offsets tabs
-    uint8_t nb_significant[VVC_TR_CTX_SIZE];
-    uint8_t sum_abs_level  [VVC_TR_CTX_SIZE];
-    uint8_t sum_abs_level2 [VVC_TR_CTX_SIZE];
+    uint8_t nb_significant[VVC_TR_CTX_SIZE] = {0};
+    uint8_t sum_abs_level  [VVC_TR_CTX_SIZE] = {0};
+    uint8_t sum_abs_level2 [VVC_TR_CTX_SIZE] = {0};
 
     VVCCoeffCodingCtx c_coding_ctx = {
         .sum_abs_lvl  = &sum_abs_level[VVC_TR_CTX_OFFSET],
@@ -3765,7 +3760,6 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     };
 
     uint64_t sig_sb_map = 0;
-    int sb_pos;
 
     if (!last_pos){
 
@@ -3799,7 +3793,6 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     sig_sb_map |= 1llu << (last_sb_x + (last_sb_y << 3));
 
-    sb_pos    = (last_sb_x << 2) + ((last_sb_y << log2_red_w) << 2);
     sb_offset = (last_sb_x << 2) + (last_sb_y << 2) * VVC_TR_CTX_STRIDE;
 
     d_sb = last_sb_x + last_sb_y;
@@ -3833,7 +3826,6 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         if(sig_sb_flg){
 
-            sb_pos    = (x_sb << 2) + ((y_sb << log2_red_w) << 2);
             sb_offset = (x_sb << 2) + (y_sb << 2) * (VVC_TR_CTX_STRIDE);
 
             sig_sb_map |= 1llu << (x_sb + (y_sb << 3));
@@ -4048,7 +4040,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     int nb_sig_c;
     int16_t *const _dst = dst;
 
-    uint8_t buff[VVC_TR_CTX_SIZE * 3];
+    uint8_t buff[VVC_TR_CTX_SIZE * 3] = {0};
 
     int16_t last_x =  last_pos       & 0x1F;
     int16_t last_y = (last_pos >> 8) & 0x1F;
@@ -4189,7 +4181,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     int16_t *const _dst = dst;
 
     /* FIXME reduce */
-    uint8_t buff[VVC_TR_CTX_SIZE * 3];
+    uint8_t buff[VVC_TR_CTX_SIZE * 3] = {0};
 
     VVCCoeffCodingCtx c_coding_ctx;
 
@@ -4315,7 +4307,7 @@ read_tb_inv_diag_scan(const struct SBReader *const sb_rdr,
         VVCCoeffCodingCtx c_coding_ctx;
         int16_t sb_coeffs[16] = {0};// = {0}; //temporary table to store sb_coeffs in process
 
-        uint8_t buff[VVC_TR_CTX_SIZE * 3];
+        uint8_t buff[VVC_TR_CTX_SIZE * 3] = {0};
 
         const uint8_t log2_sb_w = 2;
         const uint8_t log2_sb_h = 2;
@@ -4718,7 +4710,7 @@ decode_dpq_small_w_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     int16_t *const _dst = dst;
 
     /* FIXME reduce */
-    uint8_t buff[VVC_TR_CTX_SIZE * 3];
+    uint8_t buff[VVC_TR_CTX_SIZE * 3] = {0};
 
     VVCCoeffCodingCtx c_coding_ctx;
 

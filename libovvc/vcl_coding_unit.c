@@ -1970,6 +1970,7 @@ check_nz_affine_b(const struct AffineControlInfo *const cp_mvd0, const struct Af
     return (uint8_t)!!mvd_not_zero;
 }
 
+#if 0
 static inline uint8_t
 check_nz_mvd(const OVMV *const mvd0, const OVMV *const mvd1,
              uint8_t inter_dir, uint8_t smvd_flag, uint8_t mvd1_zero_flag)
@@ -1988,6 +1989,7 @@ check_nz_mvd(const OVMV *const mvd0, const OVMV *const mvd1,
 
     return (uint8_t)!!mvd_not_zero;
 }
+#endif
 
 static inline uint8_t
 check_nz_mvd_b(const OVMV *const mvd0, const OVMV *const mvd1,

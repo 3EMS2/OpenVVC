@@ -1035,14 +1035,11 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     const OVPH  *const ph  = ps->ph;
     int ret = 0;
     int32_t poc = dpb->poc;
-    uint8_t cra_flag = 0;
     uint8_t idr_flag = 0;
 
     idr_flag |= nalu_type == OVNALU_IDR_W_RADL;
     idr_flag |= nalu_type == OVNALU_IDR_N_LP;
 
-    cra_flag |= nalu_type == OVNALU_CRA;
-    cra_flag |= nalu_type == OVNALU_GDR;
     uint8_t once = !dpb->active_pic;
 
     /* TODO move to dec init */

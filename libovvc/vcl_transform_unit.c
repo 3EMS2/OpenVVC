@@ -470,7 +470,7 @@ decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, C
     }
 
     /* FIXME intra if inter we only check for cbf_mask == 3*/
-    if (tools->jcbcr_enabled && (!(cu_flags & flg_ibc_flag) && ((cu_flags & flg_pred_mode_flag) && cbf_mask) || cbf_mask == 3)) {
+    if (tools->jcbcr_enabled && ((!(cu_flags & flg_ibc_flag) && ((cu_flags & flg_pred_mode_flag) && cbf_mask)) || cbf_mask == 3)) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx, (cbf_mask & 0x3) - 1);
         cbf_mask |= joint_cb_cr << 3;
     }
@@ -891,7 +891,6 @@ transform_unit_c(OVCTUDec *const ctu_dec,
                  uint8_t rqt_root_cbf, CUFlags cu_flags, uint8_t tr_depth,
                  struct TUInfo *const tu_info)
 {
-    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t cbf_mask = decode_cbf_c(ctu_dec, cu_flags);
     uint8_t jcbcr_flag = cbf_mask & 0x8;
     uint8_t cbf_mask_c = cbf_mask & 0x3;
@@ -1035,7 +1034,6 @@ transform_tree(OVCTUDec *const ctu_dec,
                        tr_depth + 1, &tu_info[8]);
         return 0;
     } else if (log2_tb_h > 6 && log2_tb_w < 7) {
-        int residual_offset = tu_info[0].pos_offset;
 
         transform_tree(ctu_dec, x0, y0, log2_tb_w, 6,
                        log2_max_tb_s, rqt_root_cbf, cu_flags,
@@ -1161,7 +1159,6 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
 
     } else {
         uint8_t y1 = y0 + (1 << (log2_tb_h - 1));
-        uint8_t y3 = y0 + (1 << (log2_tb_h - 1));
         if (tools->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
@@ -1369,7 +1366,6 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
 
     if (tools->chroma_qp_offset_enabled && cbf_mask_c && ctu_dec->read_qp_c) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-        int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
         uint8_t length = tools->chroma_qp_offset_len;
         int cu_qp_delta = ovcabac_read_ae_cu_chroma_qp_offset(cabac_ctx, length);
         if (cu_qp_delta) {

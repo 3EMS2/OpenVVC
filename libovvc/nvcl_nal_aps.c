@@ -254,14 +254,10 @@ nvcl_read_scaling_list_data(OVNVCLReader *const rdr, struct OVScalingListData* s
         }
 
         for (; id < 9; id++) {
-            uint8_t is_pred_or_cpy;
             sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
             if (!sl->scaling_list_copy_mode_flag[id]) {
                 sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
             }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
 
             if (!sl->scaling_list_copy_mode_flag[id]) {
 

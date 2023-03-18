@@ -1253,7 +1253,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
 
     /* Control points from affine neighbours */
     /* Affine left cand */
-    struct AffineControlInfo cp_info[2];
+    struct AffineControlInfo cp_info[2] = {0};
 
 
     /* FIXME check affine */
@@ -2644,9 +2644,9 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
     {
         uint8_t avail_cp_map = 0;
         uint8_t cand_msk;
-        uint8_t dir[4];
+        uint8_t dir[4] = {0};
 
-        struct ControlPointMVCand mi;
+        struct ControlPointMVCand mi = {0};
 
         if ((cand_msk = available_merge_b2_b3_a2(rpl0_cand, rpl1_cand))) {
             enum CandName cand_id = cand_mask_to_idx(cand_msk);
@@ -2978,6 +2978,7 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
     }
 }
 
+#if 0
 static inline OVMV
 round_dmv(OVMV mv)
 {
@@ -3000,6 +3001,7 @@ round_dmv(OVMV mv)
 
   return tmp;
 }
+#endif
 
 static void
 dbf_set_sb_edges(struct DBFInfo *const dbf_info,
@@ -3517,8 +3519,8 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
                                 nb_pb_h, log2_cu_w, log2_cu_h, inter_dir);
 
     if (prof_dir) {
-        uint8_t prof_0 = check_affine_prof(&mv_info, RPL_0);
-        uint8_t prof_1 = check_affine_prof(&mv_info, RPL_1);
+        uint8_t prof_0 = prof_dir &0x1 &&  check_affine_prof(&mv_info, RPL_0);
+        uint8_t prof_1 = prof_dir &0x2 && check_affine_prof(&mv_info, RPL_1);
 
         prof_dir &= (prof_0) | (prof_1 << 1);
 
@@ -3694,8 +3696,8 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                                 nb_pb_h, log2_cu_w, log2_cu_h, inter_dir);
 
     if (prof_dir) {
-        uint8_t prof_0 = check_affine_prof(&mv_info, RPL_0);
-        uint8_t prof_1 = check_affine_prof(&mv_info, RPL_1);
+        uint8_t prof_0 = prof_dir &0x1 &&  check_affine_prof(&mv_info, RPL_0);
+        uint8_t prof_1 = prof_dir &0x2 && check_affine_prof(&mv_info, RPL_1);
 
         prof_dir &= (prof_0) | (prof_1 << 1);
 
@@ -3972,8 +3974,8 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                                     mv_info.inter_dir);
 
         if (prof_dir) {
-            uint8_t prof_0 = check_affine_prof(&mv_info, RPL_0);
-            uint8_t prof_1 = check_affine_prof(&mv_info, RPL_1);
+            uint8_t prof_0 = prof_dir &0x1 &&  check_affine_prof(&mv_info, RPL_0);
+            uint8_t prof_1 = prof_dir &0x2 && check_affine_prof(&mv_info, RPL_1);
 
             prof_dir &= (prof_0) | (prof_1 << 1);
 

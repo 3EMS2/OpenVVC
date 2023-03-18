@@ -240,6 +240,7 @@ derive_scaling_matrix_8x8_2(struct ScalingLists *const sl_ctx, const OVScalingLi
 
 #define TB_SIZE(id) (TB_EXIST(id) << (OVMIN(LOG2_TB_W(id), 5) + OVMIN(LOG2_TB_H(id), 5)))
 
+#if 0
 static const uint16_t tb_lut_size_tb[64] = {
    TB_SIZE( 0),
    TB_SIZE( 1),
@@ -306,6 +307,7 @@ static const uint16_t tb_lut_size_tb[64] = {
    TB_SIZE(62),
    TB_SIZE(63),
 };
+#endif
 
 static const uint16_t tb_lut_offset[64] =
 {      0,    0,    2,    6,   14,   30,   62,   94,
@@ -1629,14 +1631,14 @@ copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVP
     inter_ctx->inter_params.low_delay = 1;
 
     /* FIXME Bidir only */
-    for (int i = 0; i < nb_active_refs0; ++i) {
+    for (int i = 0; i < nb_active_refs0 + !nb_active_refs0; ++i) {
         uint8_t opp_ref_idx0 = 0xFF;
 
         if (inter_ctx->inter_params.dist_ref_0[i] < 0) {
             inter_ctx->inter_params.low_delay = 0;
         }
 
-        for (int j = 0; j < nb_active_refs1; j ++) {
+        for (int j = 0; j < nb_active_refs1 + !nb_active_refs1; j ++) {
             if (inter_ctx->inter_params.rpl0[i] == inter_ctx->inter_params.rpl1[j]) {
                 opp_ref_idx0 = j;
                 break;
@@ -1645,14 +1647,14 @@ copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVP
         inter_ctx->inter_params.rpl0_opp[i] = opp_ref_idx0;
     }
 
-    for (int i = 0; i < nb_active_refs1; ++i) {
+    for (int i = 0; i < nb_active_refs1 + !nb_active_refs1; ++i) {
         uint8_t opp_ref_idx1 = 0xFF;
 
         if (inter_ctx->inter_params.dist_ref_1[i] < 0) {
             inter_ctx->inter_params.low_delay = 0;
         }
 
-        for (int j = 0; j < nb_active_refs0; j ++) {
+        for (int j = 0; j < nb_active_refs0 + !nb_active_refs0; j ++) {
             if (inter_ctx->inter_params.rpl1[i] == inter_ctx->inter_params.rpl0[j]) {
                 opp_ref_idx1 = j;
                 break;

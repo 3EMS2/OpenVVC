@@ -792,7 +792,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     uint8_t slice_in_tiles = !pps->pps_rect_slice_flag && nb_tiles_pic > 1;
     uint8_t rect_slice_in_tiles = pps->pps_rect_slice_flag && pps->pps_num_slices_in_pic_minus1;
-    uint8_t slice_in_subpic = rect_slice_in_tiles || pps->pps_rect_slice_flag && nb_slices_subpic > 1;
+    uint8_t slice_in_subpic = rect_slice_in_tiles || (pps->pps_rect_slice_flag && nb_slices_subpic > 1);
     uint8_t tiles_in_slice = !slice_in_tiles && nb_tiles_pic > 1;
 
     /* FIXME would be better to distinguish in two different branches */
