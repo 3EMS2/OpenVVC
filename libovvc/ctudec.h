@@ -284,12 +284,15 @@ struct TMVPMV
 
 struct OVMV
 {
-    int32_t x;
-    int32_t y;
+    //int32_t x;
+    //int32_t y;
+    struct MV mv;
     int8_t ref_idx;
     /*FIXME move ref_idx, bcw_idx and prec_amvr outside of struct */
+    struct {
     uint8_t bcw_idx_plus1;
     uint8_t prec_amvr;
+    }mv_spec;
 };
 
 struct VVCGPM
@@ -318,9 +321,14 @@ struct OVMVCtx
 
 struct AffineControlInfo
 {
-    OVMV lt;
-    OVMV rt;
-    OVMV lb;
+    struct MV lt;
+    struct MV rt;
+    struct MV lb;
+    uint8_t ref_idx;
+    struct {
+    uint8_t bcw_idx_plus1;
+    uint8_t prec_amvr;
+    }mv_spec;
 };
 
 struct PBInfo

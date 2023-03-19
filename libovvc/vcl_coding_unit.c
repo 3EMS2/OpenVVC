@@ -391,12 +391,12 @@ vvc_exp_golomb_mv(OVCABACCtx *const cabac_ctx)
     return offset + add_val;
 }
 
-static OVMV
+static struct MV
 ovcabac_read_ae_mvd(OVCABACCtx *const cabac_ctx)
 {
     int abs_x, abs_y;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    OVMV mvd;
+    struct MV mvd;
 
     abs_x = ovcabac_ae_read(cabac_ctx, &cabac_state[MVD_CTX_OFFSET]);
     abs_y = ovcabac_ae_read(cabac_ctx, &cabac_state[MVD_CTX_OFFSET]);
@@ -830,7 +830,7 @@ coding_unit(OVCTUDec *const ctu_dec,
 }
 
 static inline uint8_t
-check_nz_mvd_p(const OVMV *const mvd)
+check_nz_mvd_p(const struct MV *const mvd)
 {
     int32_t mvd_not_zero = 0;
 
@@ -854,7 +854,7 @@ inter_mvp_data_ibc(OVCTUDec *const ctu_dec, uint8_t nb_ibc_cand_min1)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     struct IBCMVPData mvp_data;
-    OVMV mvd;
+    struct MV mvd;
     uint8_t mvp_idx = 0;
 
     mvd = ovcabac_read_ae_mvd(cabac_ctx);
@@ -876,7 +876,7 @@ inter_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref_min1)
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     struct MVPDataP mvp_data;
     uint8_t ref_idx = nb_active_ref_min1;
-    OVMV mvd;
+    struct MV mvd;
     uint8_t mvp_idx;
 
     if (nb_active_ref_min1) {
@@ -889,7 +889,7 @@ inter_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref_min1)
 
 
     mvp_data.ref_idx   = ref_idx;
-    mvp_data.mvd       = mvd;
+    mvp_data.mvd.mv       = mvd;
     mvp_data.mvp_idx   = mvp_idx;
 
     return mvp_data;
@@ -1691,8 +1691,8 @@ inter_mvp_data_b(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1,
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     const struct ToolsInfo *tools = &ctu_dec->tools;
     struct MVPDataB mvp_data;
-    OVMV mvd0;
-    OVMV mvd1 = {0};
+    struct MV mvd0;
+    struct MV mvd1 = {0};
     uint8_t ref_idx0 = 0;
     uint8_t mvp_idx0 = 0;
     uint8_t ref_idx1 = 0;
@@ -1716,8 +1716,8 @@ inter_mvp_data_b(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1,
 
     mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
-    mvp_data.mvd0 = mvd0;
-    mvp_data.mvd1 = mvd1;
+    mvp_data.mvd0.mv = mvd0;
+    mvp_data.mvd1.mv = mvd1;
 
     mvp_data.ref_idx0 = ref_idx0;
     mvp_data.mvp_idx0 = mvp_idx0;
@@ -1779,7 +1779,7 @@ inter_mvp_read_p(OVCTUDec *const ctu_dec,
         mvp_data = inter_mvp_data_p(ctu_dec, nb_active_ref_min1);
 
         if (tools->amvr_enabled) {
-            uint8_t nz_mvd = check_nz_mvd_p(&mvp_data.mvd);
+            uint8_t nz_mvd = check_nz_mvd_p(&mvp_data.mvd.mv);
             if (nz_mvd) {
                 prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx);
             }
@@ -1824,26 +1824,26 @@ drv_rcn_wrap_mvp_p(OVCTUDec *const ctu_dec,
             uint8_t mvp_idx0 = mvp_data->mvp_idx;
             ref_idx0 = mvp_data->ref_idx;
             mv_info = drv_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                                mvp_data->mvd, mvp_data->mvd,
+                                mvp_data->mvd.mv, mvp_data->mvd.mv,
                                 mvp_info.prec_amvr,
                                 mvp_idx0, -1,
                                 BCW_DEFAULT,
                                 0x1, ref_idx0, -1,
                                 log2_cb_w + log2_cb_h <= 5);
 
-            mv_info.mv0.prec_amvr = mvp_info.prec_amvr;
+            mv_info.mv0.mv_spec.prec_amvr = mvp_info.prec_amvr;
         } else {
             uint8_t mvp_idx1 = mvp_data->mvp_idx;
             ref_idx1 = mvp_data->ref_idx;
             mv_info = drv_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                                mvp_data->mvd, mvp_data->mvd,
+                                mvp_data->mvd.mv, mvp_data->mvd.mv,
                                 mvp_info.prec_amvr,
                                 -1, mvp_idx1,
                                 BCW_DEFAULT,
                                 0x2, -1, ref_idx1,
                                 log2_cb_w + log2_cb_h <= 5);
 
-            mv_info.mv1.prec_amvr = mvp_info.prec_amvr;
+            mv_info.mv1.mv_spec.prec_amvr = mvp_info.prec_amvr;
         }
     }
 
@@ -1992,7 +1992,7 @@ check_nz_mvd(const OVMV *const mvd0, const OVMV *const mvd1,
 #endif
 
 static inline uint8_t
-check_nz_mvd_b(const OVMV *const mvd0, const OVMV *const mvd1,
+check_nz_mvd_b(const struct MV *const mvd0, const struct MV *const mvd1,
                uint8_t mvd1_zero_flag)
 {
     uint32_t mvd_not_zero = 0;
@@ -2005,7 +2005,7 @@ check_nz_mvd_b(const OVMV *const mvd0, const OVMV *const mvd1,
 }
 
 static inline uint8_t
-check_nz_mvd_smvd(const OVMV *const mvd0)
+check_nz_mvd_smvd(const struct MV *const mvd0)
 {
     int32_t mvd_not_zero = 0;
     mvd_not_zero |= (mvd0->x | mvd0->y);
@@ -2244,13 +2244,13 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
         if (smvd_flag) {
             struct SMVDData smvd;
 
-            smvd.mvd = ovcabac_read_ae_mvd(cabac_ctx);
+            smvd.mvd.mv = ovcabac_read_ae_mvd(cabac_ctx);
 
             smvd.mvp_idx0 = ovcabac_read_ae_mvp_flag(cabac_ctx);
             smvd.mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
             if (tools->amvr_enabled) {
-                uint8_t nz_mvd = check_nz_mvd_smvd(&smvd.mvd);
+                uint8_t nz_mvd = check_nz_mvd_smvd(&smvd.mvd.mv);
                 if (nz_mvd) {
                     prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx);
                 }
@@ -2263,7 +2263,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
             struct MVPDataB mvp_b = inter_mvp_data_b(ctu_dec, nb_active_ref0_min1,
                                                      nb_active_ref1_min1);
             if (tools->amvr_enabled) {
-                uint8_t nz_mvd = check_nz_mvd_b(&mvp_b.mvd0, &mvp_b.mvd1, tools->mvd1_zero_enabled);
+                uint8_t nz_mvd = check_nz_mvd_b(&mvp_b.mvd0.mv, &mvp_b.mvd1.mv, tools->mvd1_zero_enabled);
                 if (nz_mvd) {
                     prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx);
                 }
@@ -2298,7 +2298,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
     } else {
         VVCMergeInfo mv_info;
 
-        OVMV mvd0, mvd1 = {0};
+        struct MV mvd0, mvd1 = {0};
         uint8_t mvp_idx0 = 0;
         uint8_t mvp_idx1 = 0;
         uint8_t ref_idx0 = 0;
@@ -2307,7 +2307,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
         if (smvd_flag) {
 
             const struct SMVDData *const smvd = &mvp_info.data.smvd;
-            mvd0 = smvd->mvd;
+            mvd0 = smvd->mvd.mv;
             mvp_idx0 = smvd->mvp_idx0;
             mvp_idx1 = smvd->mvp_idx1;
 
@@ -2315,17 +2315,15 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
             ref_idx1     = inter_ctx->inter_params.ref_smvd_idx1;
             mvd1.x       = -mvd0.x;
             mvd1.y       = -mvd0.y;
-            /* FIXME check if necessary */
-            mvd1.ref_idx = inter_ctx->inter_params.ref_smvd_idx1;
 
         } else {
             const struct MVPDataB *const mvp_b = &mvp_info.data.mvp;
 
-            mvd0 = mvp_b->mvd0;
+            mvd0 = mvp_b->mvd0.mv;
             ref_idx0 = mvp_b->ref_idx0;
             mvp_idx0 = mvp_b->mvp_idx0;
 
-            mvd1 = mvp_b->mvd1;
+            mvd1 = mvp_b->mvd1.mv;
             ref_idx1 = mvp_b->ref_idx1;
             mvp_idx1 = mvp_b->mvp_idx1;
         }
@@ -2338,7 +2336,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
         if (inter_ctx->inter_params.bdof_enabled) {
             /* Note ciip_flag is zero in this function */
             uint8_t ciip_flag = 0;
-            uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
+            uint8_t bcw_flag = (mv_info.mv0.mv_spec.bcw_idx_plus1 != 0 && mv_info.mv0.mv_spec.bcw_idx_plus1 != 3);
             bdof_enable = check_bdof(log2_cb_w, log2_cb_h, ciip_flag, bcw_flag, smvd_flag);
 
             bdof_enable = bdof_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
@@ -2442,8 +2440,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             ref_idx0 = mv_info.mv0.ref_idx;
             ref_idx1 = mv_info.mv1.ref_idx;
 
-            mv_info.mv0.bcw_idx_plus1 = 0;
-            mv_info.mv1.bcw_idx_plus1 = 0;
+            mv_info.mv0.mv_spec.bcw_idx_plus1 = 0;
+            mv_info.mv1.mv_spec.bcw_idx_plus1 = 0;
 
             ctu_dec->rcn_funcs.rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
                        log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
@@ -2475,7 +2473,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             if (inter_ctx->inter_params.bdof_enabled && mv_info.inter_dir == 0x3) {
                 /* Note ciip_flag is zero in this function */
                 uint8_t ciip_flag = 0;
-                uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
+                uint8_t bcw_flag = (mv_info.mv0.mv_spec.bcw_idx_plus1 != 0 && mv_info.mv0.mv_spec.bcw_idx_plus1 != 3);
                 bdof_enable = check_bdof(log2_cb_w, log2_cb_h, ciip_flag, bcw_flag, smvd_flag);
 
                 bdof_enable = bdof_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
@@ -2483,7 +2481,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
             if (inter_ctx->inter_params.dmvr_enabled && mv_info.inter_dir == 0x3) {
                 /*FIXME check both mv in bir dir ?*/
-                uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
+                uint8_t bcw_flag = (mv_info.mv0.mv_spec.bcw_idx_plus1 != 0 && mv_info.mv0.mv_spec.bcw_idx_plus1 != 3);
                 dmvr_enable = check_bdof(log2_cb_w, log2_cb_h, 0, mmvd_flag, bcw_flag);
 
                 dmvr_enable = dmvr_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
@@ -2514,8 +2512,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                                &mv0, &mv1,
                                                ref_idx0, ref_idx1, bdof_enable);
 
-                            struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[ref_idx0]};
-                            struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[ref_idx1]};
+                            struct TMVPMV tmvpmv0 = {.mv=mv0.mv, .z=inter_ctx->inter_params.dist_ref_0[ref_idx0]};
+                            struct TMVPMV tmvpmv1 = {.mv=mv1.mv, .z=inter_ctx->inter_params.dist_ref_1[ref_idx1]};
                             /* FIXME temporary hack to override MVs on 8x8 grid for TMVP */
                             /* FIXME find an alternative in case x0 % 8  is != 0 */
                             tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16] = tmvpmv0;
@@ -2620,14 +2618,14 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             struct MVPDataP mvp_data = inter_mvp_data_p(ctu_dec, nb_active_ref_min1);
 
             if (tools->amvr_enabled) {
-                uint8_t nz_mvd = check_nz_mvd_p(&mvp_data.mvd);
+                uint8_t nz_mvd = check_nz_mvd_p(&mvp_data.mvd.mv);
                 if (nz_mvd) {
                     prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx);
                 }
             }
 
             mv_info = drv_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                                mvp_data.mvd, mvp_data.mvd, prec_amvr, mvp_data.mvp_idx, mvp_data.mvp_idx, BCW_DEFAULT,
+                                mvp_data.mvd.mv, mvp_data.mvd.mv, prec_amvr, mvp_data.mvp_idx, mvp_data.mvp_idx, BCW_DEFAULT,
                                 inter_dir, mvp_data.ref_idx, mvp_data.ref_idx, log2_cb_w + log2_cb_h <= 5);
 
             ctu_dec->rcn_funcs.rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,

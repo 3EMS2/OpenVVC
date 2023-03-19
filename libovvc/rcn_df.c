@@ -1513,7 +1513,7 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
 
 #define LF_MV_THRESHOLD 8
 static inline uint8_t
-mv_threshold_check(OVMV a, OVMV b)
+mv_threshold_check(struct MV a, struct MV b)
 {
     uint32_t abs_delta_x = OVABS(a.x - b.x);
     uint32_t abs_delta_y = OVABS(a.y - b.y);
@@ -1534,7 +1534,7 @@ check_dbf_enabled_p(const int16_t *dist_ref_p, const int16_t *dist_ref_q, OVMV m
     uint8_t bs = 1;
 
     if (ref0_p == ref0_q) {
-        bs  = mv_threshold_check(mv_q0, mv_p0);
+        bs  = mv_threshold_check(mv_q0.mv, mv_p0.mv);
     }
 
     return (uint64_t)bs;
@@ -1564,14 +1564,14 @@ check_dbf_enabled(const struct InterDRVCtx *const inter_ctx,
      * paired_ref_pq == swapped_ref_pq
      */
     if ((coupled_l0_l1) && (paired_ref_pq)) {
-        bs  = mv_threshold_check(mv_q0, mv_p0) || mv_threshold_check(mv_q1, mv_p1);
-        bs &= mv_threshold_check(mv_q1, mv_p0) || mv_threshold_check(mv_q0, mv_p1);
+        bs  = mv_threshold_check(mv_q0.mv, mv_p0.mv) || mv_threshold_check(mv_q1.mv, mv_p1.mv);
+        bs &= mv_threshold_check(mv_q1.mv, mv_p0.mv) || mv_threshold_check(mv_q0.mv, mv_p1.mv);
     } else if (paired_ref_pq){
-        bs  = mv_threshold_check(mv_q0, mv_p0);
-        bs |= mv_threshold_check(mv_q1, mv_p1);
+        bs  = mv_threshold_check(mv_q0.mv, mv_p0.mv);
+        bs |= mv_threshold_check(mv_q1.mv, mv_p1.mv);
     } else if (swapped_ref_pq) {
-        bs  = mv_threshold_check(mv_q1, mv_p0);
-        bs |= mv_threshold_check(mv_q0, mv_p1);
+        bs  = mv_threshold_check(mv_q1.mv, mv_p0.mv);
+        bs |= mv_threshold_check(mv_q0.mv, mv_p1.mv);
     }
 
     return (uint64_t)bs;

@@ -117,8 +117,8 @@ enum ControlPointCandMask
 /* FIXME only keep points */
 struct AffineDeltaMV
 {
-    OVMV h;
-    OVMV v;
+    struct MV h;
+    struct MV v;
 };
 
 struct Affine3CP
@@ -176,10 +176,10 @@ struct TMVPPos {
 /* Generic Motion vector clipping and rounding helper functions
  */
 
-static inline OVMV
-clip_mv(OVMV src)
+static inline struct MV
+clip_mv(struct MV src)
 {
-    OVMV dst;
+    struct MV dst;
     const int mv_min = -(1 << 17);
     const int mv_max = (1 << 17) - 1;
 
@@ -190,10 +190,10 @@ clip_mv(OVMV src)
 }
 
 /*FIXME is different from clip_mv ? */
-static inline OVMV
-mv_clip_periodic(OVMV src)
+static inline struct MV
+mv_clip_periodic(struct MV src)
 {
-    OVMV dst;
+    struct MV dst;
 
     dst.x = (src.x + CLIP_PERIOD) & (CLIP_PERIOD - 1);
     dst.y = (src.y + CLIP_PERIOD) & (CLIP_PERIOD - 1);
@@ -205,10 +205,10 @@ mv_clip_periodic(OVMV src)
 }
 
 //TODOamvr
-static inline OVMV
-round_affine_mv(const OVMV mv, uint8_t prec_amvr)
+static inline struct MV
+round_affine_mv(const struct MV mv, uint8_t prec_amvr)
 {
-    OVMV tmp;
+    struct MV tmp;
 
     tmp  = drv_round_to_precision_mv(mv, MV_PRECISION_INTERNAL, prec_amvr);
 
@@ -221,11 +221,11 @@ round_affine_mv(const OVMV mv, uint8_t prec_amvr)
     return tmp;
 }
 
-static inline OVMV
-round_affine_mv2(OVMV mv)
+static inline struct MV
+round_affine_mv2(struct MV mv)
 {
   const int rnd = 1 << (AFFINE_SHIFT - 1);
-  OVMV tmp;
+  struct MV tmp;
 
   tmp.x = mv.x + rnd;
   tmp.y = mv.y + rnd;
@@ -584,11 +584,9 @@ found :
 
     mv.mv = tmvp_rescale(mv.mv, scale);
 
-    dst->x = mv.mv.x;
-    dst->y = mv.mv.y;
+    dst->mv = mv.mv;
     dst->ref_idx = ref_idx;
-    dst->bcw_idx_plus1 = 0;
-    dst->prec_amvr = 0;
+    memset(&dst->mv_spec, 0, sizeof(dst->mv_spec));
 
     return 1;
 }
@@ -641,11 +639,9 @@ found :
 
     mv.mv = tmvp_rescale(mv.mv, scale);
 
-    dst->x = mv.mv.x;
-    dst->y = mv.mv.y;
+    dst->mv = mv.mv;
     dst->ref_idx = ref_idx;
-    dst->bcw_idx_plus1 = 0;
-    dst->prec_amvr = 0;
+    memset(&dst->mv_spec, 0, sizeof(dst->mv_spec));
 
     return 1;
 }
@@ -680,10 +676,7 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             mv       = tmvp->ctb_mv1[c0_pos];
             dist_col = mv.z;
@@ -692,10 +685,8 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
 
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
         } else if (cand_c0 && cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
             mv       = mvs[c0_pos];
@@ -704,10 +695,7 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             mv       = tmvp->ctb_mv0[c0_pos];
             dist_col = mv.z;
@@ -716,10 +704,8 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
 
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
         } else if (cand_c0) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv0;
             mv       = mvs[c0_pos];
@@ -728,10 +714,7 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             mv       = mvs[c0_pos];
 
@@ -739,10 +722,7 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
-
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
 
         } else if (cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
@@ -753,12 +733,7 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
-
-            //mv.ref_idx = ref_idx;
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             mv       = mvs[c0_pos];
 
@@ -766,10 +741,7 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
-
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
         }
 
         return dir;
@@ -808,12 +780,9 @@ merge_tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             //mv.ref_idx = ref_idx;
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
 
             mv       = mvs[c0_pos];
 
@@ -821,12 +790,9 @@ merge_tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
 
             //mv.ref_idx = ref_idx;
-
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
 
         } else if (cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
@@ -837,12 +803,9 @@ merge_tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             //mv.ref_idx = ref_idx;
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
 
             mv       = mvs[c0_pos];
 
@@ -850,12 +813,9 @@ merge_tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
 
             //mv.ref_idx = ref_idx;
-
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
         }
 
         return dir;
@@ -895,12 +855,9 @@ merge_tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             //mv.ref_idx = ref_idx;
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
 
             dir |= 0x2;
 
@@ -908,12 +865,10 @@ merge_tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
 
             //mv.ref_idx = ref_idx;
 
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
         } else if (cand_c0) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv0;
             mv       = mvs[c0_pos];
@@ -923,12 +878,9 @@ merge_tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             //mv.ref_idx = ref_idx;
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
 
             dir |= 0x1;
 
@@ -936,12 +888,9 @@ merge_tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
 
             //mv.ref_idx = ref_idx;
-
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
         }
 
         return dir;
@@ -959,7 +908,7 @@ derive_affine_delta_mvs(const struct AffineControlInfo *const cinfo,
                         uint8_t affine_type)
 {
     struct AffineDeltaMV dmv;
-    OVMV delta_mv_h, delta_mv_v;
+    struct MV delta_mv_h, delta_mv_v;
     delta_mv_h = cinfo->lt;
     delta_mv_v = cinfo->lt;
 
@@ -1004,9 +953,9 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
     int y0 = pb_info.y_pb << 2;
 
     struct AffineControlInfo dst_cp = {0};
-    uint8_t ref_idx = ngh_cp->lt.ref_idx;
-    uint8_t bcw_idx_plus1 = ngh_cp->lt.bcw_idx_plus1;
-    uint8_t prec_amvr = ngh_cp->lt.prec_amvr;
+    uint8_t ref_idx = ngh_cp->ref_idx;
+    uint8_t bcw_idx_plus1 = ngh_cp->mv_spec.bcw_idx_plus1;
+    uint8_t prec_amvr = ngh_cp->mv_spec.prec_amvr;
 
     /* FIXME avoid checking for above candidate here */
     uint8_t is_abv_ctu = y0 == 0 && is_above_cand(cand_name);
@@ -1021,7 +970,7 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
     struct AffineDeltaMV delta_mv = derive_affine_delta_mvs(ngh_cp, log2_ngh_w, log2_ngh_h,
                                                             ngh_affine_type);
 
-    OVMV tmp = {0}, lt_mv = {0};
+    struct MV tmp = {0}, lt_mv = {0};
 
     if (is_abv_ctu || ngh_affine_type == AFFINE_2CP) {
         delta_mv.v.x = -delta_mv.h.y;
@@ -1044,18 +993,15 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
 
     dst_cp.lt = round_affine_mv2(lt_mv);
     dst_cp.lt = clip_mv(dst_cp.lt);
-    dst_cp.lt.ref_idx = ref_idx;
-    dst_cp.lt.bcw_idx_plus1 = bcw_idx_plus1;
-    dst_cp.lt.prec_amvr = prec_amvr;
+    dst_cp.ref_idx = ref_idx;
+    dst_cp.mv_spec.bcw_idx_plus1 = bcw_idx_plus1;
+    dst_cp.mv_spec.prec_amvr = prec_amvr;
 
     tmp.x = lt_mv.x + (int32_t)((uint32_t)delta_mv.h.x << log2_pb_w);
     tmp.y = lt_mv.y + (int32_t)((uint32_t)delta_mv.h.y << log2_pb_w);
 
     dst_cp.rt = round_affine_mv2(tmp);
     dst_cp.rt = clip_mv(dst_cp.rt);
-    dst_cp.rt.ref_idx = ref_idx;
-    dst_cp.rt.bcw_idx_plus1 = bcw_idx_plus1;
-    dst_cp.rt.prec_amvr = prec_amvr;
 
     if (affine_type == AFFINE_3CP) {
         tmp.x = lt_mv.x + (int32_t)((uint32_t)delta_mv.v.x << log2_pb_h);
@@ -1063,9 +1009,6 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
 
         dst_cp.lb = round_affine_mv2(tmp);
         dst_cp.lb = clip_mv(dst_cp.lb);
-        dst_cp.lb.ref_idx = ref_idx;
-        dst_cp.lb.bcw_idx_plus1 = bcw_idx_plus1;
-        dst_cp.lb.prec_amvr = prec_amvr;
     }
 
     return dst_cp;
@@ -1103,7 +1046,7 @@ derive_affine_mvp_cand(const struct AffineDRVInfo *const affine_ctx,
 
         if (avail_rpl) {
             struct AffineControlInfo ngh_cp_info = affine_info->cps[rpl_idx];
-            if (ngh_cp_info.lt.ref_idx == ref_idx) {
+            if (ngh_cp_info.ref_idx == ref_idx) {
 
                 cp_info = derive_cp_from_cand(&ngh_cp_info, pb, ngh_pb, affine_type,
                                               affine_info->type, cand_name, log2_ctu_s);
@@ -1115,18 +1058,13 @@ derive_affine_mvp_cand(const struct AffineDRVInfo *const affine_ctx,
         if (avail_rpl_opp) {
             struct AffineControlInfo ngh_cp_info = affine_info->cps[rpl_opp_idx];
 
-            if (ngh_cp_info.lt.ref_idx == ref_opp_idx) {
+            if (ngh_cp_info.ref_idx == ref_opp_idx) {
 
                 cp_info = derive_cp_from_cand(&ngh_cp_info, pb, ngh_pb, affine_type,
                                               affine_info->type, cand_name, log2_ctu_s);
 
                 /* override ref_idx since it is taken from opposit RPL */
-                cp_info.lt.ref_idx = ref_idx;
-                cp_info.rt.ref_idx = ref_idx;
-
-                if (affine_type == AFFINE_3CP) {
-                    cp_info.lb.ref_idx = ref_idx;
-                }
+                cp_info.ref_idx = ref_idx;
 
                 goto found;
             }
@@ -1221,7 +1159,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     OVMV rt_mv_cand = {0};
     OVMV lb_mv_cand = {0};
 
-    OVMV mv_aff[3];
+    struct MV mv_aff[3];
 
     struct PBInfo pb_info = { 
         .x_pb = x_pb, 
@@ -1333,14 +1271,15 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
 
     cand_mask |= cand_lb << 2;
 
-    mv_aff[CP_LT] = round_affine_mv(lt_mv_cand, prec_amvr);
-    mv_aff[CP_RT] = round_affine_mv(rt_mv_cand, prec_amvr);
-    mv_aff[CP_LB] = round_affine_mv(lb_mv_cand, prec_amvr);
+    mv_aff[CP_LT] = round_affine_mv(lt_mv_cand.mv, prec_amvr);
+    mv_aff[CP_RT] = round_affine_mv(rt_mv_cand.mv, prec_amvr);
+    mv_aff[CP_LB] = round_affine_mv(lb_mv_cand.mv, prec_amvr);
 
     if (cand_mask == 0x7 || (cand_mask == 0x3 && affine_type == AFFINE_2CP)) {
         cp_info[nb_cand].lt = mv_aff[CP_LT];
         cp_info[nb_cand].rt = mv_aff[CP_RT];
         cp_info[nb_cand].lb = mv_aff[CP_LB];
+        cp_info[nb_cand].ref_idx = ref_idx;
         nb_cand++;
     }
 
@@ -1349,6 +1288,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
             cp_info[nb_cand].lt = mv_aff[CP_LB];
             cp_info[nb_cand].rt = mv_aff[CP_LB];
             cp_info[nb_cand].lb = mv_aff[CP_LB];
+            cp_info[nb_cand].ref_idx = ref_idx;
             nb_cand++;
         }
     }
@@ -1358,6 +1298,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
             cp_info[nb_cand].lt = mv_aff[CP_RT];
             cp_info[nb_cand].rt = mv_aff[CP_RT];
             cp_info[nb_cand].lb = mv_aff[CP_RT];
+            cp_info[nb_cand].ref_idx = ref_idx;
             nb_cand++;
         }
     }
@@ -1367,6 +1308,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
             cp_info[nb_cand].lt = mv_aff[CP_LT];
             cp_info[nb_cand].rt = mv_aff[CP_LT];
             cp_info[nb_cand].lb = mv_aff[CP_LT];
+            cp_info[nb_cand].ref_idx = ref_idx;
             nb_cand++;
         }
     }
@@ -1385,7 +1327,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
         uint8_t cand_msk = check_tmvp_cand(tmvp->dir_map_v0, tmvp->dir_map_v1, pos);
 
         if (cand_msk) {
-            OVMV col_mv = {0};
+            struct MV col_mv = {0};
             uint8_t avail = 0;
             uint8_t rpl_idx  = inter_dir - 1;
             uint8_t col_ref_l0 = tmvp->col_ref_l0;
@@ -1397,25 +1339,25 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
             }
 
             if (avail) {
-                col_mv = round_affine_mv(dst, prec_amvr);
-                col_mv.ref_idx = ref_idx;
+                col_mv = round_affine_mv(dst.mv, prec_amvr);
 
                 cp_info[nb_cand].lt = col_mv;
                 cp_info[nb_cand].rt = col_mv;
                 cp_info[nb_cand].lb = col_mv;
+                cp_info[nb_cand].ref_idx = ref_idx;
 
                 nb_cand++;
             }
         }
-
     }
 
     if (nb_cand < 2) {
         for (int i = nb_cand; i < MAX_NB_AMVP_CAND; i++) {
-            OVMV zmv = {0};
+            struct MV zmv = {0};
             cp_info[nb_cand].lt = zmv;
             cp_info[nb_cand].rt = zmv;
             cp_info[nb_cand].lb = zmv;
+            cp_info[nb_cand].ref_idx = ref_idx;
             nb_cand++;
         }
     }
@@ -1450,8 +1392,8 @@ struct OVPos
     int16_t y;
 };
 
-static inline OVMV
-mv_internal_to_integer(OVMV mv)
+static inline struct MV
+mv_internal_to_integer(struct MV mv)
 {
     mv.x += 7 + (mv.x < 0);
     mv.y += 7 + (mv.y < 0);
@@ -1477,7 +1419,7 @@ clip_sb_pos_to_col_ctu(struct OVPos pos, int16_t ctu_w, int16_t ctu_h, uint8_t i
 
 static inline struct OVPos
 derive_sbtmvp_cand_pos(uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h,
-                       OVMV mv_offset, int16_t ctu_w, int16_t ctu_h, uint8_t is_bnd)
+                       struct MV mv_offset, int16_t ctu_w, int16_t ctu_h, uint8_t is_bnd)
 {
     struct OVPos center_pos;
 
@@ -1492,7 +1434,7 @@ derive_sbtmvp_cand_pos(uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_p
     return center_pos;
 }
 
-static OVMV
+static struct MV
 derive_sbtmvp_mv_offset(const struct InterDRVCtx *inter_ctx,
                         const struct PBInfo *const pb_info,
                         uint8_t cand_rpl0, uint8_t cand_rpl1)
@@ -1522,13 +1464,12 @@ derive_sbtmvp_mv_offset(const struct InterDRVCtx *inter_ctx,
         }
     }
 
-    OVMV zmv = {0};
+    struct MV zmv = {0};
 
     return zmv;
 
 found:
-    a1_mv = mv_internal_to_integer(a1_mv);
-    return a1_mv;
+    return mv_internal_to_integer(a1_mv.mv);
 }
 
 static uint8_t
@@ -1561,10 +1502,7 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             mv       = tmvp->ctb_mv1[c0_pos];
             dist_col = mv.z;
@@ -1573,10 +1511,8 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
 
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
         } else if (cand_c0 && cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
             mv       = mvs[c0_pos];
@@ -1585,10 +1521,7 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             mv       = tmvp->ctb_mv0[c0_pos];
             dist_col = mv.z;
@@ -1597,10 +1530,8 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
 
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
         } else if (cand_c0) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv0;
             mv       = mvs[c0_pos];
@@ -1609,10 +1540,7 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             mv       = mvs[c0_pos];
 
@@ -1620,10 +1548,7 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
-
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
 
         } else if (cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
@@ -1634,10 +1559,7 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             scale = derive_tmvp_scale(dist_ref, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
-
-            dst[0].x = mv.mv.x;
-            dst[0].y = mv.mv.y;
+            dst[0].mv = tmvp_rescale(mv.mv, scale);
 
             mv       = mvs[c0_pos];
 
@@ -1645,19 +1567,17 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
-            mv.mv = tmvp_rescale(mv.mv, scale);
+            dst[1].mv = tmvp_rescale(mv.mv, scale);
 
-            dst[1].x = mv.mv.x;
-            dst[1].y = mv.mv.y;
         }
 
         dst[0].ref_idx = ref_idx;
-        dst[0].bcw_idx_plus1 = 0;
-        dst[0].prec_amvr = 0;
+        dst[0].mv_spec.bcw_idx_plus1 = 0;
+        dst[0].mv_spec.prec_amvr = 0;
 
         dst[1].ref_idx = ref_idx;
-        dst[1].bcw_idx_plus1 = 0;
-        dst[1].prec_amvr = 0;
+        dst[1].mv_spec.bcw_idx_plus1 = 0;
+        dst[1].mv_spec.prec_amvr = 0;
 
         return dir;
     }
@@ -1706,13 +1626,10 @@ sbtmvp_from_same_rpl(const struct InterDRVCtx *const inter_ctx, const struct VVC
 found :
     scale = derive_tmvp_scale(dist_ref, dist_col);
 
-    mv.mv = tmvp_rescale(mv.mv, scale);
-
-    dst->x = mv.mv.x;
-    dst->y = mv.mv.y;
+    dst->mv = tmvp_rescale(mv.mv, scale);
     dst->ref_idx = ref_idx;
-    dst->bcw_idx_plus1 = 0;
-    dst->prec_amvr = 0;
+    dst->mv_spec.bcw_idx_plus1 = 0;
+    dst->mv_spec.prec_amvr = 0;
 
     return 1;
 }
@@ -1739,7 +1656,7 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
                          uint8_t x0, uint8_t y0,
                          uint8_t log2_pu_w, uint8_t log2_pu_h,
                          struct MergeInfo *const mv_info,
-                         OVMV *const a1_mv,
+                         struct MV *const a1_mv,
                          uint8_t cand_rpl0, uint8_t cand_rpl1)
 {
     const struct PBInfo pb_info = {
@@ -1756,7 +1673,7 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
     int16_t ctu_w = tmvp->ctu_w;
     int16_t ctu_h = tmvp->ctu_h;
 
-    OVMV mv_offset = derive_sbtmvp_mv_offset(inter_ctx, &pb_info, cand_rpl0, cand_rpl1);
+    struct MV mv_offset = derive_sbtmvp_mv_offset(inter_ctx, &pb_info, cand_rpl0, cand_rpl1);
 
     struct OVPos center_pos = derive_sbtmvp_cand_pos(x0, y0, log2_pu_w, log2_pu_h, mv_offset,
                                                      ctu_w, ctu_h, is_bnd);
@@ -1776,16 +1693,16 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
             inter_dir  = sbtmvp_from_ldc(inter_ctx, tmvp, center_pos,
                                          RPL_0, 0, cand_msk, col_mv);
 
-            mv_info->mv0 = col_mv[0];
-            mv_info->mv1 = col_mv[1];
+            mv_info->mv0.mv = col_mv[0].mv;
+            mv_info->mv1.mv = col_mv[1].mv;
         } else {
             OVMV col_mv[2];
             inter_dir  = sbtmvp_from_same_rpl(inter_ctx, tmvp, center_pos,
                                               RPL_0, 0, cand_msk, col_mv);
             inter_dir |= sbtmvp_from_same_rpl(inter_ctx, tmvp, center_pos,
                                               RPL_1, 0, cand_msk, &col_mv[1]) << 1;
-            mv_info->mv0 = col_mv[0];
-            mv_info->mv1 = col_mv[1];
+            mv_info->mv0.mv = col_mv[0].mv;
+            mv_info->mv1.mv = col_mv[1].mv;
         }
     }
 
@@ -1846,7 +1763,7 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
                        const struct VVCTMVP *tmvp,
                        uint8_t x0, uint8_t y0,
                        uint8_t log2_pu_w, uint8_t log2_pu_h,
-                       OVMV mv_offset, const struct MergeInfo *const main_mv)
+                       struct MV mv_offset, const struct MergeInfo *const main_mv)
 {
     int nb_sb_w = OVMAX((1 << log2_pu_w) >> LOG2_SBTMVP_S, 1);
     int nb_sb_h = OVMAX((1 << log2_pu_h) >> LOG2_SBTMVP_S, 1);
@@ -1895,12 +1812,12 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
                     OVMV col_mv[2];
                     inter_dir  = sbtmvp_from_ldc(inter_ctx, tmvp, col_pos, RPL_0, 0, cand_msk, col_mv);
 
-                    mv0 = col_mv[0];
+                    mv0.mv = col_mv[0].mv;
                 } else {
                     OVMV col_mv[2];
                     inter_dir  = sbtmvp_from_same_rpl(inter_ctx, tmvp, col_pos, RPL_0, 0, cand_msk, col_mv);
                     inter_dir |= sbtmvp_from_same_rpl(inter_ctx, tmvp, col_pos, RPL_1, 0, cand_msk, &col_mv[1]) << 1;
-                    mv0 = col_mv[0];
+                    mv0.mv = col_mv[0].mv;
                 }
             }
 
@@ -1915,9 +1832,9 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
                                         x_pb + 2 * j, y_pb + 2 * i,
                                         2, 2);
             mv0.ref_idx       = 0;
-            mv0.bcw_idx_plus1 = 0;
+            mv0.mv_spec.bcw_idx_plus1 = 0;
 
-            struct TMVPMV tmvpmv = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[0]};
+            struct TMVPMV tmvpmv = {.mv = mv0.mv, .z=inter_ctx->inter_params.dist_ref_0[0]};
 
             tmvp_mv0[j] = tmvpmv;
 
@@ -2005,7 +1922,7 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                      const struct VVCTMVP *tmvp,
                      uint8_t x0, uint8_t y0,
                      uint8_t log2_pu_w, uint8_t log2_pu_h,
-                     OVMV mv_offset, const struct MergeInfo *const main_mv)
+                     struct MV mv_offset, const struct MergeInfo *const main_mv)
 {
     int nb_sb_w = OVMAX((1 << log2_pu_w) >> LOG2_SBTMVP_S, 1);
     int nb_sb_h = OVMAX((1 << log2_pu_h) >> LOG2_SBTMVP_S, 1);
@@ -2086,8 +2003,8 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                                             x_pb + 2 * j, y_pb + 2 * i,
                                             2, 2);
                 mv0.ref_idx = 0;
-                mv0.bcw_idx_plus1 = 0;
-                struct TMVPMV tmvpmv = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[0]};
+                mv0.mv_spec.bcw_idx_plus1 = 0;
+                struct TMVPMV tmvpmv = {.mv=mv0.mv, .z=inter_ctx->inter_params.dist_ref_0[0]};
                 tmvp_mv0[j] = tmvpmv;
 
                 mv_buff0[j * 2]     = mv0;
@@ -2101,9 +2018,9 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                                             x_pb + 2 * j, y_pb + 2 * i,
                                             2, 2);
                 mv1.ref_idx = 0;
-                mv1.bcw_idx_plus1 = 0;
+                mv1.mv_spec.bcw_idx_plus1 = 0;
 
-                struct TMVPMV tmvpmv = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[0]};
+                struct TMVPMV tmvpmv = {.mv=mv1.mv, .z=inter_ctx->inter_params.dist_ref_1[0]};
                 tmvp_mv1[j] = tmvpmv;
 
                 mv_buff1[j * 2]     = mv1;
@@ -2214,8 +2131,8 @@ derive_affine_control_point_0(struct ControlPointMVCand mi, int model_idx,
                               struct AffineMergeInfo *const aff_mrg_ctx)
 {
     /* FIXME dir info should be derived from RPL cand list + ref_idx*/
-    OVMV mv0[4];
-    OVMV mv1[4];
+    struct MV mv0[4];
+    struct MV mv1[4];
 
     uint8_t dir = 0;
 
@@ -2225,16 +2142,16 @@ derive_affine_control_point_0(struct ControlPointMVCand mi, int model_idx,
 
             if (mi.mv0[CP_LT].ref_idx >= 0 && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_RT].ref_idx) {
 
-                mv0[CP_LT] = mi.mv0[CP_LT];
-                mv0[CP_RT] = mi.mv0[CP_RT];
+                mv0[CP_LT] = mi.mv0[CP_LT].mv;
+                mv0[CP_RT] = mi.mv0[CP_RT].mv;
 
                 dir |= 0x1;
             }
 
             if (mi.mv1[CP_LT].ref_idx >= 0 && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_RT].ref_idx) {
 
-                mv1[CP_LT] = mi.mv1[CP_LT];
-                mv1[CP_RT] = mi.mv1[CP_RT];
+                mv1[CP_LT] = mi.mv1[CP_LT].mv;
+                mv1[CP_RT] = mi.mv1[CP_RT].mv;
 
                 dir |= 0x2;
             }
@@ -2245,10 +2162,10 @@ derive_affine_control_point_0(struct ControlPointMVCand mi, int model_idx,
 
             if (mi.mv0[CP_LT].ref_idx >= 0 && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_LB].ref_idx) {
                 int shiftHtoW = AFFINE_SHIFT + log2_cu_w - log2_cu_h;
-                OVMV tmp;
+                struct MV tmp;
 
-                mv0[CP_LT] = mi.mv0[CP_LT];
-                mv0[CP_LB] = mi.mv0[CP_LB];
+                mv0[CP_LT] = mi.mv0[CP_LT].mv;
+                mv0[CP_LB] = mi.mv0[CP_LB].mv;
 
                 tmp.x = (int32_t)((uint32_t)mv0[0].x << AFFINE_SHIFT) + (int32_t)((uint32_t)(mv0[2].y - mv0[0].y) << shiftHtoW);
                 tmp.y = (int32_t)((uint32_t)mv0[0].y << AFFINE_SHIFT) - (int32_t)((uint32_t)(mv0[2].x - mv0[0].x) << shiftHtoW);
@@ -2262,10 +2179,10 @@ derive_affine_control_point_0(struct ControlPointMVCand mi, int model_idx,
 
             if (mi.mv1[CP_LT].ref_idx >= 0 && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_LB].ref_idx) {
                 int shift_hw = AFFINE_SHIFT + log2_cu_w - log2_cu_h;
-                OVMV tmp;
+                struct MV tmp;
 
-                mv1[CP_LT] = mi.mv1[CP_LT];
-                mv1[CP_LB] = mi.mv1[CP_LB];
+                mv1[CP_LT] = mi.mv1[CP_LT].mv;
+                mv1[CP_LB] = mi.mv1[CP_LB].mv;
 
                 tmp.x = (int32_t)((uint32_t)mv1[0].x << AFFINE_SHIFT) + (int32_t)((uint32_t)(mv1[2].y - mv1[0].y) << shift_hw);
                 tmp.y = (int32_t)((uint32_t)mv1[0].y << AFFINE_SHIFT) - (int32_t)((uint32_t)(mv1[2].x - mv1[0].x) << shift_hw);
@@ -2284,16 +2201,22 @@ derive_affine_control_point_0(struct ControlPointMVCand mi, int model_idx,
         return 0;
     }
 
-    aff_mrg_ctx[0].cinfo[0].lt = mv0[0];
-    aff_mrg_ctx[0].cinfo[0].rt = mv0[1];
-    aff_mrg_ctx[0].cinfo[0].lb = mv0[2];
+    aff_mrg_ctx->cinfo[0].lt = mv0[0];
+    aff_mrg_ctx->cinfo[0].rt = mv0[1];
+    aff_mrg_ctx->cinfo[0].lb = mv0[2];
+    aff_mrg_ctx->cinfo[0].ref_idx = mi.mv0[CP_LT].ref_idx;
+    aff_mrg_ctx->cinfo[0].mv_spec.bcw_idx_plus1 = mi.mv0[CP_LT].mv_spec.bcw_idx_plus1;
+    aff_mrg_ctx->cinfo[0].mv_spec.prec_amvr = mi.mv0[CP_LT].mv_spec.prec_amvr;
 
-    aff_mrg_ctx[0].cinfo[1].lt = mv1[0];
-    aff_mrg_ctx[0].cinfo[1].rt = mv1[1];
-    aff_mrg_ctx[0].cinfo[1].lb = mv1[2];
+    aff_mrg_ctx->cinfo[1].lt = mv1[0];
+    aff_mrg_ctx->cinfo[1].rt = mv1[1];
+    aff_mrg_ctx->cinfo[1].lb = mv1[2];
+    aff_mrg_ctx->cinfo[1].ref_idx = mi.mv1[CP_LT].ref_idx;
+    aff_mrg_ctx->cinfo[1].mv_spec.bcw_idx_plus1 = mi.mv1[CP_LT].mv_spec.bcw_idx_plus1;
+    aff_mrg_ctx->cinfo[1].mv_spec.prec_amvr = mi.mv1[CP_LT].mv_spec.prec_amvr;
 
-    aff_mrg_ctx[0].inter_dir   = dir;
-    aff_mrg_ctx[0].affine_type = AFFINE_2CP;
+    aff_mrg_ctx->inter_dir   = dir;
+    aff_mrg_ctx->affine_type = AFFINE_2CP;
 
     return 1;
 }
@@ -2302,10 +2225,16 @@ static uint8_t
 derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                               struct AffineMergeInfo *const aff_mrg_ctx)
 {
-    OVMV mv0[4] = {0};
-    OVMV mv1[4] = {0};
+    struct MV mv0[4] = {0};
+    struct MV mv1[4] = {0};
 
     uint8_t dir = 0;
+    uint8_t ref_idx0 = 0;
+    uint8_t ref_idx1 = 0;
+    uint8_t prec_amvr0 = 0;
+    uint8_t prec_amvr1 = 0;
+    uint8_t bcw_0 = 0;
+    uint8_t bcw_1 = 0;
 
     switch (model_idx)
     {
@@ -2313,10 +2242,14 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
 
             if (mi.mv0[CP_LT].ref_idx >= 0 && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_RT].ref_idx
                                            && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_LB].ref_idx) {
-                mv0[0] = mi.mv0[0];
-                mv0[1] = mi.mv0[1];
-                mv0[2] = mi.mv0[2];
+                mv0[0] = mi.mv0[0].mv;
+                mv0[1] = mi.mv0[1].mv;
+                mv0[2] = mi.mv0[2].mv;
 
+                ref_idx0 = mi.mv0[0].ref_idx;
+                bcw_0= mi.mv0[CP_LT].mv_spec.bcw_idx_plus1;
+                prec_amvr0 = mi.mv0[CP_LT].mv_spec.prec_amvr;
+#if 0
                 mv0[1].ref_idx = mi.mv0[0].ref_idx;
                 mv0[2].ref_idx = mi.mv0[0].ref_idx;
 
@@ -2326,6 +2259,7 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv0[0].prec_amvr = mi.mv0[CP_LT].prec_amvr;
                 mv0[1].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
                 mv0[1].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+#endif
 
                 dir |= 0x1;
             }
@@ -2333,9 +2267,13 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
             if (mi.mv1[CP_LT].ref_idx >= 0 && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_RT].ref_idx
                                            && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_LB].ref_idx) {
 
-                mv1[0] = mi.mv1[0];
-                mv1[1] = mi.mv1[1];
-                mv1[2] = mi.mv1[2];
+                mv1[0] = mi.mv1[0].mv;
+                mv1[1] = mi.mv1[1].mv;
+                mv1[2] = mi.mv1[2].mv;
+                ref_idx1 = mi.mv1[0].ref_idx;
+                bcw_1 = mi.mv1[CP_LT].mv_spec.bcw_idx_plus1;
+                prec_amvr1 = mi.mv1[CP_LT].mv_spec.prec_amvr;
+#if 0
                 mv1[1].ref_idx = mi.mv1[0].ref_idx;
                 mv1[2].ref_idx = mi.mv1[0].ref_idx;
 
@@ -2346,6 +2284,7 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv1[1].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
                 mv1[1].prec_amvr = mi.mv1[CP_LT].prec_amvr;
 
+#endif
                 dir |= 0x2;
             }
 
@@ -2354,15 +2293,19 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
         case 1:
             if (mi.mv0[CP_LT].ref_idx >= 0 && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_RT].ref_idx
                                           && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_RB].ref_idx) {
-                mv0[0] = mi.mv0[0];
-                mv0[1] = mi.mv0[1];
-                mv0[3] = mi.mv0[3];
+                mv0[0] = mi.mv0[0].mv;
+                mv0[1] = mi.mv0[1].mv;
+                mv0[3] = mi.mv0[3].mv;
 
                 mv0[2].x = mv0[0].x - mv0[1].x + mv0[3].x;
                 mv0[2].y = mv0[0].y - mv0[1].y + mv0[3].y;
 
                 mv0[2] = clip_mv(mv0[2]);
 
+                ref_idx0 = mi.mv0[CP_LT].ref_idx;
+                bcw_0 = mi.mv0[CP_LT].mv_spec.bcw_idx_plus1;
+                prec_amvr0 = mi.mv0[CP_LT].mv_spec.prec_amvr;
+#if 0
                 mv0[2].ref_idx = mi.mv0[CP_LT].ref_idx;
                 mv0[2].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
                 mv0[2].prec_amvr = mi.mv0[CP_LT].prec_amvr;
@@ -2370,6 +2313,7 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv0[0].prec_amvr = mi.mv0[CP_LT].prec_amvr;
                 mv0[1].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
                 mv0[1].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+#endif
 
                 dir |= 0x1;
             }
@@ -2377,15 +2321,19 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
             if (mi.mv1[CP_LT].ref_idx >= 0 && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_RT].ref_idx
                                           && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_RB].ref_idx) {
 
-                mv1[0] = mi.mv1[0];
-                mv1[1] = mi.mv1[1];
-                mv1[3] = mi.mv1[3];
+                mv1[0] = mi.mv1[0].mv;
+                mv1[1] = mi.mv1[1].mv;
+                mv1[3] = mi.mv1[3].mv;
 
                 mv1[2].x = mv1[0].x - mv1[1].x + mv1[3].x;
                 mv1[2].y = mv1[0].y - mv1[1].y + mv1[3].y;
 
                 mv1[2] = clip_mv(mv1[2]);
 
+                ref_idx1 = mi.mv1[CP_LT].ref_idx;
+                bcw_1 = mi.mv1[CP_LT].mv_spec.bcw_idx_plus1;
+                prec_amvr1 = mi.mv1[CP_LT].mv_spec.prec_amvr;
+#if 0
                 mv1[2].ref_idx = mi.mv1[CP_LT].ref_idx;
                 mv1[2].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
                 mv1[2].prec_amvr = mi.mv1[CP_LT].prec_amvr;
@@ -2393,6 +2341,7 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv1[0].prec_amvr = mi.mv1[CP_LT].prec_amvr;
                 mv1[1].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
                 mv1[1].prec_amvr = mi.mv1[CP_LT].prec_amvr;
+#endif
 
                 dir |= 0x2;
             }
@@ -2402,22 +2351,27 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
         case 2:
             if (mi.mv0[CP_LT].ref_idx >= 0 && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_LB].ref_idx
                                           && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_RB].ref_idx) {
-                mv0[0] = mi.mv0[0];
-                mv0[2] = mi.mv0[2];
-                mv0[3] = mi.mv0[3];
+                mv0[0] = mi.mv0[0].mv;
+                mv0[2] = mi.mv0[2].mv;
+                mv0[3] = mi.mv0[3].mv;
 
                 mv0[1].x = mv0[0].x - mv0[2].x + mv0[3].x;
                 mv0[1].y = mv0[0].y - mv0[2].y + mv0[3].y;
 
                 mv0[1] = clip_mv(mv0[1]);
 
+                ref_idx0 = mi.mv0[CP_LT].ref_idx;
+                bcw_0 = mi.mv0[CP_LT].mv_spec.bcw_idx_plus1;
+                prec_amvr0 = mi.mv0[CP_LT].mv_spec.prec_amvr;
+#if 0
                 mv0[1].ref_idx = mi.mv0[CP_LT].ref_idx;
-                mv0[1].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
-                mv0[1].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+                mv0[1].bcw_idx_plus1 = mi.mv0[cp_lt].bcw_idx_plus1;
+                mv0[1].prec_amvr = mi.mv0[cp_lt].prec_amvr;
                 mv0[0].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
                 mv0[0].prec_amvr = mi.mv0[CP_LT].prec_amvr;
                 mv0[2].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
                 mv0[2].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+#endif
 
                 dir |= 0x1;
             }
@@ -2425,22 +2379,27 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
             if (mi.mv1[CP_LT].ref_idx >= 0 && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_LB].ref_idx
                                           && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_RB].ref_idx) {
 
-                mv1[0] = mi.mv1[0];
-                mv1[2] = mi.mv1[2];
-                mv1[3] = mi.mv1[3];
+                mv1[0] = mi.mv1[0].mv;
+                mv1[2] = mi.mv1[2].mv;
+                mv1[3] = mi.mv1[3].mv;
 
                 mv1[1].x = mv1[0].x - mv1[2].x + mv1[3].x;
                 mv1[1].y = mv1[0].y - mv1[2].y + mv1[3].y;
 
                 mv1[1] = clip_mv(mv1[1]);
 
+                ref_idx1 = mi.mv1[CP_LT].ref_idx;
+                bcw_1 = mi.mv1[CP_LT].mv_spec.bcw_idx_plus1;
+                prec_amvr1 = mi.mv1[CP_LT].mv_spec.prec_amvr;
+#if 0
                 mv1[1].ref_idx = mi.mv1[CP_LT].ref_idx;
-                mv1[1].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
-                mv1[1].prec_amvr = mi.mv1[CP_LT].prec_amvr;
+                mv1[1].bcw_idx_plus1 = mi.mv1[cp_lt].bcw_idx_plus1;
+                mv1[1].prec_amvr = mi.mv1[cp_lt].prec_amvr;
                 mv1[0].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
                 mv1[0].prec_amvr = mi.mv1[CP_LT].prec_amvr;
                 mv1[2].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
                 mv1[2].prec_amvr = mi.mv1[CP_LT].prec_amvr;
+#endif
 
                 dir |= 0x2;
             }
@@ -2450,15 +2409,19 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
         case 3:
             if (mi.mv0[CP_RT].ref_idx >= 0 && mi.mv0[CP_RT].ref_idx == mi.mv0[CP_LB].ref_idx
                                           && mi.mv0[CP_RT].ref_idx == mi.mv0[CP_RB].ref_idx) {
-                mv0[1] = mi.mv0[1];
-                mv0[2] = mi.mv0[2];
-                mv0[3] = mi.mv0[3];
+                mv0[1] = mi.mv0[1].mv;
+                mv0[2] = mi.mv0[2].mv;
+                mv0[3] = mi.mv0[3].mv;
 
                 mv0[0].x = mv0[1].x + mv0[2].x - mv0[3].x;
                 mv0[0].y = mv0[1].y + mv0[2].y - mv0[3].y;
 
                 mv0[0] = clip_mv(mv0[0]);
 
+                ref_idx0 = mi.mv0[CP_RT].ref_idx;
+                bcw_0 = mi.mv0[CP_RT].mv_spec.bcw_idx_plus1;
+                prec_amvr0 = mi.mv0[CP_RT].mv_spec.prec_amvr;
+#if 0
                 mv0[0].ref_idx = mi.mv0[CP_RT].ref_idx;
                 mv0[0].bcw_idx_plus1 = mi.mv0[CP_RT].bcw_idx_plus1;
                 mv0[0].prec_amvr = mi.mv0[CP_RT].prec_amvr;
@@ -2466,6 +2429,7 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv0[1].prec_amvr = mi.mv0[CP_RT].prec_amvr;
                 mv0[2].bcw_idx_plus1 = mi.mv0[CP_RT].bcw_idx_plus1;
                 mv0[2].prec_amvr = mi.mv0[CP_RT].prec_amvr;
+#endif
 
                 dir |= 0x1;
             }
@@ -2473,22 +2437,27 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
             if (mi.mv1[CP_RT].ref_idx >= 0 && mi.mv1[CP_RT].ref_idx == mi.mv1[CP_LB].ref_idx
                                           && mi.mv1[CP_RT].ref_idx == mi.mv1[CP_RB].ref_idx) {
 
-                mv1[1] = mi.mv1[1];
-                mv1[2] = mi.mv1[2];
-                mv1[3] = mi.mv1[3];
+                mv1[1] = mi.mv1[1].mv;
+                mv1[2] = mi.mv1[2].mv;
+                mv1[3] = mi.mv1[3].mv;
 
                 mv1[0].x = mv1[1].x + mv1[2].x - mv1[3].x;
                 mv1[0].y = mv1[1].y + mv1[2].y - mv1[3].y;
 
                 mv1[0] = clip_mv(mv1[0]);
 
+                ref_idx1 = mi.mv1[CP_RT].ref_idx;
+                bcw_1 = mi.mv1[CP_RT].mv_spec.bcw_idx_plus1;
+                prec_amvr1= mi.mv1[CP_RT].mv_spec.prec_amvr;
+#if 0
                 mv1[0].ref_idx = mi.mv1[CP_RT].ref_idx;
-                mv1[0].bcw_idx_plus1 = mi.mv1[CP_RT].bcw_idx_plus1;
-                mv1[0].prec_amvr = mi.mv1[CP_RT].prec_amvr;
+                mv1[0].bcw_idx_plus1 = mi.mv1[cp_rt].bcw_idx_plus1;
+                mv1[0].prec_amvr = mi.mv1[cp_rt].prec_amvr;
                 mv1[1].bcw_idx_plus1 = mi.mv1[CP_RT].bcw_idx_plus1;
                 mv1[1].prec_amvr = mi.mv1[CP_RT].prec_amvr;
                 mv1[2].bcw_idx_plus1 = mi.mv1[CP_RT].bcw_idx_plus1;
                 mv1[2].prec_amvr = mi.mv1[CP_RT].prec_amvr;
+#endif
 
                 dir |= 0x2;
             }
@@ -2500,16 +2469,22 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
         return 0;
     }
 
-    aff_mrg_ctx[0].cinfo[0].lt = mv0[0];
-    aff_mrg_ctx[0].cinfo[0].rt = mv0[1];
-    aff_mrg_ctx[0].cinfo[0].lb = mv0[2];
+    aff_mrg_ctx->cinfo[0].lt = mv0[0];
+    aff_mrg_ctx->cinfo[0].rt = mv0[1];
+    aff_mrg_ctx->cinfo[0].lb = mv0[2];
+    aff_mrg_ctx->cinfo[0].ref_idx = ref_idx0;
+    aff_mrg_ctx->cinfo[0].mv_spec.bcw_idx_plus1 = bcw_0;
+    aff_mrg_ctx->cinfo[0].mv_spec.prec_amvr = prec_amvr0;
 
-    aff_mrg_ctx[0].cinfo[1].lt = mv1[0];
-    aff_mrg_ctx[0].cinfo[1].rt = mv1[1];
-    aff_mrg_ctx[0].cinfo[1].lb = mv1[2];
+    aff_mrg_ctx->cinfo[1].lt = mv1[0];
+    aff_mrg_ctx->cinfo[1].rt = mv1[1];
+    aff_mrg_ctx->cinfo[1].lb = mv1[2];
+    aff_mrg_ctx->cinfo[1].ref_idx = ref_idx1;
+    aff_mrg_ctx->cinfo[1].mv_spec.bcw_idx_plus1 = bcw_1;
+    aff_mrg_ctx->cinfo[1].mv_spec.prec_amvr = prec_amvr1;
 
-    aff_mrg_ctx[0].inter_dir   = dir;
-    aff_mrg_ctx[0].affine_type = AFFINE_3CP;
+    aff_mrg_ctx->inter_dir   = dir;
+    aff_mrg_ctx->affine_type = AFFINE_3CP;
 
     return 1;
 }
@@ -2905,12 +2880,11 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
 
     uint8_t nb_sb_w = (1 << log2_cu_w) >> LOG2_MIN_CU_S;
     uint8_t nb_sb_h = (1 << log2_cu_h) >> LOG2_MIN_CU_S;
-    uint8_t ref_idx = cinfo->lt.ref_idx;
+    uint8_t ref_idx = cinfo->ref_idx;
 
     if (!mv_broad) {
         int i, j;
-        OVMV accu_mv_v;
-        OVMV mv_dst;
+        struct MV accu_mv_v;
 
         accu_mv_v.x = ((uint32_t)cinfo->lt.x << AFFINE_SHIFT) + delta_mv.h.x * HALF_SB_SIZE
                                                     + delta_mv.v.x * HALF_SB_SIZE;
@@ -2918,24 +2892,21 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
                                                     + delta_mv.v.y * HALF_SB_SIZE;
 
         for (i = 0; i < nb_sb_h; ++i) {
-            OVMV accu_mv_h;
+            struct MV accu_mv_h;
 
             accu_mv_h.x = accu_mv_v.x;
             accu_mv_h.y = accu_mv_v.y;
 
             for (j = 0; j < nb_sb_w; ++j) {
+                struct MV mv_dst;
 
-                mv_dst.x = accu_mv_h.x;
-                mv_dst.y = accu_mv_h.y;
-
-                mv_dst = round_affine_mv2(mv_dst);
+                mv_dst = round_affine_mv2(accu_mv_h);
                 mv_dst = clip_mv(mv_dst);
 
-                mv_dst.ref_idx = ref_idx;
-                mv_dst.bcw_idx_plus1 = cinfo->lt.bcw_idx_plus1;
-                mv_dst.prec_amvr = cinfo->lt.prec_amvr;
-
-                mv_buff[j] = mv_dst;
+                mv_buff[j].mv = mv_dst;
+                mv_buff[j].ref_idx = ref_idx;
+                mv_buff[j].mv_spec.bcw_idx_plus1 = cinfo->mv_spec.bcw_idx_plus1;
+                mv_buff[j].mv_spec.prec_amvr = cinfo->mv_spec.prec_amvr;
 
                 accu_mv_h.x += SB_SIZE * delta_mv.h.x;
                 accu_mv_h.y += SB_SIZE * delta_mv.h.y;
@@ -2951,23 +2922,24 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
         /* Broadcast MV computed from PU center */
         int i, j;
         OVMV center_mv;
+        struct MV tmp;
 
-        center_mv.x = (uint32_t)cinfo->lt.x << AFFINE_SHIFT;
-        center_mv.y = (uint32_t)cinfo->lt.y << AFFINE_SHIFT;
+        tmp.x = (uint32_t)cinfo->lt.x << AFFINE_SHIFT;
+        tmp.y = (uint32_t)cinfo->lt.y << AFFINE_SHIFT;
 
-        center_mv.x += (int32_t)((uint32_t)delta_mv.h.x << log2_cu_w) >> 1;
-        center_mv.y += (int32_t)((uint32_t)delta_mv.h.y << log2_cu_w) >> 1;
+        tmp.x += (int32_t)((uint32_t)delta_mv.h.x << log2_cu_w) >> 1;
+        tmp.y += (int32_t)((uint32_t)delta_mv.h.y << log2_cu_w) >> 1;
 
-        center_mv.x += (int32_t)((uint32_t)delta_mv.v.x << log2_cu_h) >> 1;
-        center_mv.y += (int32_t)((uint32_t)delta_mv.v.y << log2_cu_h) >> 1;
+        tmp.x += (int32_t)((uint32_t)delta_mv.v.x << log2_cu_h) >> 1;
+        tmp.y += (int32_t)((uint32_t)delta_mv.v.y << log2_cu_h) >> 1;
 
-        center_mv = round_affine_mv2(center_mv);
+        tmp = round_affine_mv2(tmp);
 
-        center_mv = clip_mv(center_mv);
+        center_mv.mv = clip_mv(tmp);
 
         center_mv.ref_idx = ref_idx;
-        center_mv.bcw_idx_plus1 = cinfo->lt.bcw_idx_plus1;
-        center_mv.prec_amvr = cinfo->lt.prec_amvr;
+        center_mv.mv_spec.bcw_idx_plus1 = cinfo->mv_spec.bcw_idx_plus1;
+        center_mv.mv_spec.prec_amvr = cinfo->mv_spec.prec_amvr;
 
         for (i = 0; i < nb_sb_h; ++i) {
             for (j = 0; j < nb_sb_w; ++j) {
@@ -3168,8 +3140,8 @@ compute_prof_dmv_scale(struct AffineDeltaMV delta_mv,
                        int16_t dmv_scale_h[16], int16_t dmv_scale_v[16])
 {
     int x, y, i;
-    OVMV quad_dmv_h;
-    OVMV quad_dmv_v;
+    struct MV quad_dmv_h;
+    struct MV quad_dmv_v;
     int32_t dmv_scale_h_tab[16];
     int32_t dmv_scale_v_tab[16];
     int32_t *dmv_scale_h_p = &dmv_scale_h_tab[0];
@@ -3242,8 +3214,8 @@ rcn_affine_mcp_b_l(OVCTUDec *const ctudec,
             OVMV mv1 = mv_buff1[j];
 
             if (!(((x0+4*j)>>2)& 0x1) && !((((y0+4*i)>>2)& 0x1))) {
-                struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[ref_idx0]};
-                struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[ref_idx1]};
+                struct TMVPMV tmvpmv0 = {.mv=mv0.mv, .z=inter_ctx->inter_params.dist_ref_0[ref_idx0]};
+                struct TMVPMV tmvpmv1 = {.mv=mv1.mv, .z=inter_ctx->inter_params.dist_ref_1[ref_idx1]};
                tmvp_mv0[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = tmvpmv0;
                tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = tmvpmv1;
             }
@@ -3303,8 +3275,8 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
             OVMV mv1 = mv_buff1[j];
 
             if (!(((x0+4*j)>>2)& 0x1) && !((((y0+4*i)>>2)& 0x1))) {
-                struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[ref_idx0]};
-                struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[ref_idx1]};
+                struct TMVPMV tmvpmv0 = {.mv=mv0.mv, .z=inter_ctx->inter_params.dist_ref_0[ref_idx0]};
+                struct TMVPMV tmvpmv1 = {.mv=mv1.mv, .z=inter_ctx->inter_params.dist_ref_1[ref_idx1]};
                 tmvp_mv0[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = tmvpmv0;
                 tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = tmvpmv1;
             }
@@ -3342,24 +3314,24 @@ rcn_affine_mcp_b_c(OVCTUDec *const ctudec,
 
     for (i = 0; i < nb_sb_h; i += 2) {
         for (j = 0; j < nb_sb_w; j += 2) {
-            OVMV mv0 = mv_buff0[j];
-            OVMV mv1 = mv_buff1[j];
+            struct OVMV mv0 = mv_buff0[j];
+            struct OVMV mv1 = mv_buff1[j];
 
-            mv0.x += mv_buff0[j + 35].x;
-            mv0.y += mv_buff0[j + 35].y;
+            mv0.mv.x += mv_buff0[j + 35].mv.x;
+            mv0.mv.y += mv_buff0[j + 35].mv.y;
 
-            mv0.x += mv0.x < 0;
-            mv0.y += mv0.y < 0;
-            mv0.x >>= 1;
-            mv0.y >>= 1;
+            mv0.mv.x += mv0.mv.x < 0;
+            mv0.mv.y += mv0.mv.y < 0;
+            mv0.mv.x >>= 1;
+            mv0.mv.y >>= 1;
 
-            mv1.x += mv_buff1[j + 35].x;
-            mv1.y += mv_buff1[j + 35].y;
+            mv1.mv.x += mv_buff1[j + 35].mv.x;
+            mv1.mv.y += mv_buff1[j + 35].mv.y;
 
-            mv1.x += mv1.x < 0;
-            mv1.y += mv1.y < 0;
-            mv1.x >>= 1;
-            mv1.y >>= 1;
+            mv1.mv.x += mv1.mv.x < 0;
+            mv1.mv.y += mv1.mv.y < 0;
+            mv1.mv.x >>= 1;
+            mv1.mv.y >>= 1;
             
             ctudec->rcn_funcs.rcn_mcp_b_c(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
                         mv0, mv1, x0+ 4*j, y0 + 4*i,
@@ -3372,7 +3344,7 @@ rcn_affine_mcp_b_c(OVCTUDec *const ctudec,
 }
 
 static inline uint8_t
-mv_cmp(const OVMV a, const OVMV b)
+mv_cmp(const struct MV a, const struct MV b)
 {
      uint8_t is_eq;
      is_eq = a.x == b.x;
@@ -3429,8 +3401,8 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
                                   ref_idx0, opp_ref_idx0, mvp_idx0,
                                   inter_dir & 0x1, affine_type, prec_amvr);
 
-        OVMV lt = drv_change_precision_mv(mvd->lt, prec_amvr, MV_PRECISION_INTERNAL);
-        OVMV rt = drv_change_precision_mv(mvd->rt, prec_amvr, MV_PRECISION_INTERNAL);
+        struct MV lt = drv_change_precision_mv(mvd->lt, prec_amvr, MV_PRECISION_INTERNAL);
+        struct MV rt = drv_change_precision_mv(mvd->rt, prec_amvr, MV_PRECISION_INTERNAL);
 
         cp_info->lt.x += lt.x;
         cp_info->lt.y += lt.y;
@@ -3442,22 +3414,16 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
 
         cp_info->lt = mv_clip_periodic(cp_info->lt);
         cp_info->rt = mv_clip_periodic(cp_info->rt);
-        cp_info->lt.ref_idx = ref_idx0;
-        cp_info->rt.ref_idx = ref_idx0;
-        cp_info->lt.bcw_idx_plus1 = bcw_idx + 1;
-        cp_info->rt.bcw_idx_plus1 = bcw_idx + 1;
-        cp_info->lt.prec_amvr = prec_amvr ;
-        cp_info->rt.prec_amvr = prec_amvr ;
+        cp_info->ref_idx = ref_idx0;
+        cp_info->mv_spec.bcw_idx_plus1 = bcw_idx + 1;
+        cp_info->mv_spec.prec_amvr = prec_amvr ;
         if (affine_type == AFFINE_3CP) {
-            OVMV lb = drv_change_precision_mv(mvd->lb, prec_amvr, MV_PRECISION_INTERNAL);
+            struct MV lb = drv_change_precision_mv(mvd->lb, prec_amvr, MV_PRECISION_INTERNAL);
             cp_info->lb.x +=  lt.x;
             cp_info->lb.y +=  lt.y;
             cp_info->lb.x +=  lb.x;
             cp_info->lb.y +=  lb.y;
             cp_info->lb = mv_clip_periodic(cp_info->lb);
-            cp_info->lb.ref_idx = ref_idx0;
-            cp_info->lb.bcw_idx_plus1 = bcw_idx + 1;
-            cp_info->lb.prec_amvr = prec_amvr;
         }
     }
 
@@ -3473,8 +3439,8 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
                                   ref_idx1, opp_ref_idx1, mvp_idx1,
                                   inter_dir & 0x2, affine_type, prec_amvr);
 
-        OVMV lt = drv_change_precision_mv(mvd->lt, prec_amvr, MV_PRECISION_INTERNAL);
-        OVMV rt = drv_change_precision_mv(mvd->rt, prec_amvr, MV_PRECISION_INTERNAL);
+        struct MV lt = drv_change_precision_mv(mvd->lt, prec_amvr, MV_PRECISION_INTERNAL);
+        struct MV rt = drv_change_precision_mv(mvd->rt, prec_amvr, MV_PRECISION_INTERNAL);
 
         cp_info->lt.x += lt.x;
         cp_info->lt.y += lt.y;
@@ -3487,15 +3453,12 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
         cp_info->lt = mv_clip_periodic(cp_info->lt);
         cp_info->rt = mv_clip_periodic(cp_info->rt);
 
-        cp_info->lt.ref_idx = ref_idx1;
-        cp_info->rt.ref_idx = ref_idx1;
-        cp_info->lt.bcw_idx_plus1 = bcw_idx + 1;
-        cp_info->rt.bcw_idx_plus1 = bcw_idx + 1;
-        cp_info->lt.prec_amvr = prec_amvr ;
-        cp_info->rt.prec_amvr = prec_amvr ;
+        cp_info->ref_idx = ref_idx1;
+        cp_info->mv_spec.bcw_idx_plus1 = bcw_idx + 1;
+        cp_info->mv_spec.prec_amvr = prec_amvr ;
 
         if (affine_type == AFFINE_3CP) {
-            OVMV lb = drv_change_precision_mv(mvd->lb, prec_amvr, MV_PRECISION_INTERNAL);
+            struct MV lb = drv_change_precision_mv(mvd->lb, prec_amvr, MV_PRECISION_INTERNAL);
 
             cp_info->lb.x += lt.x;
             cp_info->lb.y += lt.y;
@@ -3503,10 +3466,6 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
             cp_info->lb.y += lb.y;
 
             cp_info->lb = mv_clip_periodic(cp_info->lb);
-
-            cp_info->lb.ref_idx = ref_idx1;
-            cp_info->lb.bcw_idx_plus1 = bcw_idx + 1;
-            cp_info->lb.prec_amvr = prec_amvr;
         }
     }
 
@@ -3599,8 +3558,8 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
         struct AffineControlInfo *const cp_info = &mv_info.cinfo[0];
         uint8_t ref_idx0 = mvp_data->ref_idx0;
         uint8_t mvp_idx0 = mvp_data->mvp_idx0;
-        OVMV lt;
-        OVMV rt;
+        struct MV lt;
+        struct MV rt;
 
         uint8_t opp_ref_idx0 = inter_ctx->inter_params.rpl0_opp[ref_idx0];
         *cp_info = drv_affine_mvp(inter_ctx, affine_ctx, x_pb, y_pb,
@@ -3621,22 +3580,18 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
 
         cp_info->lt = mv_clip_periodic(cp_info->lt);
         cp_info->rt = mv_clip_periodic(cp_info->rt);
-        cp_info->lt.ref_idx = ref_idx0;
-        cp_info->rt.ref_idx = ref_idx0;
-        cp_info->lt.bcw_idx_plus1 = bcw_idx + 1;
-        cp_info->rt.bcw_idx_plus1 = bcw_idx + 1;
-        cp_info->lt.prec_amvr = prec_amvr ;
-        cp_info->rt.prec_amvr = prec_amvr ;
+
+        cp_info->ref_idx = ref_idx0;
+        cp_info->mv_spec.bcw_idx_plus1 = bcw_idx + 1;
+        cp_info->mv_spec.prec_amvr = prec_amvr ;
+
         if (affine_type == AFFINE_3CP) {
-            OVMV lb = drv_change_precision_mv(mvp_data->mvd0.lb, prec_amvr, MV_PRECISION_INTERNAL);
+            struct MV lb = drv_change_precision_mv(mvp_data->mvd0.lb, prec_amvr, MV_PRECISION_INTERNAL);
             cp_info->lb.x += lt.x;
             cp_info->lb.y += lt.y;
             cp_info->lb.x += lb.x;
             cp_info->lb.y += lb.y;
             cp_info->lb = mv_clip_periodic(cp_info->lb);
-            cp_info->lb.ref_idx = ref_idx0;
-            cp_info->lb.bcw_idx_plus1 = bcw_idx + 1;
-            cp_info->lb.prec_amvr = prec_amvr;
         }
     }
 
@@ -3646,7 +3601,7 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
         uint8_t mvp_idx1 = mvp_data->mvp_idx1;
 
         uint8_t opp_ref_idx1 = inter_ctx->inter_params.rpl1_opp[ref_idx1];
-        OVMV lt, rt;
+        struct MV lt, rt;
 
         *cp_info = drv_affine_mvp(inter_ctx, affine_ctx, x_pb, y_pb,
                                   nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
@@ -3666,24 +3621,19 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
 
         cp_info->lt = mv_clip_periodic(cp_info->lt);
         cp_info->rt = mv_clip_periodic(cp_info->rt);
-        cp_info->lt.ref_idx = ref_idx1;
-        cp_info->rt.ref_idx = ref_idx1;
-        cp_info->lt.bcw_idx_plus1 = bcw_idx + 1;
-        cp_info->rt.bcw_idx_plus1 = bcw_idx + 1;
-        cp_info->lt.prec_amvr = prec_amvr;
-        cp_info->rt.prec_amvr = prec_amvr;
+
+        cp_info->ref_idx = ref_idx1;
+        cp_info->mv_spec.bcw_idx_plus1 = bcw_idx + 1;
+        cp_info->mv_spec.prec_amvr = prec_amvr;
 
         if (affine_type == AFFINE_3CP) {
-            OVMV lb = drv_change_precision_mv(mvp_data->mvd1.lb, prec_amvr, MV_PRECISION_INTERNAL);
+            struct MV lb = drv_change_precision_mv(mvp_data->mvd1.lb, prec_amvr, MV_PRECISION_INTERNAL);
 
             cp_info->lb.x += lt.x;
             cp_info->lb.y += lt.y;
             cp_info->lb.x += lb.x;
             cp_info->lb.y += lb.y;
             cp_info->lb = mv_clip_periodic(cp_info->lb);
-            cp_info->lb.ref_idx = ref_idx1;
-            cp_info->lb.bcw_idx_plus1 = bcw_idx + 1;
-            cp_info->lb.prec_amvr = prec_amvr;
         }
     }
 
@@ -3765,10 +3715,13 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
     uint8_t is_sbtmvp = 0;
     uint8_t log2_pmerge_lvl = inter_ctx->inter_params.log2_parallel_merge_level;
 
+    mv_info.cinfo[0].ref_idx = 100;
+    mv_info.cinfo[1].ref_idx = 100;
+
     if (sbtmvp_enabled) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct MergeInfo mv_info;
-        OVMV mv_offset = {0};
+        struct MergeInfo mv_info = {0};
+        struct MV mv_offset = {0};
 
         /* FIXME avoid duplication with merge derivation */
         uint64_t rpl0_lft_col = mv_ctx0->map.vfield[x_pb];
@@ -3783,7 +3736,8 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                                                    &mv_info, &mv_offset,
                                                    rpl0_cand, 0);
 
-       if (sb_cand && merge_idx == 0) {
+
+        if (sb_cand && merge_idx == 0) {
             derive_sub_block_mvs_p(inter_ctx, &inter_ctx->tmvp_ctx,
                                    x0, y0,
                                    log2_cu_w, log2_cu_h,
@@ -3816,12 +3770,10 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                                merge_idx);
     }
 
-    mv_info.cinfo[0].lt.prec_amvr = 0;
-    mv_info.cinfo[0].rt.prec_amvr = 0;
-    mv_info.cinfo[0].lb.prec_amvr = 0;
-    mv_info.cinfo[1].lt.prec_amvr = 0;
-    mv_info.cinfo[1].rt.prec_amvr = 0;
-    mv_info.cinfo[1].lb.prec_amvr = 0;
+    mv_info.cinfo[0].mv_spec.prec_amvr = 0;
+
+    mv_info.cinfo[1].mv_spec.prec_amvr = 0;
+
     mv_info.inter_dir = 0x1;
 
     if (!is_sbtmvp) {
@@ -3890,6 +3842,9 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 {
     struct AffineDRVInfo *affine_ctx = &inter_ctx->affine_ctx;
     struct AffineMergeInfo mv_info;
+        mv_info.cinfo[0].ref_idx = 100;
+        mv_info.cinfo[1].ref_idx = 100;
+
 
     uint8_t x_pb = x0 >> 2;
     uint8_t y_pb = y0 >> 2;
@@ -3903,8 +3858,8 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     if (sbtmvp_enabled) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct MergeInfo mv_info;
-        OVMV mv_offset = {0};
+        struct MergeInfo mv_info = {0};
+        struct MV mv_offset = {0};
 
         /* FIXME avoid duplication with merge derivation */
         uint64_t rpl0_lft_col = mv_ctx0->map.vfield[x_pb];
@@ -3954,12 +3909,10 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                                merge_idx);
     }
 
-    mv_info.cinfo[0].lt.prec_amvr = 0;
-    mv_info.cinfo[0].rt.prec_amvr = 0;
-    mv_info.cinfo[0].lb.prec_amvr = 0;
-    mv_info.cinfo[1].lt.prec_amvr = 0;
-    mv_info.cinfo[1].rt.prec_amvr = 0;
-    mv_info.cinfo[1].lb.prec_amvr = 0;
+    mv_info.cinfo[0].mv_spec.prec_amvr = 0;
+    mv_info.cinfo[1].mv_spec.prec_amvr = 0;
+    mv_info.cinfo[0].mv_spec.bcw_idx_plus1 = 0;
+    mv_info.cinfo[1].mv_spec.bcw_idx_plus1 = 0;
     /* FIXME can we have small blocks bidir requiring inter_dir
      * override
      */

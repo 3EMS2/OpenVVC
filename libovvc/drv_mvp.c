@@ -50,8 +50,8 @@
 #define TMVP_POS_MASK(y) ((uint64_t) 1 << ((y) + 1))
 
 #define OFFSET_BUFF(x,y) (35 + x + (y) * 34)
-#define MV_CMP(mv0,mv1) ((mv0.x == mv1.x) && (mv0.y == mv1.y))
-#define MV_CMP2(mv0,mv1) ((mv0.x == mv1.x) && (mv0.y == mv1.y) && (mv0.ref_idx == mv1.ref_idx))
+#define MV_CMP(mv0,mv1) ((mv0.mv.x == mv1.mv.x) && (mv0.mv.y == mv1.mv.y))
+#define MV_CMP2(mv0,mv1) ((mv0.mv.x == mv1.mv.x) && (mv0.mv.y == mv1.mv.y) && (mv0.ref_idx == mv1.ref_idx))
 
 #define PB_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
 
@@ -83,8 +83,8 @@ tmvp_compute_scale(int16_t dist_current, int16_t dist_colocated)
     return (int16_t)scale;
 }
 
-OVMV
-drv_change_precision_mv(OVMV mv, int src, int dst)
+struct MV
+drv_change_precision_mv(struct MV mv, int src, int dst)
 {
     int shift = dst - src;
 
@@ -119,10 +119,10 @@ drv_change_precision_mv2(struct MV mv, int src, int dst)
     return mv;
 }
 
-OVMV
-drv_round_to_precision_mv(OVMV mv, int src, int dst)
+struct MV
+drv_round_to_precision_mv(struct MV mv, int src, int dst)
 {
-    OVMV mv1 = drv_change_precision_mv(mv, src, dst);
+    struct MV mv1 = drv_change_precision_mv(mv, src, dst);
     return drv_change_precision_mv(mv1, dst, src);
 }
 
@@ -550,11 +550,10 @@ found:
         col_mv.mv = tmvp_scale_mv(scale, col_mv.mv);
         col_mv.mv = drv_round_to_precision_mv2(col_mv.mv, MV_PRECISION_INTERNAL, prec_amvr);
 
-        cand[0].x = col_mv.mv.x;
-        cand[0].y = col_mv.mv.y;
+        cand[0].mv = col_mv.mv;
         cand[0].ref_idx = ref_idx;
-        cand[0].bcw_idx_plus1 = 0;
-        cand[0].prec_amvr = 0;
+        cand[0].mv_spec.bcw_idx_plus1 = 0;
+        cand[0].mv_spec.prec_amvr = 0;
 
         return 1;
     }
@@ -652,8 +651,8 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         }
     }
 
-    cand[0]  = drv_round_to_precision_mv(cand[0], MV_PRECISION_INTERNAL, prec_amvr);
-    cand[1]  = drv_round_to_precision_mv(cand[1], MV_PRECISION_INTERNAL, prec_amvr);
+    cand[0].mv  = drv_round_to_precision_mv(cand[0].mv, MV_PRECISION_INTERNAL, prec_amvr);
+    cand[1].mv  = drv_round_to_precision_mv(cand[1].mv, MV_PRECISION_INTERNAL, prec_amvr);
 
     /* Remove on candidates if duplicated */
     if (nb_cand == 2) {
@@ -684,8 +683,8 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         cand[nb_cand++] = zmv;
     }
 
-    cand[0]  = drv_round_to_precision_mv(cand[0], MV_PRECISION_INTERNAL, prec_amvr);
-    cand[1]  = drv_round_to_precision_mv(cand[1], MV_PRECISION_INTERNAL, prec_amvr);
+    cand[0].mv  = drv_round_to_precision_mv(cand[0].mv, MV_PRECISION_INTERNAL, prec_amvr);
+    cand[1].mv  = drv_round_to_precision_mv(cand[1].mv, MV_PRECISION_INTERNAL, prec_amvr);
 
     return cand[mvp_idx];
 }
@@ -750,11 +749,10 @@ found:
         col_mv.mv = tmvp_round_mv(col_mv.mv);
         col_mv.mv = tmvp_scale_mv(scale , col_mv.mv);
 
-        cand->x = col_mv.mv.x;
-        cand->y = col_mv.mv.y;
+        cand->mv = col_mv.mv;
         cand->ref_idx = 0;
-        cand->bcw_idx_plus1 = 0;
-        cand->prec_amvr = 0;
+        cand->mv_spec.bcw_idx_plus1 = 0;
+        cand->mv_spec.prec_amvr = 0;
 
         return 1;
     }
@@ -781,7 +779,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
     uint8_t cand_tl = !!(abv_row & POS_MASK(pb_x - 1, 0));      /*B2*/
     OVMV cand[6];
     OVMV cand_amvp[5];
-    OVMV mv_z = {-1};
+    OVMV mv_z = {0};
 
     int nb_cand = 0;
 
@@ -874,16 +872,16 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
 
     if (nb_cand > 1 && nb_cand < max_nb_merge_cand) {
 
-        OVMV avg_mv = cand[0];
-        avg_mv.x += cand[1].x;
-        avg_mv.y += cand[1].y;
-        avg_mv.x += 1 - (avg_mv.x >= 0);
-        avg_mv.y += 1 - (avg_mv.y >= 0);
-        avg_mv.x >>= 1;
-        avg_mv.y >>= 1;
+        struct OVMV avg_mv = cand[0];
+        avg_mv.mv.x += cand[1].mv.x;
+        avg_mv.mv.y += cand[1].mv.y;
+        avg_mv.mv.x += 1 - (avg_mv.mv.x >= 0);
+        avg_mv.mv.y += 1 - (avg_mv.mv.y >= 0);
+        avg_mv.mv.x >>= 1;
+        avg_mv.mv.y >>= 1;
 
-        if (cand[0].prec_amvr != cand[1].prec_amvr) {
-            avg_mv.prec_amvr = 0;
+        if (cand[0].mv_spec.prec_amvr != cand[1].mv_spec.prec_amvr) {
+            avg_mv.mv_spec.prec_amvr = 0;
         }
 
         if (nb_cand == merge_idx)
@@ -986,8 +984,8 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
         int16_t scale_cur;
         int16_t scale_opp;
 
-        struct TMVPMV tmp_cur;
-        struct TMVPMV tmp_opp;
+        struct MV tmp_cur;
+        struct MV tmp_opp;
         struct TMVPMV col_mv_opp;
         struct TMVPMV col_mv;
 
@@ -1090,26 +1088,24 @@ found:
         scale_cur = derive_tmvp_scale(dist_ref_cur, col_mv.z);
         scale_opp = derive_tmvp_scale(dist_ref_opp, col_mv_opp.z);
 
-        tmp_cur.mv = tmvp_round_mv(col_mv.mv);
-        tmp_opp.mv = tmvp_round_mv(col_mv_opp.mv);
+        tmp_cur = tmvp_round_mv(col_mv.mv);
+        tmp_opp = tmvp_round_mv(col_mv_opp.mv);
 
-        tmp_cur.mv = tmvp_scale_mv(scale_cur, tmp_cur.mv);
-        tmp_opp.mv = tmvp_scale_mv(scale_opp, tmp_opp.mv);
+        tmp_cur = tmvp_scale_mv(scale_cur, tmp_cur);
+        tmp_opp = tmvp_scale_mv(scale_opp, tmp_opp);
 
-        dst_cur->x = tmp_cur.mv.x;
-        dst_cur->y = tmp_cur.mv.y;
-        dst_opp->x = tmp_opp.mv.x;
-        dst_opp->y = tmp_opp.mv.y;
+        dst_cur->mv = tmp_cur;
+        dst_opp->mv = tmp_opp;
 
         cand->inter_dir = 3;
 
         cand->mv0.ref_idx = 0;
-        cand->mv0.bcw_idx_plus1 = 0;
-        cand->mv0.prec_amvr = 0;
+        cand->mv0.mv_spec.bcw_idx_plus1 = 0;
+        cand->mv0.mv_spec.prec_amvr = 0;
 
         cand->mv1.ref_idx = 0;
-        cand->mv1.bcw_idx_plus1 = 0;
-        cand->mv1.prec_amvr = 0;
+        cand->mv1.mv_spec.bcw_idx_plus1 = 0;
+        cand->mv1.mv_spec.prec_amvr = 0;
 
         return 1;
     }
@@ -1267,12 +1263,12 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         avg_mv.inter_dir = cand[0].inter_dir & cand[1].inter_dir;
 
         if (avg_mv.inter_dir & 0x1) {
-            avg_mv.mv0.x += cand[1].mv0.x;
-            avg_mv.mv0.y += cand[1].mv0.y;
-            avg_mv.mv0.x += 1 - (avg_mv.mv0.x >= 0);
-            avg_mv.mv0.y += 1 - (avg_mv.mv0.y >= 0);
-            avg_mv.mv0.x >>= 1;
-            avg_mv.mv0.y >>= 1;
+            avg_mv.mv0.mv.x += cand[1].mv0.mv.x;
+            avg_mv.mv0.mv.y += cand[1].mv0.mv.y;
+            avg_mv.mv0.mv.x += 1 - (avg_mv.mv0.mv.x >= 0);
+            avg_mv.mv0.mv.y += 1 - (avg_mv.mv0.mv.y >= 0);
+            avg_mv.mv0.mv.x >>= 1;
+            avg_mv.mv0.mv.y >>= 1;
         } else if (cand[1].inter_dir & 0x1) {
             avg_mv.mv0 = cand[1].mv0;
             avg_mv.inter_dir |= 1;
@@ -1282,12 +1278,12 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         }
 
         if (avg_mv.inter_dir & 0x2) {
-            avg_mv.mv1.x += cand[1].mv1.x;
-            avg_mv.mv1.y += cand[1].mv1.y;
-            avg_mv.mv1.x += 1 - (avg_mv.mv1.x >= 0);
-            avg_mv.mv1.y += 1 - (avg_mv.mv1.y >= 0);
-            avg_mv.mv1.x >>= 1;
-            avg_mv.mv1.y >>= 1;
+            avg_mv.mv1.mv.x += cand[1].mv1.mv.x;
+            avg_mv.mv1.mv.y += cand[1].mv1.mv.y;
+            avg_mv.mv1.mv.x += 1 - (avg_mv.mv1.mv.x >= 0);
+            avg_mv.mv1.mv.y += 1 - (avg_mv.mv1.mv.y >= 0);
+            avg_mv.mv1.mv.x >>= 1;
+            avg_mv.mv1.mv.y >>= 1;
         } else if (cand[1].inter_dir & 0x2) {
             avg_mv.mv1 = cand[1].mv1;
             avg_mv.inter_dir |= 2;
@@ -1297,12 +1293,12 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         }
 
         if (nb_cand == merge_idx){
-            uint8_t prec_amvr0 = cand[0].inter_dir & 0x1 ? cand[0].mv0.prec_amvr : cand[0].mv1.prec_amvr;
-            uint8_t prec_amvr1 = cand[1].inter_dir & 0x1 ? cand[1].mv0.prec_amvr : cand[1].mv1.prec_amvr;
-            avg_mv.mv0.prec_amvr = (prec_amvr0 == prec_amvr1) ? prec_amvr0 : 0 ;
-            avg_mv.mv1.prec_amvr = avg_mv.mv0.prec_amvr ;
-            avg_mv.mv0.bcw_idx_plus1 = 0;
-            avg_mv.mv1.bcw_idx_plus1 = 0;
+            uint8_t prec_amvr0 = cand[0].inter_dir & 0x1 ? cand[0].mv0.mv_spec.prec_amvr : cand[0].mv1.mv_spec.prec_amvr;
+            uint8_t prec_amvr1 = cand[1].inter_dir & 0x1 ? cand[1].mv0.mv_spec.prec_amvr : cand[1].mv1.mv_spec.prec_amvr;
+            avg_mv.mv0.mv_spec.prec_amvr = (prec_amvr0 == prec_amvr1) ? prec_amvr0 : 0 ;
+            avg_mv.mv1.mv_spec.prec_amvr = avg_mv.mv0.mv_spec.prec_amvr ;
+            avg_mv.mv0.mv_spec.bcw_idx_plus1 = 0;
+            avg_mv.mv1.mv_spec.bcw_idx_plus1 = 0;
             return avg_mv;
         }
 
@@ -1317,11 +1313,11 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
 
     mv_z.inter_dir = 3;
     mv_z.mv0.ref_idx = ridx;
-    mv_z.mv0.bcw_idx_plus1 = 0;
-    mv_z.mv0.prec_amvr = 0;
+    mv_z.mv0.mv_spec.bcw_idx_plus1 = 0;
+    mv_z.mv0.mv_spec.prec_amvr = 0;
     mv_z.mv1.ref_idx = ridx;
-    mv_z.mv1.bcw_idx_plus1 = 0;
-    mv_z.mv1.prec_amvr = 0;
+    mv_z.mv1.mv_spec.bcw_idx_plus1 = 0;
+    mv_z.mv1.mv_spec.prec_amvr = 0;
 
     return mv_z;
 }
@@ -1383,8 +1379,8 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     if (inter_dir == 3) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
-        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
+        struct TMVPMV tmvpmv0 = {.mv=mv0.mv, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
+        struct TMVPMV tmvpmv1 = {.mv=mv1.mv, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
         fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, tmvpmv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1394,7 +1390,7 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
+        struct TMVPMV tmvpmv1 = {.mv=mv1.mv, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, tmvpmv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1402,7 +1398,7 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
+        struct TMVPMV tmvpmv0 = {.mv=mv0.mv, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1420,8 +1416,8 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     if (inter_dir == 3) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
-        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
+        struct TMVPMV tmvpmv0 = {.mv=mv0.mv, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
+        struct TMVPMV tmvpmv1 = {.mv=mv1.mv, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
         fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, tmvpmv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1431,7 +1427,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
+        struct TMVPMV tmvpmv1 = {.mv=mv1.mv, .z=inter_ctx->inter_params.dist_ref_1[mv1.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, tmvpmv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1439,7 +1435,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
+        struct TMVPMV tmvpmv0 = {.mv=mv0.mv, .z=inter_ctx->inter_params.dist_ref_0[mv0.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1472,7 +1468,7 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
     uint8_t enable_hmvp = enable_hmvp_storage(pb_x, pb_y, nb_pb_w, nb_pb_h, log2_pmerge_lvl);
     if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct TMVPMV tmvpmv = {.mv.x=mv.x, .mv.y=mv.y, .z=inter_ctx->inter_params.dist_ref_1[mv.ref_idx]};
+        struct TMVPMV tmvpmv = {.mv=mv.mv, .z=inter_ctx->inter_params.dist_ref_1[mv.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, tmvpmv, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1480,7 +1476,7 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct TMVPMV tmvpmv = {.mv.x=mv.x, .mv.y=mv.y, .z=inter_ctx->inter_params.dist_ref_0[mv.ref_idx]};
+        struct TMVPMV tmvpmv = {.mv=mv.mv, .z=inter_ctx->inter_params.dist_ref_0[mv.ref_idx]};
 
         fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, tmvpmv, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
@@ -1567,7 +1563,7 @@ VVCMergeInfo
 drv_mvp_b(struct InterDRVCtx *const inter_ctx,
           uint8_t x0, uint8_t y0,
           uint8_t log2_cb_w, uint8_t log2_cb_h,
-          OVMV mvd0, OVMV mvd1, int prec_amvr,
+          struct MV mvd0, struct MV mvd1, int prec_amvr,
           uint8_t mvp_idx0, uint8_t mvp_idx1, uint8_t bcw_idx,
           uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
           uint8_t is_small)
@@ -1594,13 +1590,13 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
 
         mvd0 = drv_change_precision_mv(mvd0, prec_amvr, MV_PRECISION_INTERNAL);
 
-        mv0.x += mvd0.x;
-        mv0.y += mvd0.y;
+        mv0.mv.x += mvd0.x;
+        mv0.mv.y += mvd0.y;
 
         mv0.ref_idx = ref_idx0;
 
-        mv0.bcw_idx_plus1 = bcw_idx + 1;
-        mv0.prec_amvr     = prec_amvr;
+        mv0.mv_spec.bcw_idx_plus1 = bcw_idx + 1;
+        mv0.mv_spec.prec_amvr     = prec_amvr;
     }
 
     if (inter_dir & 0x2) {
@@ -1617,13 +1613,13 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
 
         mvd1 = drv_change_precision_mv(mvd1, prec_amvr, MV_PRECISION_INTERNAL);
 
-        mv1.x += mvd1.x;
-        mv1.y += mvd1.y;
+        mv1.mv.x += mvd1.x;
+        mv1.mv.y += mvd1.y;
 
         mv1.ref_idx = ref_idx1;
 
-        mv1.bcw_idx_plus1 = bcw_idx + 1;
-        mv1.prec_amvr = prec_amvr;
+        mv1.mv_spec.bcw_idx_plus1 = bcw_idx + 1;
+        mv1.mv_spec.prec_amvr = prec_amvr;
     }
 
     mv_info.inter_dir = inter_dir;
@@ -1663,7 +1659,7 @@ drv_mmvd_merge_mvp(struct InterDRVCtx *const inter_ctx,
                                    max_nb_cand, log2_cb_w + log2_cb_h <= 5);
 
 
-    OVMV mvd0;
+    struct MV mvd0;
 
     int f_pos_group = merge_idx / (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
 
@@ -1691,8 +1687,8 @@ drv_mmvd_merge_mvp(struct InterDRVCtx *const inter_ctx,
         mvd0.y = -offset;
     }
 
-    mv.x += mvd0.x;
-    mv.y += mvd0.y;
+    mv.mv.x += mvd0.x;
+    mv.mv.y += mvd0.y;
 
     /* Force to RPL_0 */
     update_mv_ctx(inter_ctx, mv, x0_unit, y0_unit,
@@ -1729,7 +1725,7 @@ drv_merge_mvp(struct InterDRVCtx *const inter_ctx,
 OVMV
 drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
             const struct OVMVCtx *const mv_ctx,
-            OVMV mvd, int prec_amvr,
+            struct MV mvd, int prec_amvr,
             uint8_t x0, uint8_t y0,
             uint8_t log2_cb_w, uint8_t log2_cb_h,
             uint8_t mvp_idx, uint8_t inter_dir,
@@ -1754,12 +1750,12 @@ drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
                                  x0_unit, y0_unit, nb_unit_w, nb_unit_h,
                                  mvp_idx, 1, mv_ctx_opp, ref_idx_opp, prec_amvr, 0);
 
-    mv.ref_idx = ref_idx;
 
     mvd = drv_change_precision_mv(mvd, prec_amvr, MV_PRECISION_INTERNAL);
 
-    mv.x += mvd.x;
-    mv.y += mvd.y;
+    mv.mv.x += mvd.x;
+    mv.mv.y += mvd.y;
+    mv.ref_idx = ref_idx;
 
     update_mv_ctx(inter_ctx, mv, x0_unit, y0_unit, nb_unit_w, nb_unit_h,
                   inter_dir);
@@ -1804,7 +1800,7 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 
     int offset = (uint16_t)ref_mvd_cands[f_pos_step] << 2;
 
-    OVMV mvd0, mvd1;
+    struct MV mvd0, mvd1;
 
     int ref0 = mv_info.mv0.ref_idx;
     int ref1 = mv_info.mv1.ref_idx;
@@ -1910,13 +1906,13 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     }
 
     if (mv_info.inter_dir & 0x1) {
-        mv_info.mv0.x += mvd0.x;
-        mv_info.mv0.y += mvd0.y;
+        mv_info.mv0.mv.x += mvd0.x;
+        mv_info.mv0.mv.y += mvd0.y;
     }
 
     if (mv_info.inter_dir & 0x2) {
-        mv_info.mv1.x += mvd1.x;
-        mv_info.mv1.y += mvd1.y;
+        mv_info.mv1.mv.x += mvd1.x;
+        mv_info.mv1.mv.y += mvd1.y;
     }
 
     /* FIXME check before ? */
@@ -1956,15 +1952,15 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                                       nb_pb_w, nb_pb_h, gpm_info->merge_idx1,
                                       max_nb_cand, is_small);
 
-    mv_info0.mv0.bcw_idx_plus1 = 0;
-    mv_info0.mv1.bcw_idx_plus1 = 0;
-    mv_info1.mv0.bcw_idx_plus1 = 0;
-    mv_info1.mv1.bcw_idx_plus1 = 0;
+    mv_info0.mv0.mv_spec.bcw_idx_plus1 = 0;
+    mv_info0.mv1.mv_spec.bcw_idx_plus1 = 0;
+    mv_info1.mv0.mv_spec.bcw_idx_plus1 = 0;
+    mv_info1.mv1.mv_spec.bcw_idx_plus1 = 0;
 
-    mv_info0.mv0.prec_amvr = 0;
-    mv_info0.mv1.prec_amvr = 0;
-    mv_info1.mv0.prec_amvr = 0;
-    mv_info1.mv1.prec_amvr = 0;
+    mv_info0.mv0.mv_spec.prec_amvr = 0;
+    mv_info0.mv1.mv_spec.prec_amvr = 0;
+    mv_info1.mv0.mv_spec.prec_amvr = 0;
+    mv_info1.mv1.mv_spec.prec_amvr = 0;
 
     uint8_t parity = gpm_info->merge_idx0 & 1;
 

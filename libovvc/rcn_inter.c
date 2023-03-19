@@ -96,8 +96,8 @@ struct OVDMV {
     int32_t y;
 };
 
-static OVMV
-clip_mv(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV mv)
+static struct MV
+clip_mv(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, struct MV mv)
 {
     int x_max  = (pic_w + 2 - pos_x) << 4;
     int y_max  = (pic_h + 2 - pos_y) << 4;
@@ -263,7 +263,7 @@ test_for_edge_emulation(int pb_x, int pb_y, int pic_w, int pic_h,
 
 
 static uint8_t
-check_identical_motion(struct InterDRVCtx *const inter_ctx, int inter_dir, const OVMV mv0, const OVMV mv1,
+check_identical_motion(struct InterDRVCtx *const inter_ctx, int inter_dir, const struct MV mv0, const struct MV mv1,
                        uint8_t ref_idx0, uint8_t ref_idx1)
 {
     uint16_t dist_0 = inter_ctx->inter_params.dist_ref_0[ref_idx0];
@@ -274,7 +274,7 @@ check_identical_motion(struct InterDRVCtx *const inter_ctx, int inter_dir, const
 
 
 static struct OVBuffInfo
-derive_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
+derive_ref_buf_c(const OVPicture *const ref_pic, struct MV mv, int pos_x, int pos_y,
                  OVSample *edge_buff0, OVSample *edge_buff1,
                  int log2_pu_w, int log2_pu_h, int log2_ctu_s)
 {
@@ -384,7 +384,7 @@ padd_dmvr(OVSample *const _ref, int16_t stride, uint8_t pu_w, uint8_t pu_h)
 }
 
 static struct OVBuffInfo
-derive_ref_buf_y(OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
+derive_ref_buf_y(OVPicture *const ref_pic, struct MV mv, int pos_x, int pos_y,
                  OVSample *edge_buff, int log2_pu_w, int log2_pu_h, int log2_ctu_s)
 {
     struct OVBuffInfo ref_buff;
@@ -435,7 +435,7 @@ derive_ref_buf_y(OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
 }
 
 static struct OVBuffInfo
-derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
+derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, struct MV mv, int pos_x, int pos_y,
                       OVSample *edge_buff, int pu_w, int pu_h, int log2_ctu_s)
 {
     struct OVBuffInfo ref_buff;
@@ -446,7 +446,7 @@ derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
 
     int src_stride = ref_pic->frame->linesize[0]/sizeof(OVSample);
 
-    OVMV mv_clipped = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
+    struct MV mv_clipped = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
 
     int ref_pos_x = pos_x + (mv_clipped.x >> 4);
     int ref_pos_y = pos_y + (mv_clipped.y >> 4);
@@ -477,7 +477,7 @@ derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
 }
 
 static struct OVBuffInfo
-derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
+derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, struct MV mv, int pos_x, int pos_y,
                       OVSample *edge_buff0, OVSample *edge_buff1, int pu_w, int pu_h)
 {
     struct OVBuffInfo ref_buff;
@@ -489,7 +489,7 @@ derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
 
     int src_stride = ref_pic->frame->linesize[1]/sizeof(OVSample);
 
-    OVMV mv_clipped = clip_mv(pos_x << 1, pos_y << 1, pic_w << 1, pic_h << 1, pu_w << 1, pu_h << 1, mv);
+    struct MV mv_clipped = clip_mv(pos_x << 1, pos_y << 1, pic_w << 1, pic_h << 1, pu_w << 1, pu_h << 1, mv);
 
     int ref_pos_x = pos_x + (mv_clipped.x >> 5);
     int ref_pos_y = pos_y + (mv_clipped.y >> 5);
@@ -532,8 +532,8 @@ motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
-    uint8_t use_alt_filter = mv0.prec_amvr == MV_PRECISION_HALF;
-    uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
+    uint8_t use_alt_filter = mv0.mv_spec.prec_amvr == MV_PRECISION_HALF;
+    uint8_t use_bcw = mv0.mv_spec.bcw_idx_plus1 != 0 && mv0.mv_spec.bcw_idx_plus1 != 3;
 
     int16_t wt0, wt1;
 
@@ -551,26 +551,26 @@ motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    mv0 = clip_mv(pos_x, pos_y, ref0->frame->width,
-                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0);
+    mv0.mv = clip_mv(pos_x, pos_y, ref0->frame->width,
+                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
 
-    mv1 = clip_mv(pos_x, pos_y, ref1->frame->width,
-                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1);
+    mv1.mv = clip_mv(pos_x, pos_y, ref1->frame->width,
+                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
-    struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
+    struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0.mv, pos_x, pos_y, edge_buff0,
                                                 log2_pu_w, log2_pu_h, log2_ctb_s);
 
-    struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
+    struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1.mv, pos_x, pos_y, edge_buff1,
                                                 log2_pu_w, log2_pu_h, log2_ctb_s);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
 
-    uint8_t prec_x0 = (mv0.x) & 0xF;
-    uint8_t prec_y0 = (mv0.y) & 0xF;
-    uint8_t prec_x1 = (mv1.x) & 0xF;
-    uint8_t prec_y1 = (mv1.y) & 0xF;
+    uint8_t prec_x0 = (mv0.mv.x) & 0xF;
+    uint8_t prec_y0 = (mv0.mv.y) & 0xF;
+    uint8_t prec_x1 = (mv1.mv.x) & 0xF;
+    uint8_t prec_y1 = (mv1.mv.y) & 0xF;
 
     if (use_alt_filter) {
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
@@ -591,7 +591,7 @@ motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, dst.stride, ref1_b.y, ref1_b.stride,
                                                     tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
     } else if (use_bcw) {
-        wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
+        wt1 = bcw_weights[mv0.mv_spec.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
         mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1](dst.y, dst.stride, ref1_b.y, ref1_b.stride,
                                                      tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1, 0, 0,
@@ -880,7 +880,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     struct DMVRFunctions *dmvr = &ctudec->rcn_funcs.dmvr;
     struct BDOFFunctions *bdof = &ctudec->rcn_funcs.bdof;
-    uint8_t use_alt_filter = mv0->prec_amvr == MV_PRECISION_HALF;
+    uint8_t use_alt_filter = mv0->mv_spec.prec_amvr == MV_PRECISION_HALF;
 
     OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx1];
@@ -902,26 +902,26 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    mv0->x = ov_clip(mv0->x, MV_MIN, MV_MAX);
-    mv0->y = ov_clip(mv0->y, MV_MIN, MV_MAX);
+    mv0->mv.x = ov_clip(mv0->mv.x, MV_MIN, MV_MAX);
+    mv0->mv.y = ov_clip(mv0->mv.y, MV_MIN, MV_MAX);
 
-    mv1->x = ov_clip(mv1->x, MV_MIN, MV_MAX);
-    mv1->y = ov_clip(mv1->y, MV_MIN, MV_MAX);
+    mv1->mv.x = ov_clip(mv1->mv.x, MV_MIN, MV_MAX);
+    mv1->mv.y = ov_clip(mv1->mv.y, MV_MIN, MV_MAX);
 
-    OVMV tmp0 = *mv0;
-    OVMV tmp1 = *mv1;
+    struct MV tmp0 = mv0->mv;
+    struct MV tmp1 = mv1->mv;
 
-    struct OVBuffInfo ref0_b = derive_dmvr_ref_buf_y(ref0, *mv0, pos_x, pos_y, edge_buff0,
+    struct OVBuffInfo ref0_b = derive_dmvr_ref_buf_y(ref0, mv0->mv, pos_x, pos_y, edge_buff0,
                                                      pu_w, pu_h, ctudec->part_ctx->log2_ctu_s);
 
-    struct OVBuffInfo ref1_b = derive_dmvr_ref_buf_y(ref1, *mv1, pos_x, pos_y, edge_buff1,
+    struct OVBuffInfo ref1_b = derive_dmvr_ref_buf_y(ref1, mv1->mv, pos_x, pos_y, edge_buff1,
                                                      pu_w, pu_h, ctudec->part_ctx->log2_ctu_s);
 
-    uint8_t prec_x0 = (mv0->x) & 0xF;
-    uint8_t prec_y0 = (mv0->y) & 0xF;
+    uint8_t prec_x0 = (mv0->mv.x) & 0xF;
+    uint8_t prec_y0 = (mv0->mv.y) & 0xF;
 
-    uint8_t prec_x1 = (mv1->x) & 0xF;
-    uint8_t prec_y1 = (mv1->y) & 0xF;
+    uint8_t prec_x1 = (mv1->mv.x) & 0xF;
+    uint8_t prec_y1 = (mv1->mv.y) & 0xF;
 
     uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
     uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
@@ -972,19 +972,19 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
         /* FIXME if dmvr_idx != 12 force DBF ?*/
 
-        mv0->x += delta_h;
-        mv0->y += delta_v;
+        mv0->mv.x += delta_h;
+        mv0->mv.y += delta_v;
 
-        mv1->x -= delta_h;
-        mv1->y -= delta_v;
+        mv1->mv.x -= delta_h;
+        mv1->mv.y -= delta_v;
 
         /* FIXME clipping should be done on copy
          * since we use actual MVs for TMVP ? */
-        mv0->x = ov_clip(mv0->x, MV_MIN, MV_MAX);
-        mv0->y = ov_clip(mv0->y, MV_MIN, MV_MAX);
+        mv0->mv.x = ov_clip(mv0->mv.x, MV_MIN, MV_MAX);
+        mv0->mv.y = ov_clip(mv0->mv.y, MV_MIN, MV_MAX);
 
-        mv1->x = ov_clip(mv1->x, MV_MIN, MV_MAX);
-        mv1->y = ov_clip(mv1->y, MV_MIN, MV_MAX);
+        mv1->mv.x = ov_clip(mv1->mv.x, MV_MIN, MV_MAX);
+        mv1->mv.y = ov_clip(mv1->mv.y, MV_MIN, MV_MAX);
     }
 
     /* TODO Call classic reconstruction */
@@ -992,11 +992,11 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     padd_dmvr(ref0_b.y, ref0_b.stride, pu_w, pu_h);
     padd_dmvr(ref1_b.y, ref1_b.stride, pu_w, pu_h);
 
-    prec_x0 = (mv0->x) & 0xF;
-    prec_y0 = (mv0->y) & 0xF;
+    prec_x0 = (mv0->mv.x) & 0xF;
+    prec_y0 = (mv0->mv.y) & 0xF;
 
-    prec_x1 = (mv1->x) & 0xF;
-    prec_y1 = (mv1->y) & 0xF;
+    prec_x1 = (mv1->mv.x) & 0xF;
+    prec_y1 = (mv1->mv.y) & 0xF;
 
     if (use_alt_filter) {
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
@@ -1010,11 +1010,11 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
     prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
 
-    int delta_h2 = (mv0->x >> 4) - (tmp0.x >> 4);
-    int delta_v2 = (mv0->y >> 4) - (tmp0.y >> 4);
+    int delta_h2 = (mv0->mv.x >> 4) - (tmp0.x >> 4);
+    int delta_v2 = (mv0->mv.y >> 4) - (tmp0.y >> 4);
 
-    int delta_h3 = (mv1->x >> 4) - (tmp1.x >> 4);
-    int delta_v3 = (mv1->y >> 4) - (tmp1.y >> 4);
+    int delta_h3 = (mv1->mv.x >> 4) - (tmp1.x >> 4);
+    int delta_v3 = (mv1->mv.y >> 4) - (tmp1.y >> 4);
 
     ref0_b.y += delta_h2 + ref0_b.stride * delta_v2;
     ref1_b.y += delta_h3 + ref1_b.stride * delta_v3;
@@ -1105,11 +1105,11 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     padd_dmvr_c(ref1_c.cb, ref1_c.stride_c, pu_w, pu_h);
     padd_dmvr_c(ref1_c.cr, ref1_c.stride_c, pu_w, pu_h);
 
-    prec_x0 = (mv0->x) & 0x1F;
-    prec_y0 = (mv0->y) & 0x1F;
+    prec_x0 = (mv0->mv.x) & 0x1F;
+    prec_y0 = (mv0->mv.y) & 0x1F;
 
-    prec_x1 = (mv1->x) & 0x1F;
-    prec_y1 = (mv1->y) & 0x1F;
+    prec_x1 = (mv1->mv.x) & 0x1F;
+    prec_y1 = (mv1->mv.y) & 0x1F;
 
     prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
     prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
@@ -1117,11 +1117,11 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int16_t* ref_data0 = tmp_buff;
     int16_t* ref_data1 = tmp_buff + MAX_PB_SIZE / 2;
 
-    delta_h2 = (mv0->x >> 5) - (tmp0.x >> 5);
-    delta_v2 = (mv0->y >> 5) - (tmp0.y >> 5);
+    delta_h2 = (mv0->mv.x >> 5) - (tmp0.x >> 5);
+    delta_v2 = (mv0->mv.y >> 5) - (tmp0.y >> 5);
 
-    delta_h3 = (mv1->x >> 5) - (tmp1.x >> 5);
-    delta_v3 = (mv1->y >> 5) - (tmp1.y >> 5);
+    delta_h3 = (mv1->mv.x >> 5) - (tmp1.x >> 5);
+    delta_v3 = (mv1->mv.y >> 5) - (tmp1.y >> 5);
 
     ref0_c.cb += delta_h2 + (ref0_c.stride_c * delta_v2);
     ref1_c.cb += delta_h3 + (ref1_c.stride_c * delta_v3);
@@ -1157,7 +1157,7 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     struct BDOFFunctions *bdof = &ctudec->rcn_funcs.bdof;
-    uint8_t use_alt_filter = mv0.prec_amvr == MV_PRECISION_HALF;
+    uint8_t use_alt_filter = mv0.mv_spec.prec_amvr == MV_PRECISION_HALF;
 
     OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx1];
@@ -1171,26 +1171,26 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    mv0 = clip_mv(pos_x, pos_y, ref0->frame->width,
-                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0);
+    mv0.mv = clip_mv(pos_x, pos_y, ref0->frame->width,
+                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
 
-    mv1 = clip_mv(pos_x, pos_y, ref1->frame->width,
-                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1);
+    mv1.mv = clip_mv(pos_x, pos_y, ref1->frame->width,
+                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
-    struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
+    struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0.mv, pos_x, pos_y, edge_buff0,
                                                 log2_pu_w, log2_pu_h, log2_ctb_s);
 
-    struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
+    struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1.mv, pos_x, pos_y, edge_buff1,
                                                 log2_pu_w, log2_pu_h, log2_ctb_s);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
 
-    uint8_t prec_x0 = (mv0.x) & 0xF;
-    uint8_t prec_y0 = (mv0.y) & 0xF;
-    uint8_t prec_x1 = (mv1.x) & 0xF;
-    uint8_t prec_y1 = (mv1.y) & 0xF;
+    uint8_t prec_x0 = (mv0.mv.x) & 0xF;
+    uint8_t prec_y0 = (mv0.mv.y) & 0xF;
+    uint8_t prec_x1 = (mv1.mv.x) & 0xF;
+    uint8_t prec_y1 = (mv1.mv.y) & 0xF;
 
     if (use_alt_filter) {
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
@@ -1269,8 +1269,8 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     struct PROFFunctions *prof = &ctudec->rcn_funcs.prof;
-    uint8_t use_alt_filter = mv0.prec_amvr == MV_PRECISION_HALF;
-    uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
+    uint8_t use_alt_filter = mv0.mv_spec.prec_amvr == MV_PRECISION_HALF;
+    uint8_t use_bcw = mv0.mv_spec.bcw_idx_plus1 != 0 && mv0.mv_spec.bcw_idx_plus1 != 3;
 
     OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx1];
@@ -1292,26 +1292,26 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    mv0 = clip_mv(pos_x, pos_y, ref0->frame->width,
-                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0);
+    mv0.mv = clip_mv(pos_x, pos_y, ref0->frame->width,
+                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
 
-    mv1 = clip_mv(pos_x, pos_y, ref1->frame->width,
-                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1);
+    mv1.mv = clip_mv(pos_x, pos_y, ref1->frame->width,
+                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
-    const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
+    const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0.mv, pos_x, pos_y, edge_buff0,
                                                       log2_pu_w, log2_pu_h, log2_ctb_s);
 
-    const struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
+    const struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1.mv, pos_x, pos_y, edge_buff1,
                                                       log2_pu_w, log2_pu_h, log2_ctb_s);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
 
-    uint8_t prec_x0 = (mv0.x) & 0xF;
-    uint8_t prec_y0 = (mv0.y) & 0xF;
-    uint8_t prec_x1 = (mv1.x) & 0xF;
-    uint8_t prec_y1 = (mv1.y) & 0xF;
+    uint8_t prec_x0 = (mv0.mv.x) & 0xF;
+    uint8_t prec_y0 = (mv0.mv.y) & 0xF;
+    uint8_t prec_x1 = (mv1.mv.x) & 0xF;
+    uint8_t prec_y1 = (mv1.mv.y) & 0xF;
 
     if (use_alt_filter) {
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
@@ -1368,7 +1368,7 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
             prof->tmp_prof_mrg(dst.y, dst.stride, tmp_buff1, MAX_PB_SIZE,
                                tmp_buff, pu_h, 0, 0, pu_w);
         } else if (use_bcw) {
-            int16_t wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
+            int16_t wt1 = bcw_weights[mv0.mv_spec.bcw_idx_plus1-1];
             int16_t wt0 = 8 - wt1;
             prof->tmp_prof_mrg_w(dst.y, dst.stride, tmp_buff1, MAX_PB_SIZE,
                                  tmp_buff, pu_h, 0, 0, pu_w, BCW_DENOM, wt1, wt0, 0, 0);
@@ -1387,7 +1387,7 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
             mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, dst.stride, ref1_b.y, ref1_b.stride,
                                                         tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
         } else if (use_bcw) {
-            wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
+            wt1 = bcw_weights[mv0.mv_spec.bcw_idx_plus1-1];
             wt0 = 8 - wt1;
             mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1](dst.y, dst.stride, ref1_b.y, ref1_b.stride,
                                                          tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1, 0, 0,
@@ -1419,7 +1419,7 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
     uint8_t use_wp_c = inter_ctx->inter_params.weighted_pred_status && (inter_ctx->inter_params.wp_info1[ref_idx1].flag_c |
                                                            inter_ctx->inter_params.wp_info0[ref_idx0].flag_c);
-    uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
+    uint8_t use_bcw = mv0.mv_spec.bcw_idx_plus1 != 0 && mv0.mv_spec.bcw_idx_plus1 != 3;
     int16_t wt0, wt1;
 
     OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx0];
@@ -1441,11 +1441,11 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    mv0 = clip_mv(pos_x, pos_y, ref0->frame->width,
-                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0);
+    mv0.mv = clip_mv(pos_x, pos_y, ref0->frame->width,
+                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
 
-    mv1 = clip_mv(pos_x, pos_y, ref1->frame->width,
-                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1);
+    mv1.mv = clip_mv(pos_x, pos_y, ref1->frame->width,
+                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
     const int pu_w = 1 << (log2_pu_w - 1);
@@ -1454,20 +1454,20 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
-    const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0,
+    const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0.mv,
                                                       pos_x >> 1, pos_y >> 1,
                                                       edge_buff0, edge_buff0_1,
                                                       log2_pu_w, log2_pu_h, log2_ctb_s);
 
-    const struct OVBuffInfo ref1_c = derive_ref_buf_c(ref1, mv1,
+    const struct OVBuffInfo ref1_c = derive_ref_buf_c(ref1, mv1.mv,
                                                       pos_x >> 1, pos_y >> 1,
                                                       edge_buff1, edge_buff1_1,
                                                       log2_pu_w, log2_pu_h, log2_ctb_s);
-    uint8_t prec_x0 = (mv0.x) & 0x1F;
-    uint8_t prec_y0 = (mv0.y) & 0x1F;
+    uint8_t prec_x0 = (mv0.mv.x) & 0x1F;
+    uint8_t prec_y0 = (mv0.mv.y) & 0x1F;
 
-    uint8_t prec_x1 = (mv1.x) & 0x1F;
-    uint8_t prec_y1 = (mv1.y) & 0x1F;
+    uint8_t prec_x1 = (mv1.mv.x) & 0x1F;
+    uint8_t prec_y1 = (mv1.mv.y) & 0x1F;
 
     uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
     uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
@@ -1482,7 +1482,7 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cb, dst.stride_c, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h, prec_x1, prec_y1, pu_w);
         mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cr, dst.stride_c, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h, prec_x1, prec_y1, pu_w);
     } else if (use_bcw) {
-        wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
+        wt1 = bcw_weights[mv0.mv_spec.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
         mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2](dst.cb, dst.stride_c, ref1_c.cb, ref1_c.stride_c,
                                                      ref_data0,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1, 0, 0,
@@ -1517,7 +1517,7 @@ mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
-    uint8_t use_alt_filter = mv.prec_amvr == MV_PRECISION_HALF;
+    uint8_t use_alt_filter = mv.mv_spec.prec_amvr == MV_PRECISION_HALF;
 
     OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
@@ -1544,13 +1544,13 @@ mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
+    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv.mv);
 
-    int ref_x = pos_x + (mv.x >> 4);
-    int ref_y = pos_y + (mv.y >> 4);
+    int ref_x = pos_x + (mv.mv.x >> 4);
+    int ref_y = pos_y + (mv.mv.y >> 4);
 
-    uint8_t prec_x   = (mv.x) & 0xF;
-    uint8_t prec_y   = (mv.y) & 0xF;
+    uint8_t prec_x   = (mv.mv.x) & 0xF;
+    uint8_t prec_y   = (mv.mv.y) & 0xF;
     if (use_alt_filter) {
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
@@ -1607,7 +1607,7 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
-    uint8_t use_alt_filter = mv.prec_amvr == MV_PRECISION_HALF;
+    uint8_t use_alt_filter = mv.mv_spec.prec_amvr == MV_PRECISION_HALF;
 
     OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
@@ -1635,13 +1635,13 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
+    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv.mv);
 
-    int ref_x = pos_x + (mv.x >> 4);
-    int ref_y = pos_y + (mv.y >> 4);
+    int ref_x = pos_x + (mv.mv.x >> 4);
+    int ref_y = pos_y + (mv.mv.y >> 4);
 
-    uint8_t prec_x   = (mv.x) & 0xF;
-    uint8_t prec_y   = (mv.y) & 0xF;
+    uint8_t prec_x   = (mv.mv.x) & 0xF;
+    uint8_t prec_y   = (mv.mv.y) & 0xF;
     if (use_alt_filter) {
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
@@ -1688,7 +1688,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     struct PROFFunctions *prof = &ctudec->rcn_funcs.prof;
-    uint8_t use_alt_filter = mv.prec_amvr == MV_PRECISION_HALF;
+    uint8_t use_alt_filter = mv.mv_spec.prec_amvr == MV_PRECISION_HALF;
 
     OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
@@ -1716,13 +1716,13 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
+    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv.mv);
 
-    int ref_x = pos_x + (mv.x >> 4);
-    int ref_y = pos_y + (mv.y >> 4);
+    int ref_x = pos_x + (mv.mv.x >> 4);
+    int ref_y = pos_y + (mv.mv.y >> 4);
 
-    uint8_t prec_x   = (mv.x) & 0xF;
-    uint8_t prec_y   = (mv.y) & 0xF;
+    uint8_t prec_x   = (mv.mv.x) & 0xF;
+    uint8_t prec_y   = (mv.mv.y) & 0xF;
     if (use_alt_filter) {
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
@@ -1796,7 +1796,7 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
 
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     struct PROFFunctions *prof = &ctudec->rcn_funcs.prof;
-    uint8_t use_alt_filter = mv.prec_amvr == MV_PRECISION_HALF;
+    uint8_t use_alt_filter = mv.mv_spec.prec_amvr == MV_PRECISION_HALF;
 
     OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
@@ -1823,13 +1823,13 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
+    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv.mv);
 
-    int ref_x = pos_x + (mv.x >> 4);
-    int ref_y = pos_y + (mv.y >> 4);
+    int ref_x = pos_x + (mv.mv.x >> 4);
+    int ref_y = pos_y + (mv.mv.y >> 4);
 
-    uint8_t prec_x   = (mv.x) & 0xF;
-    uint8_t prec_y   = (mv.y) & 0xF;
+    uint8_t prec_x   = (mv.mv.x) & 0xF;
+    uint8_t prec_y   = (mv.mv.y) & 0xF;
     if (use_alt_filter) {
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
@@ -1918,13 +1918,13 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w << 1, pu_h << 1, mv);
+    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w << 1, pu_h << 1, mv.mv);
 
-    int ref_x = pos_x + (mv.x >> 4);
-    int ref_y = pos_y + (mv.y >> 4);
+    int ref_x = pos_x + (mv.mv.x >> 4);
+    int ref_y = pos_y + (mv.mv.y >> 4);
 
-    uint8_t prec_x_c = mv.x & 0x1F;
-    uint8_t prec_y_c = mv.y & 0x1F;
+    uint8_t prec_x_c = mv.mv.x & 0x1F;
+    uint8_t prec_y_c = mv.mv.y & 0x1F;
 
     int prec_c_mc_type = (prec_x_c > 0) + ((prec_y_c > 0) << 1);
 
@@ -1939,7 +1939,7 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
         int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
         emulate_block_border(tmp_buff, (src_cb - src_off), RCN_CTB_STRIDE, src_stride_c,
                              pu_w  + EPEL_EXTRA, pu_h + EPEL_EXTRA,
-                             (pos_x >> 1) + (mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.y >> 5) - REF_PADDING_C,
+                             (pos_x >> 1) + (mv.mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.mv.y >> 5) - REF_PADDING_C,
                              (pic_w >> 1), (pic_h >> 1));
         src_cb = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
@@ -1964,7 +1964,7 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
         emulate_block_border(tmp_buff, (src_cr - src_off),
                              RCN_CTB_STRIDE, frame0->linesize[1]/sizeof(OVSample),
                              pu_w + EPEL_EXTRA, pu_h + EPEL_EXTRA,
-                             (pos_x >> 1) + (mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.y >> 5) - REF_PADDING_C,
+                             (pos_x >> 1) + (mv.mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.mv.y >> 5) - REF_PADDING_C,
                              (pic_w >> 1), (pic_h >> 1));
         src_cr = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
@@ -2021,13 +2021,13 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w << 1, pu_h << 1, mv);
+    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w << 1, pu_h << 1, mv.mv);
 
-    int ref_x = pos_x + (mv.x >> 4);
-    int ref_y = pos_y + (mv.y >> 4);
+    int ref_x = pos_x + (mv.mv.x >> 4);
+    int ref_y = pos_y + (mv.mv.y >> 4);
 
-    uint8_t prec_x_c = (mv.x) & 0x1F;
-    uint8_t prec_y_c = (mv.y) & 0x1F;
+    uint8_t prec_x_c = (mv.mv.x) & 0x1F;
+    uint8_t prec_y_c = (mv.mv.y) & 0x1F;
 
     int prec_c_mc_type = (prec_x_c > 0) + ((prec_y_c > 0) << 1);
 
@@ -2042,7 +2042,7 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
         int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
         emulate_block_border(tmp_buff, (src_cb - src_off), RCN_CTB_STRIDE, src_stride_c,
                              pu_w  + EPEL_EXTRA, pu_h + EPEL_EXTRA,
-                             (pos_x >> 1) + (mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.y >> 5) - REF_PADDING_C,
+                             (pos_x >> 1) + (mv.mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.mv.y >> 5) - REF_PADDING_C,
                              (pic_w >> 1), (pic_h >> 1));
         src_cb = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
@@ -2058,7 +2058,7 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
         int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
         emulate_block_border(tmp_buff, (src_cr - src_off), RCN_CTB_STRIDE, src_stride_c,
                              pu_w + EPEL_EXTRA, pu_h + EPEL_EXTRA,
-                             (pos_x >> 1) + (mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.y >> 5) - REF_PADDING_C,
+                             (pos_x >> 1) + (mv.mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.mv.y >> 5) - REF_PADDING_C,
                              (pic_w >> 1), (pic_h >> 1));
         src_cr = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
@@ -2148,8 +2148,8 @@ mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     int stepX = ((scaling_hor + 8) >> 4) << 4;
     int stepY = ((scaling_ver + 8) >> 4) << 4;
 
-    int32_t ref_pos_x = (((pos_x << shift_mv) + mv.x) * (int32_t)scaling_hor) + (1 << 7);
-    int32_t ref_pos_y = (((pos_y << shift_mv) + mv.y) * (int32_t)scaling_ver) + (1 << 7);
+    int32_t ref_pos_x = (((pos_x << shift_mv) + mv.mv.x) * (int32_t)scaling_hor) + (1 << 7);
+    int32_t ref_pos_y = (((pos_y << shift_mv) + mv.mv.y) * (int32_t)scaling_ver) + (1 << 7);
 
     int     ref_x     = (ref_pos_x + offset) >> shift_pos;
     int     ref_y     = (ref_pos_y + offset) >> shift_pos;
@@ -2265,9 +2265,9 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
     int stepX = (( scaling_hor + 8 ) >> 4) << 4;
     int stepY = (( scaling_ver + 8 ) >> 4) << 4;
 
-    int32_t ref_pos_x = ((( pos_x << shift_mv)  + mv.x ) * (int32_t)scaling_hor) + (1<<7);
+    int32_t ref_pos_x = ((( pos_x << shift_mv)  + mv.mv.x ) * (int32_t)scaling_hor) + (1<<7);
     int     ref_x     = (ref_pos_x + offset)  >> shift_pos;
-    int32_t ref_pos_y = ((( pos_y << shift_mv ) + mv.y ) * (int32_t)scaling_ver) + (1<<7);
+    int32_t ref_pos_y = ((( pos_y << shift_mv ) + mv.mv.y ) * (int32_t)scaling_ver) + (1<<7);
     int     ref_y     = (ref_pos_y + offset) >> shift_pos;
     int ref_pu_w = ((ref_pos_x + (((pu_w-1) * stepX) << shift_mv) + offset) >> shift_pos) - ref_x + 1 ;
     int ref_pu_h = ((ref_pos_y + (((pu_h-1) * stepY) << shift_mv) + offset) >> shift_pos) - ref_y + 1;
@@ -2386,9 +2386,9 @@ mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     int32_t add_x = (1 - ref0->scale_info.chroma_hor_col_flag) * 8 * ( scaling_hor - (1<<RPR_SCALE_BITS));
     int32_t add_y = (1 - ref0->scale_info.chroma_ver_col_flag) * 8 * ( scaling_ver - (1<<RPR_SCALE_BITS));
-    int32_t ref_pos_x = (( pos_x << shift_mv)  + mv.x ) * (int32_t)scaling_hor + add_x + (1 << 8);
+    int32_t ref_pos_x = (( pos_x << shift_mv)  + mv.mv.x ) * (int32_t)scaling_hor + add_x + (1 << 8);
     int     ref_x     = (ref_pos_x + offset)  >> shift_pos;
-    int32_t ref_pos_y = (( pos_y << shift_mv ) + mv.y ) * (int32_t)scaling_ver + add_y + (1 << 8);
+    int32_t ref_pos_y = (( pos_y << shift_mv ) + mv.mv.y ) * (int32_t)scaling_ver + add_y + (1 << 8);
     int     ref_y     = (ref_pos_y + offset) >> shift_pos;
     int ref_pu_w = ((ref_pos_x + (((pu_w-1) * stepX) << shift_mv) + offset) >> shift_pos) - ref_x + 1 ;
     int ref_pu_h = ((ref_pos_y + (((pu_h-1) * stepY) << shift_mv) + offset) >> shift_pos) - ref_y + 1;
@@ -2515,9 +2515,9 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
 
     int32_t add_x = (1 - ref0->scale_info.chroma_hor_col_flag) * 8 * ( scaling_hor - (1<<RPR_SCALE_BITS));
     int32_t add_y = (1 - ref0->scale_info.chroma_ver_col_flag) * 8 * ( scaling_ver - (1<<RPR_SCALE_BITS));
-    int32_t ref_pos_x = (( pos_x << shift_mv)  + mv.x ) * (int32_t)scaling_hor + add_x + (1 << 8);
+    int32_t ref_pos_x = (( pos_x << shift_mv)  + mv.mv.x ) * (int32_t)scaling_hor + add_x + (1 << 8);
     int     ref_x     = (ref_pos_x + offset)  >> shift_pos;
-    int32_t ref_pos_y = (( pos_y << shift_mv ) + mv.y ) * (int32_t)scaling_ver + add_y + (1 << 8);
+    int32_t ref_pos_y = (( pos_y << shift_mv ) + mv.mv.y ) * (int32_t)scaling_ver + add_y + (1 << 8);
     int     ref_y     = (ref_pos_y + offset) >> shift_pos;
     int ref_pu_w = ((ref_pos_x + (((pu_w-1) * stepX) << shift_mv) + offset) >> shift_pos) - ref_x + 1 ;
     int ref_pu_h = ((ref_pos_y + (((pu_h-1) * stepY) << shift_mv) + offset) >> shift_pos) - ref_y + 1;
@@ -2617,7 +2617,7 @@ mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     int type0 = 0;
     int type1 = 1;
-    uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
+    uint8_t use_bcw = mv0.mv_spec.bcw_idx_plus1 != 0 && mv0.mv_spec.bcw_idx_plus1 != 3;
 
     if (gpm_ctx) {
         const uint16_t* scale_fact_rpl ;
@@ -2679,7 +2679,7 @@ mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                           tmp_rpl1, tmp_rpl1_stride, pu_h, 0, 0, pu_w);
         }
     } else {
-        int wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
+        int wt1 = bcw_weights[mv0.mv_spec.bcw_idx_plus1-1];
         int wt0 = 8 - wt1;
         mc_l->rpr_w[log2_pb_w-1](dst.y, dst.stride, tmp_rpl0, tmp_rpl0_stride,
                                  tmp_rpl1, tmp_rpl1_stride, pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
@@ -2694,7 +2694,7 @@ mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                 OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
                 uint8_t prof_dir, const struct PROFInfo *const prof_info )
 {
-    uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
+    uint8_t use_bcw = mv0.mv_spec.bcw_idx_plus1 != 0 && mv0.mv_spec.bcw_idx_plus1 != 3;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
     int rpr_scale_v0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][1];
@@ -2736,7 +2736,7 @@ mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         mc_l->rpr_sum(dst.y, dst.stride, tmp_rpl0, tmp_rpl0_stride,
                       tmp_rpl1, tmp_rpl1_stride, pu_h, 0, 0, pu_w);
     } else {
-        int wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
+        int wt1 = bcw_weights[mv0.mv_spec.bcw_idx_plus1-1];
         int wt0 = 8 - wt1;
         mc_l->rpr_w[log2_pb_w-1](dst.y, dst.stride, tmp_rpl0, tmp_rpl0_stride,
                                  tmp_rpl1, tmp_rpl1_stride, pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
@@ -2752,7 +2752,7 @@ mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
            OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
            struct VVCGPM* gpm_ctx )
 {
-    uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
+    uint8_t use_bcw = mv0.mv_spec.bcw_idx_plus1 != 0 && mv0.mv_spec.bcw_idx_plus1 != 3;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     int rpr_scale_h0 = inter_ctx->inter_params.scale_fact_rpl0[ref_idx0][0];
@@ -2836,7 +2836,7 @@ mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                           pu_h, 0, 0, pu_w);
         }
     } else {
-        int wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
+        int wt1 = bcw_weights[mv0.mv_spec.bcw_idx_plus1-1];
         int wt0 = 8 - wt1;
         mc_c->rpr_w[log2_pb_w-2](dst.cb, dst.stride_c, tmp_rpl0_cb, tmp_rpl0_stride, tmp_rpl1_cb, tmp_rpl1_stride,
                                  pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
@@ -2870,7 +2870,7 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
           unsigned int log2_pb_w, unsigned int log2_pb_h,
           uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
 {
-    uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0, mv1, ref_idx0, ref_idx1);
+    uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0.mv, mv1.mv, ref_idx0, ref_idx1);
 
     if (inter_dir == 3 && !identical_motion) {
         uint8_t no_rpr_l1 = !(inter_ctx->inter_params.rpr_scale_msk1 & (1 << ref_idx1));
@@ -2912,7 +2912,7 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
             uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
 {
 
-    uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0, mv1, ref_idx0, ref_idx1);
+    uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0.mv, mv1.mv, ref_idx0, ref_idx1);
 
     if (inter_dir == 3 && !identical_motion) {
         uint8_t no_rpr_l1 = !(inter_ctx->inter_params.rpr_scale_msk1 & (1 << ref_idx1));
@@ -2998,7 +2998,7 @@ rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
             unsigned int log2_pb_w, unsigned int log2_pb_h,
             uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
 {
-    uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0, mv1, ref_idx0, ref_idx1);
+    uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0.mv, mv1.mv, ref_idx0, ref_idx1);
     if (inter_dir == 3 && !identical_motion) {
         uint8_t no_rpr_l1 = !(inter_ctx->inter_params.rpr_scale_msk1 & (1 << ref_idx1));
         uint8_t no_rpr_l0 = !(inter_ctx->inter_params.rpr_scale_msk0 & (1 << ref_idx0));

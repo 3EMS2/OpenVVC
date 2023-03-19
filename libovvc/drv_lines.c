@@ -285,15 +285,20 @@ rotate_affine_cp(struct AffineInfo *const aff_info, struct AffineInfo *const lns
                  OVMV *mv0, OVMV *mv1, uint16_t nb_pb_ctb)
 {
     //memcpy(&lns->aff_info[ctb_x * nb_ctb_pb], &aff_info[1 + nb_ctb_pb * 34], sizeof(struct AffineInfo) * nb_ctb_pb);
+    /*FIXME  ref_idx bcw etc are not copyeid*/
     int i = 0;
     while (msk) {
         if (msk & 0x1) {
             int x_pb = aff_info[i].pb.x_pb;
             int nb_pb_w = aff_info[i].pb.nb_pb_w;
-            lns[i].cps[0].lt = mv0[x_pb + (nb_pb_ctb * 34)+ 1];
-            lns[i].cps[0].rt = mv0[x_pb + (nb_pb_ctb * 34)+ nb_pb_w];
-            lns[i].cps[1].lt = mv1[x_pb + (nb_pb_ctb * 34)+ 1];
-            lns[i].cps[1].rt = mv1[x_pb + (nb_pb_ctb * 34)+ nb_pb_w];
+            lns[i].cps[0].lt = mv0[x_pb + (nb_pb_ctb * 34)+ 1].mv;
+            lns[i].cps[0].rt = mv0[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].mv;
+            lns[i].cps[1].lt = mv1[x_pb + (nb_pb_ctb * 34)+ 1].mv;
+            lns[i].cps[1].rt = mv1[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].mv;
+
+            lns[i].cps[0].ref_idx = mv0[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].ref_idx;
+            lns[i].cps[1].ref_idx = mv1[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].ref_idx;
+
             lns[i].type = aff_info[i].type;
             lns[i].pb = aff_info[i].pb;
         }
