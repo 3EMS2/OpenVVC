@@ -1833,6 +1833,7 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
                                         2, 2);
             mv0.ref_idx       = 0;
             mv0.mv_spec.bcw_idx_plus1 = 0;
+            mv0.mv_spec.prec_amvr = 0;
 
             struct TMVPMV tmvpmv = {.mv = mv0.mv, .z=inter_ctx->inter_params.dist_ref_0[0]};
 
@@ -2004,6 +2005,7 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                                             2, 2);
                 mv0.ref_idx = 0;
                 mv0.mv_spec.bcw_idx_plus1 = 0;
+                mv0.mv_spec.prec_amvr = 0;
                 struct TMVPMV tmvpmv = {.mv=mv0.mv, .z=inter_ctx->inter_params.dist_ref_0[0]};
                 tmvp_mv0[j] = tmvpmv;
 
@@ -2019,6 +2021,7 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                                             2, 2);
                 mv1.ref_idx = 0;
                 mv1.mv_spec.bcw_idx_plus1 = 0;
+                mv1.mv_spec.prec_amvr = 0;
 
                 struct TMVPMV tmvpmv = {.mv=mv1.mv, .z=inter_ctx->inter_params.dist_ref_1[0]};
                 tmvp_mv1[j] = tmvpmv;
@@ -3911,8 +3914,8 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 
     mv_info.cinfo[0].mv_spec.prec_amvr = 0;
     mv_info.cinfo[1].mv_spec.prec_amvr = 0;
-    mv_info.cinfo[0].mv_spec.bcw_idx_plus1 = 0;
-    mv_info.cinfo[1].mv_spec.bcw_idx_plus1 = 0;
+    //mv_info.cinfo[0].mv_spec.bcw_idx_plus1 = 0;
+    //mv_info.cinfo[1].mv_spec.bcw_idx_plus1 = 0;
     /* FIXME can we have small blocks bidir requiring inter_dir
      * override
      */
@@ -3927,8 +3930,8 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                                     mv_info.inter_dir);
 
         if (prof_dir) {
-            uint8_t prof_0 = prof_dir &0x1 &&  check_affine_prof(&mv_info, RPL_0);
-            uint8_t prof_1 = prof_dir &0x2 && check_affine_prof(&mv_info, RPL_1);
+            uint8_t prof_0 = prof_dir & 0x1 && check_affine_prof(&mv_info, RPL_0);
+            uint8_t prof_1 = prof_dir & 0x2 && check_affine_prof(&mv_info, RPL_1);
 
             prof_dir &= (prof_0) | (prof_1 << 1);
 

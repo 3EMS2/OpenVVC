@@ -299,6 +299,11 @@ rotate_affine_cp(struct AffineInfo *const aff_info, struct AffineInfo *const lns
             lns[i].cps[0].ref_idx = mv0[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].ref_idx;
             lns[i].cps[1].ref_idx = mv1[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].ref_idx;
 
+            lns[i].cps[0].mv_spec.bcw_idx_plus1 = mv0[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].mv_spec.bcw_idx_plus1;
+            lns[i].cps[1].mv_spec.bcw_idx_plus1 = mv1[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].mv_spec.bcw_idx_plus1;
+            lns[i].cps[0].mv_spec.prec_amvr = mv0[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].mv_spec.prec_amvr;
+            lns[i].cps[1].mv_spec.prec_amvr = mv0[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].mv_spec.prec_amvr;
+
             lns[i].type = aff_info[i].type;
             lns[i].pb = aff_info[i].pb;
         }

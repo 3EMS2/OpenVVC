@@ -1631,14 +1631,14 @@ copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVP
     inter_ctx->inter_params.low_delay = 1;
 
     /* FIXME Bidir only */
-    for (int i = 0; i < nb_active_refs0 + !nb_active_refs0; ++i) {
+    for (int i = 0; i < nb_active_refs0; ++i) {
         uint8_t opp_ref_idx0 = 0xFF;
 
         if (inter_ctx->inter_params.dist_ref_0[i] < 0) {
             inter_ctx->inter_params.low_delay = 0;
         }
 
-        for (int j = 0; j < nb_active_refs1 + !nb_active_refs1; j ++) {
+        for (int j = 0; j < nb_active_refs1; j ++) {
             if (inter_ctx->inter_params.rpl0[i] == inter_ctx->inter_params.rpl1[j]) {
                 opp_ref_idx0 = j;
                 break;
@@ -1647,14 +1647,14 @@ copy_init_stuff(const OVSliceDec *const sldec, OVCTUDec *const ctudec, const OVP
         inter_ctx->inter_params.rpl0_opp[i] = opp_ref_idx0;
     }
 
-    for (int i = 0; i < nb_active_refs1 + !nb_active_refs1; ++i) {
+    for (int i = 0; i < nb_active_refs1; ++i) {
         uint8_t opp_ref_idx1 = 0xFF;
 
         if (inter_ctx->inter_params.dist_ref_1[i] < 0) {
             inter_ctx->inter_params.low_delay = 0;
         }
 
-        for (int j = 0; j < nb_active_refs0 + !nb_active_refs0; j ++) {
+        for (int j = 0; j < nb_active_refs0; j ++) {
             if (inter_ctx->inter_params.rpl1[i] == inter_ctx->inter_params.rpl0[j]) {
                 opp_ref_idx1 = j;
                 break;
