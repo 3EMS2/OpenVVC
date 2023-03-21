@@ -1204,8 +1204,7 @@ alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample
     OVSample * _src = src;
     OVSample * _dst = dst;
 
-    OVSample* pRec0 = dst ;
-    OVSample* pRec1 = pRec0 + dstStride;
+    OVSample* pRec1 = _dst + dstStride;
 
     for (int i = 0; i < blk_dst.height; i += clsSizeY) {
         for (int j = 0; j < blk_dst.width; j += clsSizeX) {
@@ -1223,7 +1222,7 @@ alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample
                 src_l5 = src_l3 + srcStride;
                 src_l6 = src_l4 - srcStride;
 
-                pRec1 = pRec0 + j + ii * dstStride;
+                pRec1 = _dst + j + ii * dstStride;
 
                 for (int jj = 0; jj < clsSizeX; jj++) {
                     int sum = 0;
@@ -1262,7 +1261,6 @@ alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample
             }
         }
 
-        pRec0 += dstStride2;
         pRec1 += dstStride2;
 
         _src += srcStride2;
@@ -1289,8 +1287,7 @@ alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSamp
     OVSample * _src = src;
     OVSample * _dst = dst;
 
-    OVSample* pRec0 = dst ;
-    OVSample* pRec1 = pRec0 + dstStride;
+    OVSample* pRec1 = _dst + dstStride;
 
     for (int i = 0; i < blk_dst.height - 8; i += clsSizeY) {
         for (int j = 0; j < blk_dst.width; j += clsSizeX) {
@@ -1310,7 +1307,7 @@ alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSamp
                 const OVSample *src_lb2 = src_lb1 - srcStride;
                 const OVSample *src_lb3 = src_lb2 - srcStride;
 
-                pRec1 = pRec0 + j + ii * dstStride;
+                pRec1 = _dst + j + ii * dstStride;
 
                 for (int jj = 0; jj < clsSizeX; jj++) {
                     const int16_t curr = src_l0[+0];
@@ -1351,7 +1348,6 @@ alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSamp
             }
         }
 
-        pRec0 += dstStride2;
         pRec1 += dstStride2;
 
         _src += srcStride2;
@@ -1377,7 +1373,7 @@ alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSamp
                 const OVSample *src_lb2 = src_lb1 - srcStride;
                 const OVSample *src_lb3 = src_lb2 - srcStride;
 
-                pRec1 = pRec0 + j + ii * dstStride;
+                pRec1 = _dst + j + ii * dstStride;
 
                 int y_pos = (blk_dst.y + i + ii) & (ctu_height - 1);
                 if (y_pos == virbnd_pos - 3) {
@@ -1459,7 +1455,6 @@ alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSamp
             }
         }
 
-        pRec0 += dstStride2;
         pRec1 += dstStride2;
 
         _src += srcStride2;
@@ -1486,7 +1481,7 @@ alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSamp
                 const OVSample *src_lb2 = src_lb1 - srcStride;
                 const OVSample *src_lb3 = src_lb2 - srcStride;
 
-                pRec1 = pRec0 + j + ii * dstStride;
+                pRec1 = _dst + j + ii * dstStride;
 
                 int y_pos = (blk_dst.y + i + ii) & (ctu_height - 1);
                 if (y_pos == virbnd_pos) {
@@ -1568,7 +1563,6 @@ alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSamp
             }
         }
 
-        pRec0 += dstStride2;
         pRec1 += dstStride2;
 
         _src += srcStride2;
