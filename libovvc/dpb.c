@@ -1014,7 +1014,7 @@ init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu, const struc
         nb_slices += pu->nalus[i]->type < OVNALU_OPI;
     }
 
-    if (nb_slices != (pps->pps_num_slices_in_pic_minus1 + 1)) {
+    if (nb_slices != pps->part_info.nb_slices) {
         ov_log(NULL, OVLOG_ERROR, "Mismatch in PU %d slice number : %d, nb slices : %d using : %d\n", pic->poc, nb_slices, pps->pps_num_slices_in_pic_minus1 + 1, pps->part_info.nb_slices);
     }
 

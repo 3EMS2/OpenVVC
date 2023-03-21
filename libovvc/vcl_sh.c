@@ -513,16 +513,13 @@ setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_inf
 
     if (part_info->nb_entries) return;
 
-    part_info->nb_slices = pps->pps_single_slice_per_subpic_flag ? part_info->nb_subpics : pps->pps_num_slices_in_pic_minus1 + 1;
-
-    part_info->nb_entries = 0;
-
     if (!tinfo->nb_tile_cols) tinfo->nb_tile_cols = 1;
     if (!tinfo->nb_tile_rows) tinfo->nb_tile_rows = 1;
 
     part_info->nb_tile_w = tinfo->nb_tile_cols;
     part_info->nb_tile_h = tinfo->nb_tile_rows;
 
+    part_info->nb_slices = pps->pps_single_slice_per_subpic_flag ? part_info->nb_subpics : pps->pps_rect_slice_flag ? pps->pps_num_slices_in_pic_minus1 + 1 : 1;
     for (i = 0; i < part_info->nb_slices; i++) {
         int tile_x = tile_id % tinfo->nb_tile_cols;
         int tile_y = tile_id / tinfo->nb_tile_cols;
