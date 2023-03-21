@@ -3461,8 +3461,8 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
                                 nb_pb_h, log2_cu_w, log2_cu_h, inter_dir);
 
     if (prof_dir) {
-        uint8_t prof_0 = prof_dir &0x1 &&  check_affine_prof(&mv_info, RPL_0);
-        uint8_t prof_1 = prof_dir &0x2 && check_affine_prof(&mv_info, RPL_1);
+        uint8_t prof_0 = prof_dir & 0x1 && check_affine_prof(&mv_info, RPL_0);
+        uint8_t prof_1 = prof_dir & 0x2 && check_affine_prof(&mv_info, RPL_1);
 
         prof_dir &= (prof_0) | (prof_1 << 1);
 
@@ -3629,7 +3629,7 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                                 nb_pb_h, log2_cu_w, log2_cu_h, inter_dir);
 
     if (prof_dir) {
-        uint8_t prof_0 = prof_dir &0x1 &&  check_affine_prof(&mv_info, RPL_0);
+        uint8_t prof_0 = prof_dir &0x1 && check_affine_prof(&mv_info, RPL_0);
         uint8_t prof_1 = prof_dir &0x2 && check_affine_prof(&mv_info, RPL_1);
 
         prof_dir &= (prof_0) | (prof_1 << 1);
