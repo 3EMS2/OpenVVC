@@ -114,30 +114,10 @@ enum ControlPointCandMask
    CP2_MASK1 = (1 << CP_LT) | (1 << CP_LB)
 };
 
-/* FIXME only keep points */
 struct AffineDeltaMV
 {
     struct MV h;
     struct MV v;
-};
-
-struct Affine3CP
-{
-    OVMV cp[3];
-};
-
-struct Affine2CP
-{
-    OVMV cp[2];
-};
-
-struct AffineCPInfo
-{
-    uint8_t type;
-    union {
-        struct Affine3CP type3;
-        struct Affine2CP type2;
-    }cps;
 };
 
 enum CandName
