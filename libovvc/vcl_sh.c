@@ -495,12 +495,12 @@ static int
 find_subpic_id(const struct PicPartitionInfo *const part_info, uint8_t ctu_x, uint8_t ctu_y)
 {
     for (int i = 0; i <= part_info->nb_subpics; i++) {
-            const struct SubpicInfo *subpic = &part_info->subpictures[i];
+        const struct SubpicInfo *subpic = &part_info->subpictures[i];
 
-            if ((ctu_x >= subpic->x && ctu_x < subpic->x + subpic->w) && 
-                (ctu_y >= subpic->y && ctu_y < subpic->y + subpic->h)) {
-                return i;
-            }
+        if ((ctu_x >= subpic->x && ctu_x < subpic->x + subpic->w) &&
+            (ctu_y >= subpic->y && ctu_y < subpic->y + subpic->h)) {
+            return i;
+        }
     }
     return 0;
 }
@@ -508,31 +508,30 @@ find_subpic_id(const struct PicPartitionInfo *const part_info, uint8_t ctu_x, ui
 static void
 setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_info, struct TileInfo *const tinfo, uint8_t log2_ctb_s)
 {
-    struct SliceInfo slice_info[300];
     int tile_id = 0;
     int i;
 
     if (part_info->nb_entries) return;
+
     part_info->nb_slices = pps->pps_single_slice_per_subpic_flag ? part_info->nb_subpics : pps->pps_num_slices_in_pic_minus1 + 1;
+
     part_info->nb_entries = 0;
+
     if (!tinfo->nb_tile_cols) tinfo->nb_tile_cols = 1;
     if (!tinfo->nb_tile_rows) tinfo->nb_tile_rows = 1;
+
     part_info->nb_tile_w = tinfo->nb_tile_cols;
     part_info->nb_tile_h = tinfo->nb_tile_rows;
-    for (i = 0; i < part_info->nb_slices; i++) {
-        struct SliceInfo *sl = &slice_info[i];
 
+    for (i = 0; i < part_info->nb_slices; i++) {
         int tile_x = tile_id % tinfo->nb_tile_cols;
         int tile_y = tile_id / tinfo->nb_tile_cols;
-
-        sl->tile_idx = tile_id;
 
         int sl_w_tile = pps->pps_num_slices_in_pic_minus1 ? pps->pps_slice_width_in_tiles_minus1[i] + 1 : tinfo->nb_tile_cols;
         int sl_h_tile = pps->pps_num_slices_in_pic_minus1 ? pps->pps_slice_height_in_tiles_minus1[i] + 1 : tinfo->nb_tile_rows;
 
         int nb_tiles_entries = pps->pps_single_slice_per_subpic_flag ? 1 : sl_w_tile * sl_h_tile;
         if (part_info->nb_slices > 1 && pps->pps_single_slice_per_subpic_flag) {
-        /* FIXME num tile in subpic */
             sl_w_tile = 1;
             sl_h_tile = 1;
         }
@@ -542,120 +541,106 @@ setup_slice_prms(const OVPPS *const pps, struct PicPartitionInfo *const part_inf
                 int tmp_tile_x = tile_x + k;
                 int tmp_tile_y = tile_y + j;
                 int tmp_tile_id = tile_id + k + j * tinfo->nb_tile_cols;
+
                 int x = tinfo->ctu_x[tmp_tile_x];
                 int y = tinfo->ctu_y[tmp_tile_y];
                 int w = tinfo->nb_ctu_w[tmp_tile_x];
                 int h = tinfo->nb_ctu_h[tmp_tile_y];
+
                 if (nb_tiles_entries == 1 && pps->pps_num_exp_slices_in_tile[tmp_tile_id]) {
                     int nb_exp_slices = pps->pps_num_exp_slices_in_tile[tmp_tile_id];
                     int pos_y = y;
                     for (int l = 0; l < nb_exp_slices; l++) {
                         int tmp_h = pps->pps_exp_slice_height_in_ctus_minus1[i + l] + 1;
-                        int subpic_id =  find_subpic_id(&pps->part_info, x, pos_y);
-                        //printf("slice %d in tile %d in subpic %d: x %d y %d, wxh %dx%d\n", i + l, tmp_tile_id, subpic_id, x, pos_y, w, tmp_h);
+                        int subpic_id = find_subpic_id(&pps->part_info, x, pos_y);
+
                         part_info->subpictures[subpic_id].nb_slices++;
+
                         part_info->entries[part_info->nb_entries].x = x;
                         part_info->entries[part_info->nb_entries].y = pos_y;
                         part_info->entries[part_info->nb_entries].w = w;
                         part_info->entries[part_info->nb_entries].h = tmp_h;
+
+                        part_info->entries[part_info->nb_entries].slice_id = i + l;
+                        part_info->entries[part_info->nb_entries].subpic_id = subpic_id;
+
+                        part_info->slices[i + l].entry_idx = part_info->nb_entries;
+
                         pos_y += pps->pps_exp_slice_height_in_ctus_minus1[i + l] + 1;
-                    part_info->entries[part_info->nb_entries].slice_id = i + l;
-                    part_info->entries[part_info->nb_entries].subpic_id = subpic_id;
-                        //if (!l) {
-                            part_info->slices[i + l].entry_idx = part_info->nb_entries;
-                        //}
-                    if (!pps->pps_single_slice_per_subpic_flag) {
-                        part_info->slices[i + l].subpic_id = subpic_id;
-                        part_info->slices[i + l].nb_entries = 1;
-                    } else {
-                        part_info->slices[i].subpic_id = subpic_id;
-                        part_info->slices[i].nb_entries = 1;
-                    }
-                        /* store height , w = tile_w*/
+                        if (!pps->pps_single_slice_per_subpic_flag) {
+                            part_info->slices[i + l].subpic_id = subpic_id;
+                            part_info->slices[i + l].nb_entries = 1;
+                        } else {
+                            part_info->slices[i].subpic_id = subpic_id;
+                            part_info->slices[i].nb_entries = 1;
+                        }
                         part_info->nb_entries++;
                     }
+
+                    i += nb_exp_slices;
+
                     int rem_h = h - (pos_y - y);
                     if (rem_h) {
-                        int last_read = pps->pps_exp_slice_height_in_ctus_minus1[i + nb_exp_slices - 1] + 1;
+                        int last_read = pps->pps_exp_slice_height_in_ctus_minus1[i - 1] + 1;
                         int nb_implicit_slices = rem_h / last_read + !!(rem_h % last_read);
                         for (int l = 0; l < nb_implicit_slices; l++) {
                             int rem_h = h - (pos_y - y);
-                            int subpic_id =  find_subpic_id(&pps->part_info, x, pos_y);
+                            int subpic_id = find_subpic_id(&pps->part_info, x, pos_y);
                             int implicit_h = OVMIN(last_read, rem_h);
-                            //printf("Implicit slice %d in tile %d in subpic %d: x %d y %d, wxh %dx%d\n", i + nb_exp_slices + l, tmp_tile_id, subpic_id, x, pos_y, w, implicit_h);
+
+                            part_info->subpictures[subpic_id].nb_slices++;
+
                             part_info->entries[part_info->nb_entries].x = x;
                             part_info->entries[part_info->nb_entries].y = pos_y;
                             part_info->entries[part_info->nb_entries].w = w;
                             part_info->entries[part_info->nb_entries].h = implicit_h;
-                    part_info->entries[part_info->nb_entries].slice_id = i + l + nb_exp_slices;
-                    part_info->entries[part_info->nb_entries].subpic_id = subpic_id;
-                        part_info->slices[i + l + nb_exp_slices].subpic_id = subpic_id;
-                            part_info->subpictures[subpic_id].nb_slices++;
-                            part_info->slices[i + l + nb_exp_slices].nb_entries = 1;
-                            //if (!l) {
-                                part_info->slices[i + l + nb_exp_slices].entry_idx = part_info->nb_entries;
-                            //}
+
+                            part_info->entries[part_info->nb_entries].slice_id = i + l;
+                            part_info->entries[part_info->nb_entries].subpic_id = subpic_id;
+
+                            part_info->slices[i + l].subpic_id = subpic_id;
+                            part_info->slices[i + l].nb_entries = 1;
+                            part_info->slices[i + l].entry_idx = part_info->nb_entries;
+
                             pos_y += implicit_h;
+
                             part_info->nb_entries++;
                         }
+                        i += nb_implicit_slices;
                     }
 
+                    --i;
+
                     //i += nb_implicit_slices + nb_exp_slices - 1;
+
                 } else {
-                    //for (int l = 0; l < nb_tiles_entries; ++l) {
                     int subpic_id =  find_subpic_id(&pps->part_info, x, y);
-                    //printf("slice %d: tile : %d in subpic %d x %d, y %d, wxh %dx%d\n", i, tmp_tile_id, subpic_id, x, y, w, h);
-                    //printf("nb_tiles_in_slice %d \n", sl_w_tile * sl_h_tile);
-                    if (!j && !k) {
-                        part_info->slices[i].entry_idx = part_info->nb_entries;
-                        part_info->subpictures[subpic_id].nb_slices++;
-                    }
+
                     part_info->entries[part_info->nb_entries].x = x;
                     part_info->entries[part_info->nb_entries].y = y;
                     part_info->entries[part_info->nb_entries].w = w;
                     part_info->entries[part_info->nb_entries].h = h;
+
                     part_info->entries[part_info->nb_entries].slice_id = i;
                     part_info->entries[part_info->nb_entries].subpic_id = subpic_id;
 
+                    if (!j && !k) {
+                        part_info->slices[i].entry_idx = part_info->nb_entries;
+                        part_info->subpictures[subpic_id].nb_slices++;
+                    }
+
                     part_info->slices[i].subpic_id = subpic_id;
                     part_info->slices[i].nb_entries++;
-                    part_info->nb_entries++;// += sl_w_tile * sl_h_tile;
-                                            //}
+
+                    part_info->nb_entries++;
                 }
-            }
-        }
-
-        /* Multiple slices in tiles */
-        if (nb_tiles_entries == 1) {
-
-            if (tinfo->nb_ctu_h[tile_y] > 1) {
-                int sum = 0;
-                int j;
-                for (j = 0; j < pps->pps_num_exp_slices_in_tile[tile_id]; j++) {
-                    sum += pps->pps_exp_slice_height_in_ctus_minus1[i + j] + 1;
-                    /* store height , w = tile_w*/
-                }
-
-                if (sum && sum < tinfo->nb_ctu_h[tile_y]) {
-                    int last_read = pps->pps_exp_slice_height_in_ctus_minus1[i + j - 1] + 1;
-                    int rem_ctu_h = tinfo->nb_ctu_h[tile_y] - sum;
-                    int nb_implicit_slices = rem_ctu_h / last_read + !!(rem_ctu_h % last_read);
-                    /* store height , w = tile_w*/
-                    j += nb_implicit_slices;
-                } else {
-                    j = pps->pps_num_exp_slices_in_tile[tile_id] + !pps->pps_num_exp_slices_in_tile[tile_id];
-                }
-
-                i += (j - 1);
-            } else {
-                /* height = 1 */
             }
         }
 
         if (pps->pps_tile_idx_delta_present_flag && i < pps->pps_num_slices_in_pic_minus1) {
             tile_id += pps->pps_tile_idx_delta_val[i];
         } else {
-            tile_id  += pps->pps_slice_width_in_tiles_minus1[i] + 1;
+            tile_id += pps->pps_slice_width_in_tiles_minus1[i] + 1;
             if (tile_id % tinfo->nb_tile_cols == 0) {
                 tile_id += pps->pps_slice_height_in_tiles_minus1[i] * tinfo->nb_tile_cols;
             }
@@ -670,16 +655,9 @@ setup_suppic_slice_map(struct PicPartitionInfo *part_info)
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
         struct SubpicInfo *subpic = &part_info->subpictures[subpic_id];
         subpic->map_offset = slice_map_id;
-        //printf("SUBPICTURE %d: (%d, %d) %dx%d\n", subpic_id, subpic->x, subpic->y, subpic->w, subpic->h);
         for (int slice_id = 0; slice_id < part_info->nb_slices; slice_id++) {
             if (part_info->slices[slice_id].subpic_id == subpic_id) {
-                struct SliceMap *slice = &part_info->slices[slice_id];
-                //printf("    Slice %d:\n", slice_id, subpic->x, subpic->y, subpic->w, subpic->h);
                 part_info->slice_id[slice_map_id++] = slice_id;
-                for (int entry_id = slice->entry_idx; entry_id < slice->entry_idx + slice->nb_entries; entry_id++) {
-                    //struct Entry *entry = &part_info->entries[entry_id];
-                    //printf("        Entry %d: (%d, %d) %dx%d\n", entry_id, entry->x, entry->y, entry->w, entry->h);
-                }
             }
         }
         part_info->subpic_id[subpic_id] = subpic_id;
@@ -696,19 +674,16 @@ setup_subpic_id_map(struct PicPartitionInfo *part_info, const OVPPS *const pps, 
             }
         } else if (pps->pps_subpic_id_mapping_present_flag) {
             for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
-
                 part_info->subpic_id[subpic_id] = pps->pps_subpic_id[subpic_id];
             }
         } else {
             for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
                 part_info->subpic_id[subpic_id] = subpic_id;
-
             }
         }
     } else {
         for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
-
-                part_info->subpic_id[subpic_id] = subpic_id;
+            part_info->subpic_id[subpic_id] = subpic_id;
         }
     }
     return;
@@ -719,12 +694,6 @@ map_subpic_id(const struct PicPartitionInfo *part_info, uint16_t sh_subpic_id)
 {
     for (int subpic_id = 0; subpic_id < part_info->nb_subpics; subpic_id++) {
         if (sh_subpic_id == part_info->subpic_id[subpic_id]) {
-
-#if 0
-            ov_log(NULL, OVLOG_ERROR, "Mapped sh_subpic_id %d to subpic %d\n",
-                   sh_subpic_id, subpic_id);
-#endif
-
             return subpic_id;
         }
     }
