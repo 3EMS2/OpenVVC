@@ -62,16 +62,29 @@ pp_init_functions(const struct PostProcessCtx *ppctx, const OVSEI* sei, struct P
 
 #if HAVE_SLHDR
         if (sei->sei_slhdr) {
+
+            if (!ppctx->slhdr_ctx) {
+                ov_log (NULL, OVLOG_DEBUG, "Init SLHDR Post Processor with peak luminance: %d\n", ppctx->brightness);
+                pp_init_slhdr_lib(&ppctx->slhdr_ctx);
+                pp_set_display_peak(ppctx->slhdr_ctx, ppctx->brightness);
+            }
+
             pp_funcs->pp_sdr_to_hdr = pp_sdr_to_hdr;
             pp_funcs->pp_apply_flag = 1;
-        } else {
- //printf ("NO FILTER\n");           pp_funcs->pp_sdr_to_hdr = pp_slhdr_no_filter;
         }
 #endif
     }
 
     if (ppctx->upscale_flag) {
         pp_funcs->pp_apply_flag = 1;
+    }
+}
+
+void
+pp_uninit(struct PostProcessCtx *ppctx)
+{
+    if (ppctx->slhdr_ctx) {
+        pp_uninit_slhdr_lib(ppctx->slhdr_ctx);
     }
 }
 
@@ -138,10 +151,10 @@ pp_process_frame2(const struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame 
 
                 static const struct ColorDescription pq_bt2020 = {.colour_primaries = 9, .matrix_coeffs = 9, .transfer_characteristics=16, .full_range = 0} ;
 
-                ov_log (NULL, OVLOG_DEBUG, "Updating SLHDR peak luminance %d\n", sei->brightness);
-                pp_set_display_peak(sei->sei_slhdr->slhdr_context, sei->brightness);
+                ov_log (NULL, OVLOG_DEBUG, "Updating SLHDR peak luminance %d\n", ppctx->brightness);
+                pp_set_display_peak(ppctx->slhdr_ctx, ppctx->brightness);
 
-                pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, src_planes, dst_planes,
+                pp_funcs.pp_sdr_to_hdr(ppctx->slhdr_ctx, src_planes, dst_planes,
                                        sei->sei_slhdr->payload_array, src_frm->width, src_frm->height);
 
                 //memcpy(pp_frm->data[0], src_frm->data[0], pp_frm->size[0]);
@@ -150,8 +163,6 @@ pp_process_frame2(const struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame 
 
                 pp_frm->frame_info.color_desc = pq_bt2020;
 
-                pp_uninit_slhdr_lib(sei->sei_slhdr->slhdr_context);
-                sei->sei_slhdr->slhdr_context = NULL;
 
             } else {
                 ov_log (NULL, OVLOG_DEBUG, "No SLHDR SEI\n");

@@ -828,6 +828,9 @@ ovdec_close(OVDec *ovdec)
             mvpool_uninit(&ovdec->mv_pool);
         }
 
+        if (ovdec->ppctx.slhdr_ctx) {
+            pp_uninit(&ovdec->ppctx);
+        }
         ov_free(ovdec);
 
         return 0;

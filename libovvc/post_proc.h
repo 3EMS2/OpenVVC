@@ -58,6 +58,7 @@ struct PostProcFunctions
 int pp_process_frame(struct PostProcessCtx *ppctx, const OVPictureUnit* sei, OVFrame **frame_p);
 
 
+void pp_uninit(struct PostProcessCtx *ppctx);
 //TODO: change function names.
 // void fg_data_base_generation(int8_t****  dataBase, uint8_t enableDeblocking)
 void fg_data_base_generation(uint8_t enableDeblocking);

@@ -219,10 +219,8 @@ nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
                                   payload.type, payload.size);
 
 #if HAVE_SLHDR
-
         if (!sei->sei_slhdr) {
             sei->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
-            pp_init_slhdr_lib(&sei->sei_slhdr->slhdr_context);
         }
 
         nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
@@ -290,7 +288,6 @@ nvcl_decode_nalu_sei(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t
 #if HAVE_SLHDR
         if (!sei->sei_slhdr) {
             sei->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
-            pp_init_slhdr_lib(&sei->sei_slhdr->slhdr_context);
         }
 
         nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);

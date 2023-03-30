@@ -272,6 +272,7 @@ struct OVDec
         //Boolean: output video upscaled to max resolution
         uint8_t upscale_flag;
         uint8_t pp_disable;
+        void *slhdr_ctx;
         int brightness;
 
     } ppctx;
