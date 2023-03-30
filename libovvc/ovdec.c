@@ -698,7 +698,7 @@ ovdec_set_option(OVDec *ovdec, enum OVOptions opt_id, int value)
             set_nb_frame_threads(ovdec, value);
             break;
         case OVDEC_BRIGHTNESS:
-            ovdec->ppctx.brightness = ov_clip(value, 100, 1000);
+            ovdec->ppctx.brightness = ov_clip(value, 100, 10000);
             break;
         default :
             if (opt_id < OVDEC_NB_OPTIONS) {
