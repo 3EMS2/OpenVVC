@@ -113,41 +113,55 @@ pp_process_frame2(const struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame 
 
 
         if (sei) {
-        int16_t *src_planes[3] = {
-            (int16_t*)src_frm->data[0],
-            (int16_t*)src_frm->data[1],
-            (int16_t*)src_frm->data[2]
-        };
+            int16_t *src_planes[3] = {
+                (int16_t*)src_frm->data[0],
+                (int16_t*)src_frm->data[1],
+                (int16_t*)src_frm->data[2]
+            };
 
-        int16_t* dst_planes[3] = {
-            (int16_t*)pp_frm->data[0],
-            (int16_t*)pp_frm->data[1],
-            (int16_t*)pp_frm->data[2]
-        };
+            int16_t* dst_planes[3] = {
+                (int16_t*)pp_frm->data[0],
+                (int16_t*)pp_frm->data[1],
+                (int16_t*)pp_frm->data[2]
+            };
 
-        uint8_t enable_deblock = 1;
+            uint8_t enable_deblock = 1;
 
-        pp_funcs.pp_film_grain(dst_planes, src_planes, sei->sei_fg,
-                               src_frm->width, src_frm->height,
-                               src_frm->poc, 0, enable_deblock);
+            pp_funcs.pp_film_grain(dst_planes, src_planes, sei->sei_fg,
+                                   src_frm->width, src_frm->height,
+                                   src_frm->poc, 0, enable_deblock);
 
 #if HAVE_SLHDR
-        if(sei->sei_slhdr){
-            static const struct ColorDescription pq_bt2020 = {.colour_primaries = 9, .matrix_coeffs = 9, .transfer_characteristics=16, .full_range = 0} ;
-            ov_log (NULL, OVLOG_ERROR, "display brightness %d\n", sei->brightness);
-            pp_set_display_peak(sei->sei_slhdr->slhdr_context, sei->brightness);
-            pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, src_planes, dst_planes,
-                                   sei->sei_slhdr->payload_array, src_frm->width, src_frm->height);
-	    pp_frm->frame_info.color_desc = pq_bt2020;
-        } else {
-            //printf ("NO FILTER\n");
-	}
+            if(sei->sei_slhdr){
+                pp_frm->width = src_frm->width;
+                pp_frm->height = src_frm->height;
+
+                static const struct ColorDescription pq_bt2020 = {.colour_primaries = 9, .matrix_coeffs = 9, .transfer_characteristics=16, .full_range = 0} ;
+
+                ov_log (NULL, OVLOG_DEBUG, "Updating SLHDR peak luminance %d\n", sei->brightness);
+                pp_set_display_peak(sei->sei_slhdr->slhdr_context, sei->brightness);
+
+                pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, src_planes, dst_planes,
+                                       sei->sei_slhdr->payload_array, src_frm->width, src_frm->height);
+
+                //memcpy(pp_frm->data[0], src_frm->data[0], pp_frm->size[0]);
+                //memcpy(pp_frm->data[1], src_frm->data[1], pp_frm->size[1]);
+                //memcpy(pp_frm->data[2], src_frm->data[2], pp_frm->size[2]);
+
+                pp_frm->frame_info.color_desc = pq_bt2020;
+
+                pp_uninit_slhdr_lib(sei->sei_slhdr->slhdr_context);
+                sei->sei_slhdr->slhdr_context = NULL;
+
+            } else {
+                ov_log (NULL, OVLOG_DEBUG, "No SLHDR SEI\n");
+            }
 #endif
         }
 
         /* Replace pointer to output picture by post processed picture. */
         ovframe_unref(frame_p);
-        *frame_p = pp_frm;
+        ovframe_new_ref(frame_p, pp_frm);
     }
 
     return 0;
@@ -189,26 +203,26 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
             if (ret < 0) {
                 goto fail;
             }
+
+            if (sei) sei->brightness = pctx->brightness;
+            /* Check SEI SEI */
+            ret = pp_process_frame2(pctx, sei, frame_p);
+
+            if (sei) {
+                if (sei->sei_fg) {
+                    ov_freep(&sei->sei_fg);
+                }
+
+                if (sei->sei_slhdr) {
+                    ov_freep(&sei->sei_slhdr);
+                }
+                ov_freep(&sei);
+            }
         }
+
     }
-    if (sei) sei->brightness = pctx->brightness;
-    /* Check SEI SEI */
-    ret = pp_process_frame2(pctx, sei, frame_p);
-
-    if (sei) {
-        if (sei->sei_fg) {
-            ov_freep(&sei->sei_fg);
-        }
-
-        if (sei->sei_slhdr) {
-            ov_freep(&sei->sei_slhdr);
-        }
-    }
-
-    ov_free(sei);
-
 fail:
 #endif
 
-return ret;
+    return ret;
 }
