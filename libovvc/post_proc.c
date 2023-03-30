@@ -172,7 +172,7 @@ pp_process_frame2(const struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame 
 
         /* Replace pointer to output picture by post processed picture. */
         ovframe_unref(frame_p);
-        ovframe_new_ref(frame_p, pp_frm);
+        *frame_p = pp_frm;
     }
 
     return 0;
