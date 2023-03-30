@@ -1,8 +1,8 @@
 lib_LTLIBRARIES = libovvc.la
-libovvc_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIB_VERSION)
-libovvc_la_LDFLAGS += @SLHDR_LIBS@
-libovvc_la_LIBADD=
-libovvc_la_CFLAGS= @SLHDR_CFLAGS@
+libovvc_la_LDFLAGS =  $(AM_LDFLAGS) -version-info $(LIB_VERSION)
+libovvc_la_LDFLAGS += @SLHDR_LIBS@ -no-undefined
+libovvc_la_LIBADD =
+libovvc_la_CFLAGS = $(AM_CFLAGS) @SLHDR_CFLAGS@
 
 pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = libopenvvc.pc
