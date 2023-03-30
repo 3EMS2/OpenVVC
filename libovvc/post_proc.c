@@ -215,7 +215,6 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
                 goto fail;
             }
 
-            if (sei) sei->brightness = pctx->brightness;
             /* Check SEI SEI */
             ret = pp_process_frame2(pctx, sei, frame_p);
 
