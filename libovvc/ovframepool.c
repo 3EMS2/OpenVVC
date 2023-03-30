@@ -104,6 +104,7 @@ static void set_plane_properties(struct PlaneProp *const pln, const struct Chrom
 void
 ovframepool_uninit(struct FramePool **fpool_p)
 {
+    ov_log(NULL, OVLOG_TRACE, "Frame pool uninit\n");
     struct FramePool *fpool = *fpool_p;
     const struct  ChromaFmtInfo *const fmt_info = fpool->fmt_info;
     int i;
@@ -125,6 +126,7 @@ ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint8_t bitdepth_min8,
 {
     const struct ChromaFmtInfo *const fmt_info = select_frame_format(fmt, bitdepth_min8);
 
+    ov_log(NULL, OVLOG_TRACE, "Frame pool init\n");
     /* FIXME allocation size overflow */
     size_t pic_size = (pic_w * pic_h) << fmt_info->bd_shift;
     struct FramePool *fpool;
@@ -259,6 +261,7 @@ failrequest:
 OVFrame *
 ovframepool_request_frame(struct FramePool *fpool)
 {
+    ov_log(NULL, OVLOG_TRACE, "Frame pool request %x\n", fpool);
     OVFrame *frame = create_new_frame(fpool);
     return frame;
 }
