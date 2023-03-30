@@ -37,6 +37,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#include "ovconfig.h"
 #include "ovlog.h"
 
 

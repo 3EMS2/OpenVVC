@@ -13,6 +13,7 @@ AM_PROG_AR
 
 # Enable Libtool
 LT_INIT
+AC_SUBST([LIBTOOL_DEPS])
 
 AC_CONFIG_HEADERS([ovconfig.h])
 AC_CONFIG_FILES([Makefile

@@ -102,6 +102,7 @@ ovnalu_ref(OVNALUnit **nalu_p, OVNALUnit *nalu)
 void
 ovnalu_unref(OVNALUnit **nalu_p)
 {
+	if (!nalu_p) return;
     OVNALUnit *nalu = *nalu_p;
 
     if (!nalu){

@@ -245,6 +245,7 @@ create_new_frame(struct FramePool *fpool)
     frame = felem->data;
 
     frame->internal.felem = felem;
+    frame->internal.frame_pool = fpool;
 
     ret = ovframepool_request_planes(frame, fpool);
     if (ret < 0) {

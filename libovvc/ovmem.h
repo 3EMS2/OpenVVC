@@ -35,7 +35,7 @@
 #define OVMEM_H
 #include <stddef.h>
 
-#define ALIGN 32
+#define ALIGN 64
 
 #define DECLARE_ALIGNED(n, t, v) t __attribute__ ((aligned (n))) v
 #define ov_malloc_attrib   __attribute__((__malloc__))

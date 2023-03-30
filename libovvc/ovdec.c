@@ -573,7 +573,7 @@ ovdec_submit_picture_unit(OVDec *ovdec, const OVPictureUnit *const pu)
 int
 ovdec_receive_picture(OVDec *ovdec, OVFrame **frame_p)
 {
-    struct OVPictureUnit *punit;
+    struct OVPictureUnit *punit = NULL;
     OVDPB *dpb = ovdec->dpb;
     int ret = 0;
 

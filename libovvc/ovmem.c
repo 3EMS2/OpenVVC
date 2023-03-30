@@ -35,6 +35,8 @@
 #include <string.h>
 #include "ovmem.h"
 #include "ovconfig.h"
+#include "ovlog.h"
+#include "stdint.h"
 
 
 /* Wrappers around memory related function this will
