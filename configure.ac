@@ -61,8 +61,10 @@ AS_CASE([$host_os],
 	[]
 )
 
-AC_CHECK_FUNCS(posix_memalign _aligned_malloc memalign, [break],
-		AC_MSG_ERROR([No aligned malloc function found.]))
+AC_CHECK_FUNCS(posix_memalign _aligned_malloc memalign, [break],)
+
+AS_IF([test x"$ac_cv_func_memalign" = x"no"],
+      [AC_MSG_ERROR([No aligned malloc function found.])])
 
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm assembly optimisation [no]])],
                 [ AS_IF([test $enable_arm_asm = "yes" -a x"$BITS" = x"64"], [as_arm64="yes" h_as_arm64=1],
