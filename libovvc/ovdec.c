@@ -95,7 +95,7 @@ set_opt_int(OVDec *const ovdec, const struct OVOption *const opt, void *opt_val)
 {
     int32_t *dst = (int32_t*)((uint8_t *)ovdec + opt->offset);
     *dst = *((int32_t *)opt_val);
-    ov_log(ovdec, OVLOG_ERROR, "Option %s set to %d.\n", opt->opt_str, *dst);
+    ov_log(ovdec, OVLOG_TRACE, "Option %s set to %d.\n", opt->opt_str, *dst);
     return 0;
 }
 
@@ -105,7 +105,7 @@ set_opt_str(OVDec *const ovdec, const struct OVOption *const opt, void *opt_val)
     const char **const dst = (const char **const)((uint8_t *)ovdec + opt->offset);
 
     *dst = (const char *) opt_val;
-    ov_log(ovdec, OVLOG_ERROR, "Option %s set to %s.\n", opt->opt_str, *dst);
+    ov_log(ovdec, OVLOG_TRACE, "Option %s set to %s.\n", opt->opt_str, *dst);
     return 0;
 }
 
@@ -114,7 +114,7 @@ set_opt_flag(OVDec *const ovdec, const struct OVOption *const opt, void *opt_val
 {
     uint8_t *dst = (uint8_t *)ovdec + opt->offset;
     *dst = *((uint8_t *)opt_val);
-    ov_log(ovdec, OVLOG_ERROR, "Option %s set to %d.\n", opt->opt_str, *dst);
+    ov_log(ovdec, OVLOG_TRACE, "Option %s set to %d.\n", opt->opt_str, *dst);
     return 0;
 }
 
@@ -146,7 +146,7 @@ ovdec_set_opt(OVDec *const ovdec, const char *const opt_str, void *opt_val)
 {
     const struct OVOption *opt = find_opt(opt_str);
     if (opt) {
-        ov_log(ovdec, OVLOG_ERROR, "Found option %s.\n", opt_str);
+        ov_log(ovdec, OVLOG_TRACE, "Found option %s.\n", opt_str);
         return set_opt(ovdec, opt, opt_val);
     } else {
         ov_log(ovdec, OVLOG_ERROR, "Could not find options in %s.\n", opt_str);
