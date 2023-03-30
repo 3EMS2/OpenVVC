@@ -56,7 +56,7 @@ ov_malloc(size_t alloc_size)
     } else {
         ptr = NULL;
     }
-#elif HAVE_ALIGNED_MALLOC
+#elif HAVE__ALIGNED_MALLOC
     ptr = _aligned_malloc(alloc_size, ALIGN); //For windows
 #elif HAVE_MEMALIGN
   #ifndef __DJGPP__
@@ -86,7 +86,7 @@ ov_mallocz(size_t alloc_size)
 void
 ov_free(void *ptr)
 {
-#if HAVE_ALIGNED_MALLOC
+#if HAVE__ALIGNED_MALLOC
     _aligned_free(ptr); //For windows
 #else
     free(ptr);
