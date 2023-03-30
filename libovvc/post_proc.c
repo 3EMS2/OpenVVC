@@ -202,6 +202,7 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
 {
     int i;
     int ret = 0;
+    int slhdr_sei = 0;
 #if 1
     OVSEI *sei = NULL;
 
@@ -213,6 +214,14 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
 
             if (ret < 0) {
                 goto fail;
+            }
+
+            if (slhdr_sei && sei->sei_slhdr) {
+                ov_freep(&sei->sei_slhdr);
+            }
+
+            if (sei->sei_slhdr) {
+                slhdr_sei = 1;
             }
 
             /* Check SEI SEI */
