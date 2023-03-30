@@ -246,6 +246,7 @@ nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
     return 0;
 
 fail:
+    ov_log(NULL, OVLOG_ERROR, "Could not alloc SEI.\n");
     return OVVC_ENOMEM;
 }
 
