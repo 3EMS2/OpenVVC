@@ -60,6 +60,7 @@ typedef struct OVVCHdl
     OVDec *dec;
     OVIO *io;
     struct PicInfoFormat *pinfo_fmt;
+    int brightness;
 } OVVCHdl;
 
 static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name);
@@ -89,6 +90,7 @@ main(int argc, char** argv)
     int nb_entry_th = 0;
     int upscale_flag = 0;
     int pp_disable = 0;
+    int brightness = 1000;
     static const char *const default_info_fmt = "POC : %P %T µs  %R bytes %V\n";
     struct PicInfoFormat pinfo_fmt =
     {
@@ -115,6 +117,8 @@ main(int argc, char** argv)
             {"upscale",   required_argument, 0, 'u'},
             {"info",      optional_argument, 0, 'i'},
             {"nopostproc", no_argument,       0, 'p'},
+            {"brightness", required_argument,       0, 'b'},
+            {NULL},
         };
 
         int option_index = 0;
@@ -146,6 +150,10 @@ main(int argc, char** argv)
 
             case 'u':
                 upscale_flag = atoi(optarg);
+                break;
+
+            case 'b':
+                brightness = atoi(optarg);
                 break;
 
             case 't':
@@ -214,6 +222,7 @@ main(int argc, char** argv)
         int val = 1;
         ovdec_set_opt(ovvc_hdl.dec, "nopostproc", &val);
     }
+    ovdec_set_opt(ovvc_hdl.dec, "brightness", &brightness);
 
     if (ret < 0) goto failinit;
 
