@@ -84,7 +84,9 @@ void
 pp_uninit(struct PostProcessCtx *ppctx)
 {
     if (ppctx->slhdr_ctx) {
+#if HAVE_SLHDR
         pp_uninit_slhdr_lib(ppctx->slhdr_ctx);
+#endif
     }
 }
 
