@@ -501,7 +501,6 @@ static int
 vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_rpl)
 {
     int i;
-    const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
 
 
     for (i = 0;  i < rpl_info->nb_active_refs; ++i){
@@ -509,9 +508,12 @@ vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_
         uint8_t ref_type = rpl_info->ref_info[i].type;
         uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
         int found = 0;
-        int j;
-        for (j = 0; j < nb_dpb_pic; j++) {
-            OVPicture *ref_pic = &dpb->pictures[j];
+        uint64_t status = dpb->status;
+
+        while (status) {
+            uint8_t idx = next_used_slot(status);
+            OVPicture *ref_pic = &dpb->pictures[idx];
+            status &= ~(uint64_t)((uint64_t)1 << idx);
             if (ref_pic->poc == ref_poc && ref_pic->cvs_id == dpb->cvs_id) {
                 if (ref_pic->frame && ref_pic->frame->data[0]) {
                     found = 1;
@@ -560,10 +562,12 @@ vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_
         uint8_t ref_type = rpl_info->ref_info[i].type;
         uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
         uint8_t found = 0;
-        int j;
 
-        for (j = 0; j < nb_dpb_pic; j++) {
-            OVPicture *ref_pic = &dpb->pictures[j];
+        uint64_t status = dpb->status;
+        while (status) {
+            uint8_t idx = next_used_slot(status);
+            OVPicture *ref_pic = &dpb->pictures[idx];
+            status &= ~(uint64_t)((uint64_t)1 << idx);
             if (ref_pic->poc == ref_poc && ref_pic->cvs_id == dpb->cvs_id) {
                 if (ref_pic->frame && ref_pic->frame->data[0]) {
                     found = 1;
