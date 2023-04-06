@@ -498,22 +498,17 @@ self_ref:
 
 
 static int
-vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, uint8_t weighted_pred)
+vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_rpl)
 {
     int i, j;
     uint8_t found, flag;
     int32_t ref_poc, ref_type;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
 
-    struct RPLInfo rpl_info;
-    int ret = compute_ref_poc(rpl, &rpl_info, poc, weighted_pred);
-    if (ret < 0) {
-        return ret;
-    }
 
-    for (i = 0;  i < rpl_info.nb_active_refs; ++i){
-        ref_poc  = rpl_info.ref_info[i].poc;
-        ref_type = rpl_info.ref_info[i].type;
+    for (i = 0;  i < rpl_info->nb_active_refs; ++i){
+        ref_poc  = rpl_info->ref_info[i].poc;
+        ref_type = rpl_info->ref_info[i].type;
         flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
         OVPicture *ref_pic;
         found = 0;
@@ -563,9 +558,9 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
     }
 
     /* Mark non active refrences pictures as used for reference */
-    for (; i < rpl_info.nb_refs; ++i) {
-        ref_poc  = rpl_info.ref_info[i].poc;
-        ref_type = rpl_info.ref_info[i].type;
+    for (; i < rpl_info->nb_refs; ++i) {
+        ref_poc  = rpl_info->ref_info[i].poc;
+        ref_type = rpl_info->ref_info[i].type;
         flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
         OVPicture *ref_pic;
         found = 0;
@@ -808,6 +803,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int32_t poc = dpb->poc;
     int i, ret;
+    struct RPLInfo rpl_info;
 
     /* This is the same as clear_refs except we do not remove
      * flags on current picture
@@ -823,13 +819,22 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     }
     uint8_t weighted_pred = sldec->active_params.sps->sps_weighted_pred_flag || sldec->active_params.sps->sps_weighted_bipred_flag;
 
-    ret = vvc_mark_refs(dpb, rpl0, poc, sldec->inter_ctx.rpl0, weighted_pred);
+    ret = compute_ref_poc(rpl0, &rpl_info, poc, weighted_pred);
+    if (ret < 0) {
+        return ret;
+    }
+
+    ret = vvc_mark_refs(dpb, &rpl_info, sldec->inter_ctx.rpl0);
 
     sldec->nb_refs0 = rpl0->num_ref_entries;
     sldec->inter_ctx.nb_active_refs0 = rpl0->num_ref_active_entries;
 
     if (slice_type == SLICE_B){
-        ret |= vvc_mark_refs(dpb, rpl1, poc, sldec->inter_ctx.rpl1, weighted_pred);
+        ret = compute_ref_poc(rpl1, &rpl_info, poc, weighted_pred);
+        if (ret < 0) {
+            return ret;
+        }
+        ret |= vvc_mark_refs(dpb, &rpl_info, sldec->inter_ctx.rpl1);
         sldec->nb_refs1 = rpl1->num_ref_entries;
         sldec->inter_ctx.nb_active_refs1 = rpl1->num_ref_active_entries;
     } else {
