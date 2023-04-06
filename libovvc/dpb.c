@@ -293,8 +293,8 @@ next_used_slot(uint64_t status)
 static void
 ovdpb_clear_refs(OVDPB *dpb)
 {
-    //TODO: loop untill min_idx == nb_dpb_pic or nb_used_pic > dpb->max_nb_dpb_pic
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
+
     int nb_used_pic = nb_used_slots(dpb->status);
     int min_cvs_id = find_min_cvs_id(dpb);
 
@@ -317,9 +317,6 @@ ovdpb_clear_refs(OVDPB *dpb)
             }
         }
 
-        //TODOdpb: loop untill min_idx == nb_dpb_pic or nb_used_pic > dpb->max_nb_dpb_pic
-        /* Try to release picture with POC == to min_poc
-         */
         if (min_idx < nb_dpb_pic) {
             OVPicture *pic = &dpb->pictures[min_idx];
             ovdpb_release_pic(dpb, pic);
@@ -382,14 +379,12 @@ alloc_frame(OVDPB *dpb, int poc)
         atomic_init(&pic->ref_count, 0);
 
         ov_log(NULL, OVLOG_DEBUG, "Attached frame %p to Picture with POC %d\n", pic->frame, poc);
+	ov_log(NULL, OVLOG_ERROR, "DPB N state 0x%.64lb\n", dpb->status);
 
         return pic;
     }
 
-//full:
     ov_log(NULL, OVLOG_ERROR, "DPB full\n");
-    //print_dpb(dpb);
-
 
     return NULL;
 }
@@ -527,7 +522,8 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
             if (ref_pic->poc == ref_poc && ref_pic->cvs_id == dpb->cvs_id){
                 if(ref_pic->frame && ref_pic->frame->data[0]){
                     found = 1;
-                    ov_log(NULL, OVLOG_TRACE, "Mark active reference %d for picture %d\n", ref_poc, dpb->poc);
+                    ov_log(NULL, OVLOG_TRACE, "Mark active reference %d for picture %d\n",
+                           ref_poc, dpb->poc);
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
                     ovdpb_new_ref_pic(ref_pic, flag);
                     dst_rpl[i] = ref_pic; 
@@ -547,9 +543,9 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
                 return OVVC_ENOMEM;
             }
 
-    struct PictureSynchro* sync = &ref_pic->sync;
+            struct PictureSynchro* sync = &ref_pic->sync;
 
-    atomic_init(sync->nb_slices, 1);
+            atomic_init(sync->nb_slices, 1);
 
             ovdpb_new_ref_pic(ref_pic, OV_ST_REF_PIC_FLAG);
 
@@ -589,20 +585,22 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
         }
 
         if (!found){
-            ov_log(NULL, OVLOG_TRACE, "Not found non active reference %d for picture %d\n", ref_poc, dpb->poc);
+            ov_log(NULL, OVLOG_TRACE, "Not found non active reference %d for picture %d\n",
+                   ref_poc, dpb->poc);
             /* If reference picture is not in the DPB we try create a new
              * Picture with requested POC ID in the DPB
              */
-            ov_log(NULL, OVLOG_ERROR, "Generating missing na reference %d for picture %d\n", ref_poc, dpb->poc);
+            ov_log(NULL, OVLOG_ERROR, "Generating missing na reference %d for picture %d\n",
+                   ref_poc, dpb->poc);
             ref_pic = alloc_frame(dpb, ref_poc);
 
             if (ref_pic == NULL){
                 return OVVC_ENOMEM;
             }
 
-    struct PictureSynchro* sync = &ref_pic->sync;
+            struct PictureSynchro* sync = &ref_pic->sync;
 
-    atomic_init(sync->nb_slices, 1);
+            atomic_init(sync->nb_slices, 1);
 
             ovdpb_new_ref_pic(ref_pic, OV_ST_REF_PIC_FLAG);
 
