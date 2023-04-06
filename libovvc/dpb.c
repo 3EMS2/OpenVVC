@@ -500,39 +500,36 @@ self_ref:
 static int
 vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_rpl)
 {
-    int i, j;
-    uint8_t found, flag;
-    int32_t ref_poc, ref_type;
+    int i;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
 
 
     for (i = 0;  i < rpl_info->nb_active_refs; ++i){
-        ref_poc  = rpl_info->ref_info[i].poc;
-        ref_type = rpl_info->ref_info[i].type;
-        flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
-        OVPicture *ref_pic;
-        found = 0;
+        int32_t ref_poc  = rpl_info->ref_info[i].poc;
+        uint8_t ref_type = rpl_info->ref_info[i].type;
+        uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
+        int found = 0;
+        int j;
         for (j = 0; j < nb_dpb_pic; j++) {
-            ref_pic = &dpb->pictures[j];
-            if (ref_pic->poc == ref_poc && ref_pic->cvs_id == dpb->cvs_id){
-                if(ref_pic->frame && ref_pic->frame->data[0]){
+            OVPicture *ref_pic = &dpb->pictures[j];
+            if (ref_pic->poc == ref_poc && ref_pic->cvs_id == dpb->cvs_id) {
+                if (ref_pic->frame && ref_pic->frame->data[0]) {
                     found = 1;
                     ov_log(NULL, OVLOG_TRACE, "Mark active reference %d for picture %d\n",
                            ref_poc, dpb->poc);
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
+
                     ovdpb_new_ref_pic(ref_pic, flag);
+
                     dst_rpl[i] = ref_pic; 
                     break;
                 }
             }
         }
 
-        if (!found){
-            /* If reference picture is not in the DPB we try create a new
-             * Picture with requested POC ID in the DPB
-             */
+        if (!found) {
             ov_log(NULL, OVLOG_ERROR, "Generating missing reference %d for picture %d\n", ref_poc, dpb->poc);
-            ref_pic = alloc_frame(dpb, ref_poc);
+            OVPicture *ref_pic = alloc_frame(dpb, ref_poc);
 
             if (ref_pic == NULL){
                 return OVVC_ENOMEM;
@@ -557,20 +554,21 @@ vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_
         }
     }
 
-    /* Mark non active refrences pictures as used for reference */
+    /* Mark non active references pictures as used for reference */
     for (; i < rpl_info->nb_refs; ++i) {
-        ref_poc  = rpl_info->ref_info[i].poc;
-        ref_type = rpl_info->ref_info[i].type;
-        flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
-        OVPicture *ref_pic;
-        found = 0;
+        int32_t ref_poc  = rpl_info->ref_info[i].poc;
+        uint8_t ref_type = rpl_info->ref_info[i].type;
+        uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
+        uint8_t found = 0;
+        int j;
 
         for (j = 0; j < nb_dpb_pic; j++) {
-            ref_pic = &dpb->pictures[j];
-            if (ref_pic->poc == ref_poc){
-                if(ref_pic->frame && ref_pic->frame->data[0] && ref_pic->cvs_id == dpb->cvs_id){
+            OVPicture *ref_pic = &dpb->pictures[j];
+            if (ref_pic->poc == ref_poc && ref_pic->cvs_id == dpb->cvs_id) {
+                if (ref_pic->frame && ref_pic->frame->data[0]) {
                     found = 1;
-                    ov_log(NULL, OVLOG_TRACE, "Mark non active reference %d for picture %d\n", ref_poc, dpb->poc);
+                    ov_log(NULL, OVLOG_TRACE, "Mark non active reference %d for picture %d\n",
+                           ref_poc, dpb->poc);
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
                     ovdpb_new_ref_pic(ref_pic, flag);
                     dst_rpl[i] = ref_pic;
@@ -580,14 +578,10 @@ vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_
         }
 
         if (!found){
-            ov_log(NULL, OVLOG_TRACE, "Not found non active reference %d for picture %d\n",
+            ov_log(NULL, OVLOG_ERROR, "Generating missing na non active reference %d for picture %d\n",
                    ref_poc, dpb->poc);
-            /* If reference picture is not in the DPB we try create a new
-             * Picture with requested POC ID in the DPB
-             */
-            ov_log(NULL, OVLOG_ERROR, "Generating missing na reference %d for picture %d\n",
-                   ref_poc, dpb->poc);
-            ref_pic = alloc_frame(dpb, ref_poc);
+
+            OVPicture *ref_pic = alloc_frame(dpb, ref_poc);
 
             if (ref_pic == NULL){
                 return OVVC_ENOMEM;
