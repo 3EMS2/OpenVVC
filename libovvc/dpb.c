@@ -354,6 +354,8 @@ ovdpb_flush_dpb(OVDPB *dpb)
         atomic_init( &dpb->pictures[i].ref_count, 0);
         ovdpb_release_pic(dpb, &dpb->pictures[i]);
     }
+    dpb->cvs_id = (dpb->cvs_id + 1) & 0xFF;
+
 }
 
 /*FIXME rename to request new picture */
