@@ -511,7 +511,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
         return ret;
     }
 
-    for (i = 0;  i < rpl->num_ref_active_entries; ++i){
+    for (i = 0;  i < rpl_info.nb_active_refs; ++i){
         ref_poc  = rpl_info.ref_info[i].poc;
         ref_type = rpl_info.ref_info[i].type;
         flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
@@ -563,7 +563,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
     }
 
     /* Mark non active refrences pictures as used for reference */
-    for (; i < rpl->num_ref_entries; ++i) {
+    for (; i < rpl_info.nb_refs; ++i) {
         ref_poc  = rpl_info.ref_info[i].poc;
         ref_type = rpl_info.ref_info[i].type;
         flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
