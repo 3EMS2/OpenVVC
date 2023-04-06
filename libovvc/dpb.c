@@ -480,7 +480,7 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
            ref_poc = rp->rpls_poc_lsb_lt;
 
            rinfo->poc = ref_poc;
-           ov_log(NULL, OVLOG_WARNING, "Partially supported Long Term Ref \n");
+           ov_log(NULL, OVLOG_WARNING, "Partially supported Long Term Ref %d\n", ref_poc);
 
         break;
         case ILRP_REF:
