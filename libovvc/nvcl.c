@@ -263,7 +263,7 @@ decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, struct HLSDataRef **storage, OVN
         uint32_t stop_bit_pos = nvcl_find_rbsp_stop_bit(rdr);
         if (stop_bit_pos != nb_bits_read) {
 
-            ov_log(NULL, OVLOG_ERROR, "rbsp_stop_bit mismatch: cursor at %d,  expected %d\n", nb_bits_read, stop_bit_pos);
+            ov_log(NULL, OVLOG_ERROR, "%s rbsp_stop_bit mismatch: cursor at %d,  expected %d\n", hls_hdl->name, nb_bits_read, stop_bit_pos);
             return OVVC_EINDATA;
         }
     }

@@ -647,10 +647,12 @@ ovdec_flush(OVDec *ovdec)
     OVFrame *frame;
     OVDPB *dpb = ovdec->dpb;
 
+    ov_log(ovdec, OVLOG_WARNING, "Decoder FLUSH.\n");
     fifo_flush(&ovdec->main_thread);
 
     ovdec_wait_entry_threads(ovdec);
     if (dpb) {
+#if 0
         while (ovdpb_drain_frame(dpb, &frame, &punit)) {
             if (frame) {
                 ovpu_unref(&punit);
@@ -658,6 +660,8 @@ ovdec_flush(OVDec *ovdec)
             }
         }
         ovdpb_uninit(&ovdec->dpb);
+#endif
+        ovdpb_flush_dpb(ovdec->dpb);
     }
 
     decinit_unref_params(&ovdec->active_params);

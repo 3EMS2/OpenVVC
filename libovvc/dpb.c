@@ -229,11 +229,14 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
     if (/*!pic->flags &&*/ !ref_count) {
         /* Release TMVP  MV maps */
         ptrdiff_t idx = pic - dpb->pictures;
+        uint64_t cvs_id_pic = pic->cvs_id;
+        uint64_t cvs_id_dpb = dpb->cvs_id;
 
         dpbpriv_release_pic(pic);
 
-        dpb->status &= ~((uint64_t)1 << idx);
+        dpb->status &= ~(uint64_t)((uint64_t)1 << idx);
 
+	ov_log(NULL, OVLOG_ERROR, "DPB R state 0x%.64lb, %ld, %ld \n", dpb->status, cvs_id_pic, cvs_id_dpb);
     }
     pthread_mutex_unlock(&pic->pic_mtx);
 }
@@ -304,10 +307,10 @@ ovdpb_clear_refs(OVDPB *dpb)
         uint64_t status = dpb->status;
         while (status) {
             uint8_t idx = next_used_slot(status);
-            status &= ~((uint64_t)1 << idx);
+            status &= ~(uint64_t)((uint64_t)1 << idx);
             OVPicture *pic = &dpb->pictures[idx];
             uint16_t ref_count = atomic_load(&pic->ref_count);
-            if (pic->frame && pic->frame->data[0] && !ref_count && !pic->flags) {
+            if (!ref_count && !pic->flags) {
                 if (pic->poc < min_poc && pic->cvs_id == min_cvs_id) {
                     min_poc = pic->poc;
                     min_idx = idx;
@@ -382,7 +385,7 @@ alloc_frame(OVDPB *dpb, int poc)
         return pic;
     }
 
-    ov_log(NULL, OVLOG_ERROR, "DPB full\n");
+    ov_log(NULL, OVLOG_ERROR, "DPB full 0x%lb\n", dpb->status);
 
     return NULL;
 }
@@ -437,13 +440,15 @@ end:
 }
 
 static int
-compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t poc, uint8_t weighted_pred)
+compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t poc, uint8_t weighted_pred, uint8_t log2_max_poc_lsb)
 {
     const int nb_refs = rpl->num_ref_entries;
     int i;
     rpl_info->nb_refs = nb_refs;
     rpl_info->nb_active_refs = rpl->num_ref_active_entries;
     int last_poc = poc;
+    int max_poc_lsb  = 1 << log2_max_poc_lsb;
+    int delta_msb = 0;
 
     for (i = 0; i < nb_refs; ++i) {
         const struct RefPic *const rp = &rpl->rp_list[i];
@@ -469,6 +474,8 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
             *    - Compute msb part of POC when needed
             */
            ref_poc = rp->rpls_poc_lsb_lt;
+           //delta_msb += delta_poc_msb_cycle_lt[i];
+           ref_poc += poc - (int32_t)((uint32_t)delta_msb << log2_max_poc_lsb) - (poc & (max_poc_lsb - 1));
 
            rinfo->poc = ref_poc;
            ov_log(NULL, OVLOG_WARNING, "Partially supported Long Term Ref %d\n", ref_poc);
@@ -492,12 +499,48 @@ self_ref:
     return OVVC_EINDATA;
 }
 
+static void
+rpl_info_print(const OVDPB *const dpb, const struct RPLInfo *const rpl_info)
+{
+    char a_lst[512];
+    char na_lst[512];
+    int printed    = 0;
+    int printed_na = 0;
+    int i;
+
+    a_lst[0] = '\0';
+    na_lst[0] = '\0';
+
+    for (i = 0;  i < rpl_info->nb_active_refs; ++i){
+        int32_t ref_poc  = rpl_info->ref_info[i].poc;
+        printed += sprintf(a_lst + printed, "%d", ref_poc);
+        //printed += sprintf(a_lst + printed, "[%d]", j);
+        printed += sprintf(a_lst + printed, ", ");
+    }
+    for (; i < rpl_info->nb_refs; ++i) {
+        int32_t ref_poc  = rpl_info->ref_info[i].poc;
+        printed_na += sprintf(a_lst + printed_na, "%d", ref_poc);
+        //printed_na += sprintf(na_lst + printed_na, "[%d]", j);
+        printed += sprintf(a_lst + printed, ", ");
+    }
+
+    if (printed) a_lst[printed - 2] = '\0';
+    if (printed_na) na_lst[printed_na - 2] = '\0';
+
+    ov_log(NULL, OVLOG_ERROR, "POC: %d: active: (%s), non active: (%s)\n", dpb->poc, a_lst, na_lst);
+}
 
 static int
 vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_rpl)
 {
     int i;
 
+    char a_lst[512];
+    char na_lst[512];
+    int printed = 0;
+
+    a_lst[0] = '\0';
+    na_lst[0] = '\0';
 
     for (i = 0;  i < rpl_info->nb_active_refs; ++i){
         int32_t ref_poc  = rpl_info->ref_info[i].poc;
@@ -505,23 +548,26 @@ vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_
         uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
         int found = 0;
         uint64_t status = dpb->status;
+        printed += sprintf(a_lst + printed, "%d", ref_poc);
 
         while (status) {
             uint8_t idx = next_used_slot(status);
             OVPicture *ref_pic = &dpb->pictures[idx];
             status &= ~(uint64_t)((uint64_t)1 << idx);
             if (ref_pic->poc == ref_poc && ref_pic->cvs_id == dpb->cvs_id) {
-                if (ref_pic->frame && ref_pic->frame->data[0]) {
+                //if (ref_pic->frame && ref_pic->frame->data[0]) {
                     found = 1;
                     ov_log(NULL, OVLOG_TRACE, "Mark active reference %d for picture %d\n",
                            ref_poc, dpb->poc);
+                    printed += sprintf(a_lst + printed, "[%d]", idx);
+
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
 
                     ovdpb_new_ref_pic(ref_pic, flag);
 
                     dst_rpl[i] = ref_pic; 
                     break;
-                }
+                //}
             }
         }
 
@@ -533,10 +579,13 @@ vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_
                 return OVVC_ENOMEM;
             }
 
+            printed += sprintf(a_lst + printed, "g[%d]", (int)(ref_pic - dpb->pictures));
+
             struct PictureSynchro* sync = &ref_pic->sync;
 
             atomic_init(sync->nb_slices, 1);
 
+            ovdpb_new_ref_pic(ref_pic, OV_ST_REF_PIC_FLAG);
             ovdpb_new_ref_pic(ref_pic, OV_ST_REF_PIC_FLAG);
 
             ovdpb_report_decoded_frame(ref_pic);
@@ -545,12 +594,14 @@ vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_
             ref_pic->cvs_id = dpb->cvs_id;
             ref_pic->frame->poc = ref_poc;
 
-            ref_pic->flags  = 0;
-
+            //ref_pic->flags  = 0;
 
             dst_rpl[i] = ref_pic; 
         }
+        printed += sprintf(a_lst + printed, ", ");
     }
+
+    int printed2 = 0;
 
     /* Mark non active references pictures as used for reference */
     for (; i < rpl_info->nb_refs; ++i) {
@@ -559,21 +610,26 @@ vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_
         uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
         uint8_t found = 0;
 
+        printed2 += sprintf(na_lst + printed2, "%d", ref_poc);
+
         uint64_t status = dpb->status;
         while (status) {
             uint8_t idx = next_used_slot(status);
             OVPicture *ref_pic = &dpb->pictures[idx];
             status &= ~(uint64_t)((uint64_t)1 << idx);
             if (ref_pic->poc == ref_poc && ref_pic->cvs_id == dpb->cvs_id) {
-                if (ref_pic->frame && ref_pic->frame->data[0]) {
+                //if (ref_pic->frame && ref_pic->frame->data[0]) {
                     found = 1;
                     ov_log(NULL, OVLOG_TRACE, "Mark non active reference %d for picture %d\n",
                            ref_poc, dpb->poc);
+
+                    printed2 += sprintf(na_lst + printed2, "[%d]", idx);
+
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
                     ovdpb_new_ref_pic(ref_pic, flag);
                     dst_rpl[i] = ref_pic;
                     break;
-                }
+                //}
             }
         }
 
@@ -586,11 +642,13 @@ vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_
             if (ref_pic == NULL){
                 return OVVC_ENOMEM;
             }
+            printed2 += sprintf(na_lst + printed2, "g[%d]", (int)(ref_pic - dpb->pictures));
 
             struct PictureSynchro* sync = &ref_pic->sync;
 
             atomic_init(sync->nb_slices, 1);
 
+            ovdpb_new_ref_pic(ref_pic, OV_ST_REF_PIC_FLAG);
             ovdpb_new_ref_pic(ref_pic, OV_ST_REF_PIC_FLAG);
 
             ovdpb_report_decoded_frame(ref_pic);
@@ -599,12 +657,17 @@ vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_
             ref_pic->cvs_id = dpb->cvs_id;
             ref_pic->frame->poc = ref_poc;
 
-            ref_pic->flags  = 0;
-
+            //ref_pic->flags  = 0;
 
             dst_rpl[i] = ref_pic;
         }
+        printed2 += sprintf(na_lst + printed2, ", ");
     }
+
+    if (printed) a_lst[printed - 2] = '\0';
+    if (printed2) na_lst[printed2 - 2] = '\0';
+
+    ov_log(NULL, OVLOG_ERROR, "POC: %d: active: (%s), non active: (%s)\n", dpb->poc, a_lst, na_lst);
 
     return 0;
 }
@@ -709,7 +772,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVPictureUnit **punit_p)
 
         /* If no output pic found increase cvs_id and retry */
         if (output_cvs_id != dpb->cvs_id) {
-            output_cvs_id = (output_cvs_id + 1) & 0xff;
+            output_cvs_id = (output_cvs_id + 1) & 0xFF;
         } else {
             break;
         }
@@ -813,9 +876,10 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
 
         pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
     }
+
     uint8_t weighted_pred = sldec->active_params.sps->sps_weighted_pred_flag || sldec->active_params.sps->sps_weighted_bipred_flag;
 
-    ret = compute_ref_poc(rpl0, &rpl_info, poc, weighted_pred);
+    ret = compute_ref_poc(rpl0, &rpl_info, poc, weighted_pred, sldec->active_params.sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4);
     if (ret < 0) {
         return ret;
     }
@@ -826,7 +890,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     sldec->inter_ctx.nb_active_refs0 = rpl0->num_ref_active_entries;
 
     if (slice_type == SLICE_B){
-        ret = compute_ref_poc(rpl1, &rpl_info, poc, weighted_pred);
+        ret = compute_ref_poc(rpl1, &rpl_info, poc, weighted_pred, sldec->active_params.sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4);
         if (ret < 0) {
             return ret;
         }
@@ -838,7 +902,8 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
         sldec->nb_refs1 = 0;
     }
 
-    if ((slice_type != SLICE_I && !sldec->inter_ctx.nb_active_refs0) || (!sldec->inter_ctx.nb_active_refs1 && slice_type == SLICE_B)) {
+    if ((slice_type != SLICE_I && !sldec->inter_ctx.nb_active_refs0) ||
+        (!sldec->inter_ctx.nb_active_refs1 && slice_type == SLICE_B)) {
          ret |= OVVC_EINDATA;
     }
 
@@ -921,6 +986,7 @@ update_rpl(const OVPPS *const pps,
         /* copy rpl content */
         *rpl0 = hrpl->rpl_h0.rpl_data;
         *rpl1 = hrpl->rpl_h1.rpl_data;
+
         if (sh->sh_num_ref_idx_active_override_flag) {
             uint8_t nb_rpl_ref0 = hrpl->rpl_h0.rpl_data.num_ref_entries;
 
@@ -963,8 +1029,48 @@ update_rpl(const OVPPS *const pps,
          */
         *rpl0 = hrpl->rpl_h0.rpl_data;
         *rpl1 = hrpl->rpl_h1.rpl_data;
+
         rpl0->num_ref_active_entries = 0;
         rpl1->num_ref_active_entries = 0;
+    }
+    if (rpl0->ltrp_in_header_flag) {
+        
+        int j;
+        for (j = 0; j <= ((rpl0->num_ref_entries - 1) & 0xF); j++) {
+            struct RefPic *rp = &rpl0->rp_list[j];
+            if (!rp->st_ref_pic_flag && !rp->inter_layer_ref_pic_flag) {
+                const struct LTInfo *lti = &hrpl->rpl_h0.lt_info[j];
+
+                rp->rpls_poc_lsb_lt = lti->poc_lsb_lt;
+
+#if 0
+                rp->delta_poc_msb_cycle_present_flag = lti->delta_poc_msb_cycle_present_flag;
+
+                if (lti->delta_poc_msb_cycle_present_flag) {
+                    rp->delta_poc_msb_cycle_lt = lti->delta_poc_msb_cycle_lt;
+                }
+#endif
+            }
+        }
+    }
+    if (rpl1->ltrp_in_header_flag) {
+        int j;
+
+        for (j = 0; j <= ((rpl1->num_ref_entries - 1) & 0xF); j++) {
+            struct RefPic *rp = &rpl1->rp_list[j];
+            if (!rp->st_ref_pic_flag && !rp->inter_layer_ref_pic_flag) {
+                const struct LTInfo *lti = &hrpl->rpl_h1.lt_info[j];
+
+                rp->rpls_poc_lsb_lt = lti->poc_lsb_lt;
+#if 0
+                rp->delta_poc_msb_cycle_present_flag = lti->delta_poc_msb_cycle_present_flag;
+
+                if (lti->delta_poc_msb_cycle_present_flag) {
+                    rp->delta_poc_msb_cycle_lt = lti->delta_poc_msb_cycle_lt;
+                }
+#endif
+            }
+        }
     }
     return 0;
 }
@@ -1004,7 +1110,7 @@ update_pic_params(OVPicture *pic, const OVPS *const ps)
     pic->frame->frame_info.chroma_ver_col_flag = ps->sps->sps_chroma_vertical_collocated_flag;
 }
 
-void
+static void
 init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu, const struct OVPPS *pps)
 {
 
@@ -1016,10 +1122,10 @@ init_nb_slices(OVPicture *pic, const struct OVPictureUnit *const pu, const struc
     }
 
     if (nb_slices != pps->part_info.nb_slices) {
-        ov_log(NULL, OVLOG_ERROR, "Mismatch in PU %d slice number : %d, nb slices : %d using : %d\n", pic->poc, nb_slices, pps->pps_num_slices_in_pic_minus1 + 1, pps->part_info.nb_slices);
+        ov_log(NULL, OVLOG_ERROR, "Mismatch in PU %d slice number counted: %d, nb slices : %d using : %d\n", pic->poc, nb_slices, pps->pps_num_slices_in_pic_minus1 + 1, pps->part_info.nb_slices);
     }
 
-    nb_slices = pps->part_info.nb_slices;
+    //nb_slices = pps->part_info.nb_slices;
 
     sync->nb_slices = &sync->internal.nb_slices;
 
@@ -1255,11 +1361,14 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
     struct PictureSynchro* sync = &pic->sync;
 
     uint16_t nb_slices = atomic_fetch_add_explicit(sync->nb_slices, -1, memory_order_acq_rel);
-    ov_log(NULL, OVLOG_TRACE, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
+
+    ov_log(NULL, OVLOG_TRACE, "End of slice reported in picture: %d, nb slices : %d\n",
+           pic->poc, nb_slices);
 
     if (!(nb_slices - 1)) {
-         ov_log(NULL, OVLOG_TRACE, "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
-        //printf( "END pic : %d, nb slices : %d\n", pic->poc, nb_slices);
+
+        ov_log(NULL, OVLOG_TRACE, "End of picture : %d, nb slices : %d\n", pic->poc, nb_slices);
+
         ovdpb_unref_pic(pic, OV_IN_DECODING_PIC_FLAG);
         pic->flags &= OV_OUTPUT_PIC_FLAG;
 
@@ -1275,8 +1384,7 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
         pthread_cond_broadcast(sync->ref_cnd);
         pthread_mutex_unlock(sync->ref_mtx);
     } else {
-         //ov_log(NULL, OVLOG_WARNING, "END2 pic : %d, nb slices : %d\n", pic->poc, nb_slices);
-         ovdpb_unref_pic(pic, 0);
+        ovdpb_unref_pic(pic, 0);
     }
 }
 

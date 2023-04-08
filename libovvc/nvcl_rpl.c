@@ -233,11 +233,11 @@ ref_pic_list_header(OVNVCLReader *const rdr, const OVSPS *const sps,
     uint8_t use_weighted_pred = sps->sps_weighted_pred_flag || sps->sps_weighted_bipred_flag;
 
     rpl->num_ref_entries = nvcl_read_u_expgolomb(rdr);
+    rpl->ltrp_in_header_flag = sps->sps_long_term_ref_pics_flag;
 
     if (rpl->num_ref_entries > 0) {
         /* FIXME use swithc and status based on sps flags? */
         if (sps->sps_long_term_ref_pics_flag) {
-            rpl->ltrp_in_header_flag = 1;
             if (sps->sps_inter_layer_prediction_enabled_flag) {
                 ref_pic_list_ilrp_ltrp(rdr, rpl, sps);
             } else {
@@ -278,6 +278,7 @@ header_read_long_term_info(OVNVCLReader *const rdr, const struct OVRPL *const rp
                 lti->delta_poc_msb_cycle_present_flag = nvcl_read_flag(rdr);
 
                 if (lti->delta_poc_msb_cycle_present_flag) {
+                    printf("got delta\n");
                     lti->delta_poc_msb_cycle_lt = nvcl_read_u_expgolomb(rdr);
                 }
             }
@@ -294,6 +295,7 @@ header_read_long_term_info(OVNVCLReader *const rdr, const struct OVRPL *const rp
                 lti->delta_poc_msb_cycle_present_flag = nvcl_read_flag(rdr);
 
                 if (lti->delta_poc_msb_cycle_present_flag) {
+                    printf("got delta\n");
                     lti->delta_poc_msb_cycle_lt = nvcl_read_u_expgolomb(rdr);
                 }
             }
@@ -326,6 +328,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
 
         if (sps->sps_long_term_ref_pics_flag) {
             /* Call long term post function */
+            if (rpl0->num_ref_entries)
             header_read_long_term_info(rdr, rpl0, rpl_h0, sps);
         }
         /* FIXME update long term informations */
@@ -336,6 +339,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
         ref_pic_list_header(rdr, sps, rpl0);
         if (sps->sps_long_term_ref_pics_flag) {
             /* Call long term post function with lt_header*/
+            if (rpl0->num_ref_entries)
             header_read_long_term_info(rdr, rpl0, rpl_h0, sps);
         }
         //memcpy(&rpl_h0->rpl_data, rpl0, sizeof(*rpl0));
@@ -359,6 +363,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
 
         if (sps->sps_long_term_ref_pics_flag) {
             /* Call long term post function */
+            if (rpl1->num_ref_entries)
             header_read_long_term_info(rdr, rpl1, rpl_h1, sps);
         }
         /* FIXME update long term informations */
@@ -370,6 +375,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
 
         if (sps->sps_long_term_ref_pics_flag) {
             /* Call long term post function with lt_header*/
+            if (rpl1->num_ref_entries)
             header_read_long_term_info(rdr, rpl1, rpl_h1, sps);
         }
         memcpy(&rpl_h1->rpl_data, rpl1, sizeof(*rpl1));
@@ -382,6 +388,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
 
         if (sps->sps_long_term_ref_pics_flag) {
             /* Call long term post function with lt_header*/
+            if (rpl1->num_ref_entries)
             header_read_long_term_info(rdr, rpl1, rpl_h1, sps);
         }
     }
@@ -396,6 +403,7 @@ nvcl_read_sps_ref_pic_list(OVNVCLReader *const rdr, const OVSPS *const sps,
 {
     uint8_t use_weighted_pred = sps->sps_weighted_pred_flag || sps->sps_weighted_bipred_flag;
     rpl->num_ref_entries = nvcl_read_u_expgolomb(rdr);
+    rpl->ltrp_in_header_flag = sps->sps_long_term_ref_pics_flag;
 
     if (rpl->num_ref_entries > 0) {
         /* FIXME use swithc and status based on sps flags? */
