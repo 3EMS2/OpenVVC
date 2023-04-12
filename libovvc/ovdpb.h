@@ -178,6 +178,7 @@ struct DPB
    struct DPBInternal internal;
    uint64_t nb_units_in_ticks;
    uint64_t pts;
+   uint8_t no_output_before_recovery;
 };
 
 int ovdpb_init(OVDPB **dpb_p, const OVPS *ps);

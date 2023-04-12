@@ -179,6 +179,7 @@ dpb_init_params(OVDPB *dpb, OVDPBParams const *prm)
 
     dpb->nb_units_in_ticks = nb_units_in_ticks;
     dpb->pts = 0;
+    dpb->no_output_before_recovery = 2;
     return 0;
 }
 
@@ -1146,6 +1147,13 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
 
     idr_flag |= nalu_type == OVNALU_IDR_W_RADL;
     idr_flag |= nalu_type == OVNALU_IDR_N_LP;
+    uint8_t mnalu_type = 0;
+    for (int i = 0; i < ovdec->pu->nb_nalus; ++i) {
+        if (ovdec->pu->nalus[i]->type < OVNALU_OPI) {
+            mnalu_type |= nalu_type != ovdec->pu->nalus[i]->type;
+        }
+    }
+    idr_flag &= !mnalu_type;
 
     uint8_t once = !dpb->active_pic;
 
@@ -1169,14 +1177,24 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
                              ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
                              last_poc);
         }
+
+        if ((idr_flag || nalu_type == OVNALU_CRA) && dpb->no_output_before_recovery == 2) {
+            dpb->no_output_before_recovery = 1;
+        } else if ((idr_flag || nalu_type == OVNALU_CRA) && dpb->no_output_before_recovery == 1) {
+            dpb->no_output_before_recovery = 0;
+        }
     }
 
     dpb->poc = poc;
 
+    uint8_t skip = 0;
+    if (nalu_type == OVNALU_RASL) {
+        skip = dpb->no_output_before_recovery;
+    }
     /* Find an available place in DPB and allocate/retrieve available memory
      * for the current picture data from the Frame Pool
      */
-    ret = ovdpb_init_current_pic(dpb, pic_p, poc, ps->ph->ph_pic_output_flag);
+    ret = ovdpb_init_current_pic(dpb, pic_p, poc, !skip && ps->ph->ph_pic_output_flag);
     if (ret < 0) {
         goto fail;
     }
