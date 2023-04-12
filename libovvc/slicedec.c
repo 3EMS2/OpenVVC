@@ -1419,8 +1419,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
         // search nearest forward POC in List 0
         for (ref = 0; ref < nb_active_ref0; ref++) {
             int ref_poc = inter_ctx->inter_params.rpl0[ref]->poc;
-            int ref_type = ST_REF;
-            uint8_t is_lterm = (ref_type == LT_REF);
+            uint8_t is_lterm = inter_ctx->inter_params.dist_ref_0[ref] == 0;
             if (ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx0 == -1)  && !is_lterm) {
                 forw_poc = ref_poc;
                 ref_idx0 = ref;
@@ -1430,8 +1429,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
         // search nearest backward POC in List 1
         for (ref = 0; ref < nb_active_ref1; ref++) {
             int ref_poc = inter_ctx->inter_params.rpl1[ref]->poc;
-            int ref_type = ST_REF;
-            uint8_t is_lterm = (ref_type == LT_REF);
+            uint8_t is_lterm = inter_ctx->inter_params.dist_ref_1[ref] == 0;
             if (ref_poc > cur_poc && (ref_poc < back_poc || ref_idx1 == -1)  && !is_lterm) {
                 back_poc = ref_poc;
                 ref_idx1 = ref;
@@ -1447,8 +1445,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
             // search nearest backward POC in List 0
             for (ref = 0; ref < nb_active_ref0; ref++) {
                 int ref_poc = inter_ctx->inter_params.rpl0[ref]->poc;
-                int ref_type = ST_REF;
-                uint8_t is_lterm = (ref_type == LT_REF);
+                uint8_t is_lterm = inter_ctx->inter_params.dist_ref_0[ref] == 0;
                 if (ref_poc > cur_poc && (ref_poc < back_poc || ref_idx0 == -1)  && !is_lterm) {
                     back_poc = ref_poc;
                     ref_idx0 = ref;
@@ -1458,8 +1455,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
             // search nearest forward POC in List 1
             for (ref = 0; ref < nb_active_ref1; ref++) {
                 int ref_poc = inter_ctx->inter_params.rpl1[ref]->poc;
-                int ref_type = ST_REF;
-                uint8_t is_lterm = (ref_type == LT_REF);
+                uint8_t is_lterm = inter_ctx->inter_params.dist_ref_1[ref] == 0;
                 if (ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx1 == -1)  && !is_lterm) {
                     forw_poc = ref_poc;
                     ref_idx1 = ref;
