@@ -1942,7 +1942,7 @@ static inline uint8_t
 check_bdof_ref(struct InterDRVCtx *const inter_ctx, uint8_t ref_idx0, uint8_t ref_idx1)
 {
     uint8_t use_weights = inter_ctx->inter_params.wp_info0[ref_idx0].flag || inter_ctx->inter_params.wp_info1[ref_idx1].flag;
-    return !use_weights && inter_ctx->inter_params.dist_ref_0[ref_idx0] == -inter_ctx->inter_params.dist_ref_1[ref_idx1];
+    return !use_weights && inter_ctx->inter_params.dist_ref_0[ref_idx0] == -inter_ctx->inter_params.dist_ref_1[ref_idx1] && inter_ctx->inter_params.dist_ref_0[ref_idx0] != 0;
 }
 
 static inline uint8_t
