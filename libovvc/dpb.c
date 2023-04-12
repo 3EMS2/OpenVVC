@@ -239,6 +239,10 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
 
 	ov_log(NULL, OVLOG_ERROR, "DPB R state 0x%.64lb, %ld, %ld \n", dpb->status, cvs_id_pic, cvs_id_dpb);
     }
+        ptrdiff_t idx = pic - dpb->pictures;
+        uint64_t cvs_id_pic = pic->cvs_id;
+        uint64_t cvs_id_dpb = dpb->cvs_id;
+    ov_log(NULL, OVLOG_WARNING, "DPB R state 0x%.64lb, %ld, %ld %d \n", dpb->status, cvs_id_pic, cvs_id_dpb, ref_count);
     pthread_mutex_unlock(&pic->pic_mtx);
 }
 
@@ -354,7 +358,23 @@ ovdpb_flush_dpb(OVDPB *dpb)
         ovdpb_release_pic(dpb, &dpb->pictures[i]);
     }
     dpb->cvs_id = (dpb->cvs_id + 1) & 0xFF;
+    dpb->no_output_before_recovery = 2;
+}
 
+static void
+log_pic_flags(const OVDPB *dpb)
+{
+    uint64_t status = dpb->status;
+    const OVPicture *pic;
+
+    while (status) {
+        uint8_t idx = next_used_slot(status);
+        pic = &dpb->pictures[idx];
+        ov_log(NULL, OVLOG_WARNING,
+               "Picture %d ref_count: %d, flags: %d.\n",pic->poc, atomic_load(&pic->ref_count), pic->flags);
+
+        status &= ~(uint64_t)((uint64_t)1 << idx);
+    }
 }
 
 /*FIXME rename to request new picture */
@@ -387,6 +407,7 @@ alloc_frame(OVDPB *dpb, int poc)
     }
 
     ov_log(NULL, OVLOG_ERROR, "DPB full 0x%lb\n", dpb->status);
+    log_pic_flags(dpb);
 
     return NULL;
 }
@@ -430,11 +451,9 @@ end:
     if (pic != dpb->active_pic) {
         if (ph_pic_output_flag) {
             ovdpb_new_ref_pic(pic, OV_OUTPUT_PIC_FLAG);
-            ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
-        } else {
-            ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
         }
     }
+    ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
     dpb->active_pic = pic;
 
     return 0;
