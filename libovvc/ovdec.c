@@ -74,6 +74,9 @@ static const struct OVOption ovdecopt[] = {
    {"brightness", "Define the target peak luminance of SLHDR library", .type=OVOPT_INT, .min=100, .max=10000,  .offset= offsetof(struct OVDec, ppctx.brightness)},
    {"upscale", "Define if the decoder is responsible of upscaling output pictures when RPR is present", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ppctx.upscale_flag)},
    {"nopostproc", "Disable picture post processing", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ppctx.pp_disable)},
+   {"nodf", "Forcefully disable Deblocking Filter", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ovrd_opt.disable_df)},
+   {"noalf", "Forcefully disable ALF Filter", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ovrd_opt.disable_alf)},
+   {"nosao", "Forcefully disable SAO Filter", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ovrd_opt.disable_sao)},
    { NULL },
 };
 
@@ -266,6 +269,7 @@ init_vcl_decoder(OVDec *const ovdec, OVSliceDec **sldec_p, const OVNVCLCtx *cons
     OVSliceDec *sldec = ovdec_select_subdec(ovdec);
 
     *sldec_p = sldec;
+    sldec->ovrd_opt = ovdec->ovrd_opt;
     //Temporary: copy active parameters
     slicedec_ref_params(sldec, &ovdec->active_params);
 

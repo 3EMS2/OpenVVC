@@ -618,6 +618,7 @@ struct ToolsInfo
 
 
     uint8_t dbf_disable;
+    struct OverrideOptions ovrd_opt;
 };
 
 struct OVCTUDec

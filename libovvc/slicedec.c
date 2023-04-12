@@ -1781,7 +1781,7 @@ init_ladf(struct LADFParams *ladf, const OVSPS *sps)
 
 /* FIXME clean this init */
 static int
-slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
+slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms, const struct OverrideOptions *const ovrd_opt)
 {
     const OVSPS *const sps = prms->sps;
     const OVPPS *const pps = prms->pps;
@@ -1852,7 +1852,8 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 #if 1
     tools->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
                           ph->ph_deblocking_filter_disabled_flag |
-                          pps->pps_deblocking_filter_disabled_flag;
+                          pps->pps_deblocking_filter_disabled_flag | ovrd_opt->disable_df;
+    tools->ovrd_opt = *ovrd_opt;
 #else
                           ctudec->dbf_disable = 1;
 #endif
@@ -1965,7 +1966,7 @@ slicedec_update_entry_decoder(OVSliceDec *sldec, OVCTUDec *ctudec)
 {
     const OVPS *const prms = &sldec->active_params;
 
-    slicedec_init_slice_tools(ctudec, prms);
+    slicedec_init_slice_tools(ctudec, prms, &sldec->ovrd_opt);
 
     copy_init_stuff(sldec, ctudec, prms);
 

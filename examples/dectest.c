@@ -90,6 +90,9 @@ main(int argc, char** argv)
     int nb_entry_th = 0;
     int upscale_flag = 0;
     int pp_disable = 0;
+    int disable_df = 0;
+    int disable_sao = 0;
+    int disable_alf = 0;
     int brightness = 1000;
     static const char *const default_info_fmt = "POC : %P %T µs  %R bytes %V\n";
     struct PicInfoFormat pinfo_fmt =
@@ -117,6 +120,9 @@ main(int argc, char** argv)
             {"upscale",   required_argument, 0, 'u'},
             {"info",      optional_argument, 0, 'i'},
             {"nopostproc", no_argument,       0, 'p'},
+            {"nodf", no_argument,       0, 'f'},
+            {"nosao", no_argument,       0, 's'},
+            {"noalf", no_argument,       0, 'a'},
             {"brightness", required_argument,       0, 'b'},
             {NULL},
         };
@@ -174,6 +180,18 @@ main(int argc, char** argv)
                 pp_disable = 1;
                 break;
 
+            case 'f':
+                disable_df = 1;
+                break;
+
+            case 'a':
+                disable_alf = 1;
+                break;
+
+            case 's':
+                disable_sao = 1;
+                break;
+
             case '?':
                 options_flag += 0x10;
                 break;
@@ -221,6 +239,18 @@ main(int argc, char** argv)
     if (pp_disable) {
         int val = 1;
         ovdec_set_opt(ovvc_hdl.dec, "nopostproc", &val);
+    }
+    if (disable_df) {
+        int val = 1;
+        ovdec_set_opt(ovvc_hdl.dec, "nodf", &val);
+    }
+    if (disable_sao) {
+        int val = 1;
+        ovdec_set_opt(ovvc_hdl.dec, "nosao", &val);
+    }
+    if (disable_alf) {
+        int val = 1;
+        ovdec_set_opt(ovvc_hdl.dec, "noalf", &val);
     }
     ovdec_set_opt(ovvc_hdl.dec, "brightness", &brightness);
 

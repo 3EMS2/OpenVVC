@@ -147,6 +147,8 @@ typedef struct OVSliceDec
 
     OVPS active_params;
 
+    struct OverrideOptions ovrd_opt;
+
     int32_t poc;
 
     uint8_t slice_type;

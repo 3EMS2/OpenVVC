@@ -294,9 +294,12 @@ struct OVDec
     struct MainThread main_thread;
     /* Informations on decoder behaviour transmitted by user
      */
-    struct {
-        int opt1;
-    }options;
+    struct OverrideOptions {
+        uint8_t disable_df;
+        uint8_t disable_alf;
+        uint8_t disable_sao;
+        uint8_t disable_lmcs;
+    }ovrd_opt;
 
 };
 
