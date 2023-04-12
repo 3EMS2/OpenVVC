@@ -468,18 +468,23 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
            rinfo->poc = ref_poc;
 
            last_poc = ref_poc;
+           delta_msb = 0;
         break;
         case LT_REF:
            /* FIXME
             *    - Handle when read in header (ltrp_in_header_flag)
             *    - Compute msb part of POC when needed
             */
-           ref_poc = rp->rpls_poc_lsb_lt;
-           //delta_msb += delta_poc_msb_cycle_lt[i];
-           ref_poc += poc - (int32_t)((uint32_t)delta_msb << log2_max_poc_lsb) - (poc & (max_poc_lsb - 1));
+           delta_msb += rp->delta_poc_msb_cycle_lt;
+           if (rp->delta_poc_msb_cycle_present_flag) {
+               ref_poc = poc - (int32_t)((uint32_t)delta_msb << log2_max_poc_lsb) - (poc & (max_poc_lsb - 1)) + rp->rpls_poc_lsb_lt;
+           } else {
+               ref_poc = rp->rpls_poc_lsb_lt;
+           }
 
            rinfo->poc = ref_poc;
            ov_log(NULL, OVLOG_WARNING, "Partially supported Long Term Ref %d\n", ref_poc);
+           //last_poc = poc;
 
         break;
         case ILRP_REF:
@@ -1044,7 +1049,7 @@ update_rpl(const OVPPS *const pps,
 
                 rp->rpls_poc_lsb_lt = lti->poc_lsb_lt;
 
-#if 0
+#if 1
                 rp->delta_poc_msb_cycle_present_flag = lti->delta_poc_msb_cycle_present_flag;
 
                 if (lti->delta_poc_msb_cycle_present_flag) {
@@ -1063,7 +1068,7 @@ update_rpl(const OVPPS *const pps,
                 const struct LTInfo *lti = &hrpl->rpl_h1.lt_info[j];
 
                 rp->rpls_poc_lsb_lt = lti->poc_lsb_lt;
-#if 0
+#if 1
                 rp->delta_poc_msb_cycle_present_flag = lti->delta_poc_msb_cycle_present_flag;
 
                 if (lti->delta_poc_msb_cycle_present_flag) {

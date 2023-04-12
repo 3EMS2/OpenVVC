@@ -80,6 +80,8 @@ struct RefPic
 
     /* Long Term References Pictures */
     uint16_t rpls_poc_lsb_lt;/*fixme*/
+    uint8_t delta_poc_msb_cycle_present_flag;/*fixme*/
+    uint16_t delta_poc_msb_cycle_lt;/*fixme*/
 
     /* Inter Layer References Pictures */
     uint8_t ilrp_idx;
