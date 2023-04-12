@@ -603,9 +603,12 @@ tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
         mv       = mvs[c0_pos];
         dist_col = mv.z;
 
-        goto found;
+        if (!((dist_ref == 0) ^ (mv.z == 0)))
+            goto found;
 
-    } else if (cand_c1 | cand_c11) {
+    }
+
+    if (cand_c1 | cand_c11) {
         int16_t c1_pos = TMVP_POS_IN_BUF2(pos.c1_x, pos.c1_y);
 
         const struct TMVPMV *mvs    = cand_c11 ? tmvp->ctb_mv1
@@ -614,7 +617,8 @@ tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
         mv       = mvs[c1_pos];
         dist_col = mv.z;
 
-        goto found;
+        if (!((dist_ref == 0) ^ (mv.z == 0)))
+            goto found;
     }
 
     return 0;
@@ -623,6 +627,7 @@ found :
     scale = derive_tmvp_scale(dist_ref, dist_col);
 
     mv.mv = tmvp_rescale(mv.mv, scale);
+    if ((dist_ref == 0) ^ (mv.z == 0)) return 0;
 
     dst->mv = mv.mv;
     dst->ref_idx = ref_idx;
