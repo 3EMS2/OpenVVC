@@ -500,6 +500,7 @@ derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx
                 if (!((dist_ref == 0) ^ (col_mv.z == 0)))
                     goto found;
             }
+            pos_in_buff = TMVP_POS_IN_BUF2(c1_x, c1_y);
 
             if (status & 0x4) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
@@ -525,6 +526,7 @@ derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx
                 if (!((dist_ref == 0) ^ (col_mv.z == 0)))
                     goto found;
             }
+            pos_in_buff = TMVP_POS_IN_BUF2(c1_x, c1_y);
 
             if (status & 0x8) {
                 col_mv = tmvp->ctb_mv1[pos_in_buff];
@@ -727,6 +729,7 @@ derive_tmvp_merge_cand(const struct InterDRVCtx *const inter_ctx,
                 goto found;
         }
 
+        pos_in_buff = TMVP_POS_IN_BUF2(c1_x, c1_y);
         if (status & 0x4) {
             col_mv = tmvp->ctb_mv0[pos_in_buff];
             if (!((dist_ref0 == 0) ^ (col_mv.z == 0)))
