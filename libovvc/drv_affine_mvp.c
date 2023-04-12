@@ -676,6 +676,8 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             dst[1].mv = tmvp_rescale(mv.mv, scale);
+            if (!((dist_ref == 0) ^ (mv.z == 0)))
+                goto found;
 
         } else if (cand_c0 && cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
@@ -695,8 +697,12 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             dst[1].mv = tmvp_rescale(mv.mv, scale);
+            if (!((dist_ref == 0) ^ (mv.z == 0)))
+                goto found;
 
-        } else if (cand_c0) {
+        }
+
+        if (cand_c0) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv0;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
@@ -713,8 +719,12 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             dst[1].mv = tmvp_rescale(mv.mv, scale);
+            if (!((dist_ref == 0) ^ (mv.z == 0)))
+                goto found;
 
-        } else if (cand_c01) {
+        } 
+
+        if (cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
@@ -732,8 +742,11 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             dst[1].mv = tmvp_rescale(mv.mv, scale);
+            if (!((dist_ref == 0) ^ (mv.z == 0)))
+                goto found;
         }
-
+    return 0;
+found:
         return dir;
     }
 
