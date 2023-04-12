@@ -795,9 +795,12 @@ merge_tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
             dst[1].mv = tmvp_rescale(mv.mv, scale);
 
-            //mv.ref_idx = ref_idx;
+            if (!((dist_col == 0) ^ (dist_ref == 0)))
+                return dir;
 
-        } else if (cand_c01) {
+        }
+
+        if (cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
@@ -818,10 +821,10 @@ merge_tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
             dst[1].mv = tmvp_rescale(mv.mv, scale);
 
-            //mv.ref_idx = ref_idx;
+            if (!((dist_col == 0) ^ (dist_ref == 0)))
+                return dir;
         }
 
-        return dir;
     }
 
     return 0;
