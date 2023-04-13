@@ -676,8 +676,8 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         ps->sh = (OVSH *)nvcl_ctx->sh->data;
     }
 
-    for(int i = 0; i < sh->sh_num_alf_aps_ids_luma; i++){
-        uint8_t aps_id = sh->sh_alf_aps_id_luma[i];
+    for(int i = 0; i < (sh->sh_num_alf_aps_ids_luma | ph->ph_num_alf_aps_ids_luma); i++){
+        uint8_t aps_id = sh->sh_alf_aps_id_luma[i] | ph->ph_alf_aps_id_luma[i];
         OVAPS * aps_alf = retrieve_aps_alf(nvcl_ctx, aps_id);
         if (ps->aps_alf[i] != aps_alf) {
             hlsdata_unref(&ps->aps_alf_ref[i]);
@@ -687,31 +687,31 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         }
     }
 
-    for (int i = sh->sh_num_alf_aps_ids_luma; i < 8; i++) {
+    for (int i = sh->sh_num_alf_aps_ids_luma | ph->ph_num_alf_aps_ids_luma; i < 8; i++) {
         hlsdata_unref(&ps->aps_alf_ref[i]);
         ps->aps_alf[i] = NULL;
     }
 
-    OVAPS * aps_alf_c = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_aps_id_chroma);
+    OVAPS * aps_alf_c = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_aps_id_chroma | ph->ph_alf_aps_id_chroma);
     if (ps->aps_alf_c != aps_alf_c) {
         hlsdata_unref(&ps->aps_alf_c_ref);
         if (aps_alf_c)
-            hlsdata_newref(&ps->aps_alf_c_ref, nvcl_ctx->aps_list[0][sh->sh_alf_aps_id_chroma]);
+            hlsdata_newref(&ps->aps_alf_c_ref, nvcl_ctx->aps_list[0][sh->sh_alf_aps_id_chroma | ph->ph_alf_aps_id_chroma]);
         ps->aps_alf_c = aps_alf_c;
     }
 
-    OVAPS * aps_cc_alf_cb = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cb_aps_id);
+    OVAPS * aps_cc_alf_cb = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cb_aps_id | ph->ph_alf_cc_cb_aps_id);
     if (ps->aps_cc_alf_cb != aps_cc_alf_cb) {
         hlsdata_unref(&ps->aps_cc_alf_cb_ref);
         if (aps_cc_alf_cb)
-            hlsdata_newref(&ps->aps_cc_alf_cb_ref, nvcl_ctx->aps_list[0][sh->sh_alf_cc_cb_aps_id]);
+            hlsdata_newref(&ps->aps_cc_alf_cb_ref, nvcl_ctx->aps_list[0][sh->sh_alf_cc_cb_aps_id | ph->ph_alf_cc_cb_aps_id]);
         ps->aps_cc_alf_cb = aps_cc_alf_cb;
     }
-    OVAPS * aps_cc_alf_cr = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cr_aps_id);
+    OVAPS * aps_cc_alf_cr = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cr_aps_id | ph->ph_alf_cc_cr_aps_id);
     if (ps->aps_cc_alf_cr != aps_cc_alf_cr) {
         hlsdata_unref(&ps->aps_cc_alf_cr_ref);
         if (aps_cc_alf_cr)
-            hlsdata_newref(&ps->aps_cc_alf_cr_ref, nvcl_ctx->aps_list[0][sh->sh_alf_cc_cr_aps_id]);
+            hlsdata_newref(&ps->aps_cc_alf_cr_ref, nvcl_ctx->aps_list[0][sh->sh_alf_cc_cr_aps_id | ph->ph_alf_cc_cr_aps_id]);
         ps->aps_cc_alf_cr = aps_cc_alf_cr;
     }
 
