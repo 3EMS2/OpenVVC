@@ -1526,11 +1526,11 @@ mv_threshold_check(struct MV a, struct MV b)
 #define PB_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
 
 static uint64_t
-check_dbf_enabled_p(const int16_t *dist_ref_p, const int16_t *dist_ref_q, OVMV mv_p0, OVMV mv_q0)
+check_dbf_enabled_p(struct OVPicture *const *dist_ref_p, struct OVPicture *const *dist_ref_q, OVMV mv_p0, OVMV mv_q0)
 {
-    int16_t ref0_p = dist_ref_p[mv_p0.ref_idx];
+    int32_t ref0_p = dist_ref_p[mv_p0.ref_idx]->poc;
 
-    int16_t ref0_q = dist_ref_q[mv_q0.ref_idx];
+    int32_t ref0_q = dist_ref_q[mv_q0.ref_idx]->poc;
     uint8_t bs = 1;
 
     if (ref0_p == ref0_q) {
@@ -1544,14 +1544,14 @@ static uint64_t
 check_dbf_enabled(const struct InterDRVCtx *const inter_ctx,
                   OVMV mv_p0, OVMV mv_p1, OVMV mv_q0, OVMV mv_q1)
 {
-    const int16_t *dist_0 = inter_ctx->inter_params.dist_ref_0;
-    const int16_t *dist_1 = inter_ctx->inter_params.dist_ref_1;
+    struct OVPicture *const *dist_0 = inter_ctx->inter_params.rpl0;
+    struct OVPicture *const *dist_1 = inter_ctx->inter_params.rpl1;
 
-    int16_t ref0_p = dist_0[mv_p0.ref_idx];
-    int16_t ref1_p = dist_1[mv_p1.ref_idx];
+    int32_t ref0_p = dist_0[mv_p0.ref_idx]->poc;
+    int32_t ref1_p = dist_1[mv_p1.ref_idx]->poc;
 
-    int16_t ref0_q = dist_0[mv_q0.ref_idx];
-    int16_t ref1_q = dist_1[mv_q1.ref_idx];
+    int32_t ref0_q = dist_0[mv_q0.ref_idx]->poc;
+    int32_t ref1_q = dist_1[mv_q1.ref_idx]->poc;
 
     uint8_t paired_ref_pq  = (ref0_p == ref0_q) && (ref1_p == ref1_q);
     uint8_t swapped_ref_pq = (ref0_p == ref1_q) && (ref1_p == ref0_q);
@@ -1613,8 +1613,8 @@ dbf_mv_set_hedges(const struct InterDRVCtx *const inter_ctx,
     uint64_t chk_p0 = mv_q_p0 & (mv_p_p0 | mv_p_p1);
     uint64_t chk_p1 = mv_q_p1 & (mv_p_p0 | mv_p_p1);
 
-    const int16_t *dist_ref0 = inter_ctx->inter_params.dist_ref_0;
-    const int16_t *dist_ref1 = inter_ctx->inter_params.dist_ref_1;
+    struct OVPicture  *const *dist_ref0 = inter_ctx->inter_params.rpl0;
+    struct OVPicture  *const *dist_ref1 = inter_ctx->inter_params.rpl1;
 
     chk_b  &= (~(bs1_map_h | (ibc_p_msk & ibc_q_msk))) & unit_msk_h;
     chk_p0 &= (~(bs1_map_h | (ibc_p_msk & ibc_q_msk))) & unit_msk_h;
@@ -1673,8 +1673,8 @@ dbf_mv_set_hedges(const struct InterDRVCtx *const inter_ctx,
             pos_shift += nb_skipped_blk;
             uint8_t is_l0_p = mv_p_p0 & 0x1;
             uint8_t is_l0_q =  chk_p0 & 0x1;
-            const int16_t *dist_p = is_l0_p ? dist_ref0 : dist_ref1;
-            const int16_t *dist_q = is_l0_q ? dist_ref0 : dist_ref1;
+            struct OVPicture *const *dist_p = is_l0_p ? dist_ref0 : dist_ref1;
+            struct OVPicture *const *dist_q = is_l0_q ? dist_ref0 : dist_ref1;
             OVMV mv_p = is_l0_p ? *mv0_p : *mv1_p;
             OVMV mv_q = is_l0_q ? *mv0_q : *mv1_q;
 
@@ -1734,8 +1734,8 @@ dbf_mv_set_vedges(const struct InterDRVCtx *const inter_ctx,
     uint64_t chk_p0 = mv_q_p0 & (mv_p_p0 | mv_p_p1);
     uint64_t chk_p1 = mv_q_p1 & (mv_p_p0 | mv_p_p1);
 
-    const int16_t *dist_ref0 = inter_ctx->inter_params.dist_ref_0;
-    const int16_t *dist_ref1 = inter_ctx->inter_params.dist_ref_1;
+    struct OVPicture  *const *dist_ref0 = inter_ctx->inter_params.rpl0;
+    struct OVPicture  *const *dist_ref1 = inter_ctx->inter_params.rpl1;
 
     chk_b  &= (~(bs1_map_v | (ibc_p_msk & ibc_q_msk))) & unit_msk_v;
 
@@ -1795,8 +1795,8 @@ dbf_mv_set_vedges(const struct InterDRVCtx *const inter_ctx,
             pos_shift += nb_skipped_blk;
             uint8_t is_l0_p = mv_p_p0 & 0x1;
             uint8_t is_l0_q =  chk_p0 & 0x1;
-            const int16_t *dist_p = is_l0_p ? dist_ref0 : dist_ref1;
-            const int16_t *dist_q = is_l0_q ? dist_ref0 : dist_ref1;
+            struct OVPicture *const *dist_p = is_l0_p ? dist_ref0 : dist_ref1;
+            struct OVPicture *const *dist_q = is_l0_q ? dist_ref0 : dist_ref1;
             OVMV mv_p = is_l0_p ? *mv0_p : *mv1_p;
             OVMV mv_q = is_l0_q ? *mv0_q : *mv1_q;
 
