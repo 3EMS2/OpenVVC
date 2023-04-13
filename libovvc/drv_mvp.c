@@ -493,9 +493,7 @@ derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
                 if (!((dist_ref == 0) ^ (col_mv.z == 0)))
                     goto found;
-            }
-
-            if (status & 0x2) {
+            } else if (status & 0x2) {
                 col_mv = tmvp->ctb_mv1[pos_in_buff];
                 if (!((dist_ref == 0) ^ (col_mv.z == 0)))
                     goto found;
@@ -506,9 +504,7 @@ derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
                 if (!((dist_ref == 0) ^ (col_mv.z == 0)))
                     goto found;
-            }
-
-            if (status & 0x8) {
+            } else if (status & 0x8) {
                 col_mv = tmvp->ctb_mv1[pos_in_buff];
                 if (!((dist_ref == 0) ^ (col_mv.z == 0)))
                     goto found;
@@ -519,9 +515,7 @@ derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx
                 col_mv = tmvp->ctb_mv1[pos_in_buff];
                 if (!((dist_ref == 0) ^ (col_mv.z == 0)))
                     goto found;
-            }
-
-            if (status & 0x1) {
+            } else if (status & 0x1) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
                 if (!((dist_ref == 0) ^ (col_mv.z == 0)))
                     goto found;
@@ -532,9 +526,7 @@ derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx
                 col_mv = tmvp->ctb_mv1[pos_in_buff];
                 if (!((dist_ref == 0) ^ (col_mv.z == 0)))
                     goto found;
-            }
-
-            if (status & 0x4) {
+            } else if (status & 0x4) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
                 if (!((dist_ref == 0) ^ (col_mv.z == 0)))
                     goto found;
@@ -991,6 +983,7 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
         struct MV tmp_opp;
         struct TMVPMV col_mv_opp;
         struct TMVPMV col_mv;
+        uint8_t dir = 3;
 
         if (inter_ctx->inter_params.low_delay) {
             int pos_in_buff =  TMVP_POS_IN_BUF2(c0_x, c0_y);
@@ -1002,7 +995,7 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
                     col_mv_opp  = mv_opp[pos_in_buff];
                     if (!((dist_ref_opp == 0) ^ (col_mv.z == 0))) {
                         goto found;
-                    }
+                    } else dir = 1;
                 }
 
                 col_mv_opp  = col_mv;
@@ -1029,7 +1022,7 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
                     col_mv_opp  = mv_opp[pos_in_buff];
                     if (!((dist_ref_opp == 0) ^ (col_mv.z == 0))) {
                         goto found;
-                    }
+                    } else dir = 1;
                 }
 
                 col_mv_opp  = col_mv;
@@ -1090,6 +1083,12 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
 found:
         scale_cur = derive_tmvp_scale(dist_ref_cur, col_mv.z);
         scale_opp = derive_tmvp_scale(dist_ref_opp, col_mv_opp.z);
+        if (((dist_ref_cur == 0) ^ (col_mv.z == 0))) {
+            dir &= 2;
+        }
+        if (((dist_ref_opp == 0) ^ (col_mv_opp.z == 0))) {
+            dir &= 1;
+        }
 
         tmp_cur = tmvp_round_mv(col_mv.mv);
         tmp_opp = tmvp_round_mv(col_mv_opp.mv);
@@ -1100,7 +1099,7 @@ found:
         dst_cur->mv = tmp_cur;
         dst_opp->mv = tmp_opp;
 
-        cand->inter_dir = 3;
+        cand->inter_dir = dir;
 
         cand->mv0.ref_idx = 0;
         cand->mv0.mv_spec.bcw_idx_plus1 = 0;
@@ -1809,7 +1808,7 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     int ref1 = mv_info.mv1.ref_idx;
     offset <<= inter_ctx->inter_params.mmvd_shift;
 
-    if (mv_info.inter_dir == 0x3){
+    if (mv_info.inter_dir == 0x3) {
         /* FIXME handle LT ref differently */
 
         if (f_pos == 0) {
@@ -1831,8 +1830,8 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
         uint8_t is_lterm0 = !dist_ref0;
         uint8_t is_lterm1 = !dist_ref1;
 
-        //dist_ref0 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl0[ref0]->poc;
-        //dist_ref1 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl1[ref1]->poc;
+        dist_ref0 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl0[ref0]->poc;
+        dist_ref1 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl1[ref1]->poc;
         /* Same ref */
         if (dist_ref0 == dist_ref1){
             mvd1.x = mvd0.x;
