@@ -278,7 +278,6 @@ header_read_long_term_info(OVNVCLReader *const rdr, const struct OVRPL *const rp
                 lti->delta_poc_msb_cycle_present_flag = nvcl_read_flag(rdr);
 
                 if (lti->delta_poc_msb_cycle_present_flag) {
-                    printf("got delta\n");
                     lti->delta_poc_msb_cycle_lt = nvcl_read_u_expgolomb(rdr);
                 }
             }
@@ -295,7 +294,6 @@ header_read_long_term_info(OVNVCLReader *const rdr, const struct OVRPL *const rp
                 lti->delta_poc_msb_cycle_present_flag = nvcl_read_flag(rdr);
 
                 if (lti->delta_poc_msb_cycle_present_flag) {
-                    printf("got delta\n");
                     lti->delta_poc_msb_cycle_lt = nvcl_read_u_expgolomb(rdr);
                 }
             }
