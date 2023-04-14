@@ -89,6 +89,13 @@ static const int8_t dmvr_mv_y[25 + 25] = {
     -2, -2, -2, -2, -2,
 };
 
+struct SPRect {
+    int16_t x;
+    int16_t y;
+    int16_t w;
+    int16_t h;
+};
+
 static int16_t bcw_weights[5] = { -2, 3, 4, 5, 10 };
 
 struct OVDMV {
@@ -97,12 +104,12 @@ struct OVDMV {
 };
 
 static struct MV
-clip_mv(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, struct MV mv)
+clip_mv(int pos_x, int pos_y, const struct SPRect *const sp_rect, int pb_w, int pb_h, struct MV mv)
 {
-    int x_max  = (pic_w + 2 - pos_x) << 4;
-    int y_max  = (pic_h + 2 - pos_y) << 4;
-    int x_min  = -((pb_w + 3 + pos_x) << 4);
-    int y_min  = -((pb_h + 3 + pos_y) << 4);
+    int x_max  = (sp_rect->w + 2 - pos_x) << 4;
+    int y_max  = (sp_rect->h + 2 - pos_y) << 4;
+    int x_min  = (sp_rect->x << 4) - ((pb_w + 3 + pos_x) << 4);
+    int y_min  = (sp_rect->y << 4) - ((pb_h + 3 + pos_y) << 4);
 
     mv.x = ov_clip(mv.x, x_min, x_max);
     mv.y = ov_clip(mv.y, y_min, y_max);
@@ -446,7 +453,13 @@ derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, struct MV mv, int pos_x, i
 
     int src_stride = ref_pic->frame->linesize[0]/sizeof(OVSample);
 
-    struct MV mv_clipped = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = pic_w,
+        .h = pic_h
+    };
+    struct MV mv_clipped = clip_mv(pos_x, pos_y, &sp_rect, pu_w, pu_h, mv);
 
     int ref_pos_x = pos_x + (mv_clipped.x >> 4);
     int ref_pos_y = pos_y + (mv_clipped.y >> 4);
@@ -489,7 +502,14 @@ derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, struct MV mv, int pos_x, i
 
     int src_stride = ref_pic->frame->linesize[1]/sizeof(OVSample);
 
-    struct MV mv_clipped = clip_mv(pos_x << 1, pos_y << 1, pic_w << 1, pic_h << 1, pu_w << 1, pu_h << 1, mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = pic_w << 1,
+        .h = pic_h << 1
+    };
+
+    struct MV mv_clipped = clip_mv(pos_x << 1, pos_y << 1, &sp_rect, pu_w << 1, pu_h << 1, mv);
 
     int ref_pos_x = pos_x + (mv_clipped.x >> 5);
     int ref_pos_y = pos_y + (mv_clipped.y >> 5);
@@ -551,11 +571,16 @@ motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    mv0.mv = clip_mv(pos_x, pos_y, ref0->frame->width,
-                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = ref0->frame->width,
+        .h = ref0->frame->height
+    };
 
-    mv1.mv = clip_mv(pos_x, pos_y, ref1->frame->width,
-                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
+    mv0.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+
+    mv1.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
     struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0.mv, pos_x, pos_y, edge_buff0,
@@ -1171,11 +1196,16 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    mv0.mv = clip_mv(pos_x, pos_y, ref0->frame->width,
-                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = ref0->frame->width,
+        .h = ref0->frame->height
+    };
 
-    mv1.mv = clip_mv(pos_x, pos_y, ref1->frame->width,
-                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
+    mv0.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+
+    mv1.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
     struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0.mv, pos_x, pos_y, edge_buff0,
@@ -1292,11 +1322,16 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    mv0.mv = clip_mv(pos_x, pos_y, ref0->frame->width,
-                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = ref0->frame->width,
+        .h = ref0->frame->height
+    };
 
-    mv1.mv = clip_mv(pos_x, pos_y, ref1->frame->width,
-                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
+    mv0.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+
+    mv1.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
     const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0.mv, pos_x, pos_y, edge_buff0,
@@ -1441,11 +1476,16 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    mv0.mv = clip_mv(pos_x, pos_y, ref0->frame->width,
-                  ref0->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = ref0->frame->width,
+        .h = ref0->frame->height
+    };
 
-    mv1.mv = clip_mv(pos_x, pos_y, ref1->frame->width,
-                  ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
+    mv0.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+
+    mv1.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
     const int pu_w = 1 << (log2_pu_w - 1);
@@ -1544,7 +1584,14 @@ mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv.mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = pic_w,
+        .h = pic_h
+    };
+
+    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w, pu_h, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
@@ -1635,7 +1682,14 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv.mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = pic_w,
+        .h = pic_h
+    };
+
+    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w, pu_h, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
@@ -1716,7 +1770,14 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv.mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = pic_w,
+        .h = pic_h
+    };
+
+    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w, pu_h, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
@@ -1823,7 +1884,14 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv.mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = pic_w,
+        .h = pic_h
+    };
+
+    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w, pu_h, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
@@ -1918,7 +1986,14 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w << 1, pu_h << 1, mv.mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = pic_w,
+        .h = pic_h
+    };
+
+    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w << 1, pu_h << 1, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
@@ -2021,7 +2096,14 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    mv.mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w << 1, pu_h << 1, mv.mv);
+    struct SPRect sp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = pic_w,
+        .h = pic_h
+    };
+
+    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w << 1, pu_h << 1, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
