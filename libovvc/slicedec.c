@@ -1684,6 +1684,35 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
            prms->sh->sh_slice_address, prms->sh->sh_subpic_id,
            einfo->ctb_x, einfo->ctb_y, einfo->nb_ctu_w, einfo->nb_ctu_h);
 
+    uint16_t actual_subpic_id = prms->sps->sps_subpic_id_mapping_explicitly_signalled_flag ? map_subpic_id(&prms->pps->part_info, prms->sh->sh_subpic_id) : prms->sh->sh_subpic_id;
+    if (prms->sps->sps_subpic_treated_as_pic_flag[actual_subpic_id]) {
+
+        const struct SubpicInfo *subpic = &prms->pps->part_info.subpictures[actual_subpic_id];
+        int pic_w = sldec->pic->frame->width;
+        int pic_h = sldec->pic->frame->height;
+
+        struct SPRect sp_rect = {
+            .x = subpic->x << log2_ctb_s,
+            .y = subpic->y << log2_ctb_s,
+            .w = subpic->w << log2_ctb_s,
+            .h = subpic->h << log2_ctb_s,
+        };
+
+        if (sp_rect.x + sp_rect.w > pic_w) sp_rect.w = pic_w - sp_rect.x;
+        if (sp_rect.y + sp_rect.h > pic_h) sp_rect.h = pic_h - sp_rect.y;
+
+        ctudec->drv_ctx.inter_ctx.subpic_rect = sp_rect;
+    } else {
+        struct SPRect sp_rect = {
+            .x = 0,
+            .y = 0,
+            .w = sldec->pic->frame->width,
+            .h = sldec->pic->frame->height,
+        };
+
+        ctudec->drv_ctx.inter_ctx.subpic_rect = sp_rect;
+    }
+
     ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
 
     ctudec->cabac_ctx = &cabac_ctx;

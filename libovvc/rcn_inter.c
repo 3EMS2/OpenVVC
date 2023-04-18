@@ -89,13 +89,6 @@ static const int8_t dmvr_mv_y[25 + 25] = {
     -2, -2, -2, -2, -2,
 };
 
-struct SPRect {
-    int16_t x;
-    int16_t y;
-    int16_t w;
-    int16_t h;
-};
-
 static int16_t bcw_weights[5] = { -2, 3, 4, 5, 10 };
 
 struct OVDMV {
@@ -106,8 +99,8 @@ struct OVDMV {
 static struct MV
 clip_mv(int pos_x, int pos_y, const struct SPRect *const sp_rect, int pb_w, int pb_h, struct MV mv)
 {
-    int x_max  = (sp_rect->w + 2 - pos_x) << 4;
-    int y_max  = (sp_rect->h + 2 - pos_y) << 4;
+    int x_max  = (sp_rect->x + sp_rect->w + 2 - pos_x) << 4;
+    int y_max  = (sp_rect->y + sp_rect->h + 2 - pos_y) << 4;
     int x_min  = (sp_rect->x << 4) - ((pb_w + 3 + pos_x) << 4);
     int y_min  = (sp_rect->y << 4) - ((pb_h + 3 + pos_y) << 4);
 
@@ -158,6 +151,89 @@ rcn_inter_synchronization(const OVPicture *ref_pic, int ref_pos_x, int ref_pos_y
         int br_ctu_x = ov_clip((ref_pos_x + QPEL_EXTRA_AFTER + pu_w) >> log2_ctu_s, 0, nb_ctb_pic_w - 1);
 
         sync_func(ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
+    }
+}
+
+static void
+emulate_block_border2(OVSample *buf, const OVSample *src,
+                      ptrdiff_t buf_linesize,
+                      ptrdiff_t src_linesize,
+                      int block_w, int block_h,
+                      int src_x, int src_y,
+                      const struct SPRect *const sp_rect)
+{
+    int x, y, w, h;
+    int start_y, start_x, end_y, end_x;
+
+    w = sp_rect->w;
+    h = sp_rect->h;
+
+    src_x -= sp_rect->x;
+    src_y -= sp_rect->y;
+
+    if (src_y >= h) {
+        src -= src_y * src_linesize;
+        src += (h - 1) * src_linesize;
+        src_y = h - 1;
+    } else if (src_y <= -block_h) {
+        src -= src_y * src_linesize;
+        src += (1 - block_h) * src_linesize;
+        src_y = 1 - block_h;
+    }
+
+    if (src_x >= w) {
+        src  += (w - 1 - src_x);
+        src_x = w - 1;
+    } else if (src_x <= -block_w) {
+        src  += (1 - block_w - src_x);
+        src_x = 1 - block_w;
+    }
+
+    start_y = OVMAX(0, -src_y);
+    start_x = OVMAX(0, -src_x);
+
+    end_y = OVMIN(block_h, h-src_y);
+    end_x = OVMIN(block_w, w-src_x);
+
+    w    = end_x - start_x;
+    src += start_y * src_linesize + start_x;
+    buf += start_x;
+
+    // top
+    for (y = 0; y < start_y; y++) {
+        memcpy(buf, src, w * sizeof(OVSample));
+        buf += buf_linesize;
+    }
+
+    // copy existing part
+    for (; y < end_y; y++) {
+        memcpy(buf, src, w * sizeof(OVSample));
+        src += src_linesize;
+        buf += buf_linesize;
+    }
+
+    // bottom
+    src -= src_linesize;
+    for (; y < block_h; y++) {
+        memcpy(buf, src, w * sizeof(OVSample));
+        buf += buf_linesize;
+    }
+
+    buf -= block_h * buf_linesize + start_x;
+
+    while (block_h--) {
+        OVSample *bufp = (OVSample *) buf;
+
+        // left
+        for(x = 0; x < start_x; x++) {
+            bufp[x] = bufp[start_x];
+        }
+
+        // right
+        for (x = end_x; x < block_w; x++) {
+            bufp[x] = bufp[end_x - 1];
+        }
+        buf += buf_linesize;
     }
 }
 
@@ -241,30 +317,40 @@ emulate_block_border(OVSample *buf, const OVSample *src,
 }
 
 static uint8_t
-test_for_edge_emulation_c(int pb_x, int pb_y, int pic_w, int pic_h,
+test_for_edge_emulation_c(int pb_x, int pb_y, const struct SPRect *const sp_rect,
                           int pb_w, int pb_h)
 {
     uint8_t emulate_edge = 0;
+
+    pb_x -= sp_rect->x;
+    pb_y -= sp_rect->y;
+
     emulate_edge  =      pb_x - REF_PADDING_C < 0;
     emulate_edge |= 2 * (pb_y - REF_PADDING_C < 0);
-    emulate_edge |= 4 * (pb_x >= pic_w);
-    emulate_edge |= 8 * (pb_y >= pic_h);
-    emulate_edge |= 4 * ((pb_x + pb_w + EPEL_EXTRA_AFTER) > pic_w);
-    emulate_edge |= 8 * ((pb_y + pb_h + EPEL_EXTRA_AFTER) > pic_h);
+    emulate_edge |= 4 * (pb_x >= sp_rect->w);
+    emulate_edge |= 8 * (pb_y >= sp_rect->h);
+    emulate_edge |= 4 * ((pb_x + pb_w + EPEL_EXTRA_AFTER) > sp_rect->w);
+    emulate_edge |= 8 * ((pb_y + pb_h + EPEL_EXTRA_AFTER) > sp_rect->h);
+
     return emulate_edge;
 }
 
 static uint8_t
-test_for_edge_emulation(int pb_x, int pb_y, int pic_w, int pic_h,
+test_for_edge_emulation(int pb_x, int pb_y, const struct SPRect *const sp_rect,
                         int pu_w, int pu_h)
 {
     uint8_t emulate_edge = 0;
+
+    pb_x -= sp_rect->x;
+    pb_y -= sp_rect->y;
+
     emulate_edge  =      pb_x - REF_PADDING_L < 0;
     emulate_edge |= 2 * (pb_y - REF_PADDING_L < 0);
-    emulate_edge |= 4 * (pb_x >= pic_w);
-    emulate_edge |= 8 * (pb_y >= pic_h);
-    emulate_edge |= 4 * ((pb_x + pu_w + QPEL_EXTRA_AFTER) > pic_w);
-    emulate_edge |= 8 * ((pb_y + pu_h + QPEL_EXTRA_AFTER) > pic_h);
+    emulate_edge |= 4 * (pb_x >= sp_rect->w);
+    emulate_edge |= 8 * (pb_y >= sp_rect->h);
+    emulate_edge |= 4 * ((pb_x + pu_w + QPEL_EXTRA_AFTER) > sp_rect->w);
+    emulate_edge |= 8 * ((pb_y + pu_h + QPEL_EXTRA_AFTER) > sp_rect->h);
+
     return emulate_edge;
 }
 
@@ -283,7 +369,8 @@ check_identical_motion(struct InterDRVCtx *const inter_ctx, int inter_dir, const
 static struct OVBuffInfo
 derive_ref_buf_c(const OVPicture *const ref_pic, struct MV mv, int pos_x, int pos_y,
                  OVSample *edge_buff0, OVSample *edge_buff1,
-                 int log2_pu_w, int log2_pu_h, int log2_ctu_s)
+                 int log2_pu_w, int log2_pu_h, int log2_ctu_s,
+                 const struct SPRect *const sp_rect)
 {
     struct OVBuffInfo ref_buff;
     OVSample *const ref_cb  = (OVSample *) ref_pic->frame->data[1];
@@ -302,8 +389,13 @@ derive_ref_buf_c(const OVPicture *const ref_pic, struct MV mv, int pos_x, int po
 
     OVSample *src_cb  = &ref_cb[ref_pos_x + ref_pos_y * src_stride];
     OVSample *src_cr  = &ref_cr[ref_pos_x + ref_pos_y * src_stride];
+    struct SPRect sp_rect2 = *sp_rect;
+    sp_rect2.x >>= 1;
+    sp_rect2.y >>= 1;
+    sp_rect2.w >>= 1;
+    sp_rect2.h >>= 1;
 
-    uint8_t emulate_edge = test_for_edge_emulation_c(ref_pos_x, ref_pos_y, pic_w, pic_h,
+    uint8_t emulate_edge = test_for_edge_emulation_c(ref_pos_x, ref_pos_y, &sp_rect2,
                                                      pu_w, pu_h);;
 
     if (emulate_edge) {
@@ -392,7 +484,8 @@ padd_dmvr(OVSample *const _ref, int16_t stride, uint8_t pu_w, uint8_t pu_h)
 
 static struct OVBuffInfo
 derive_ref_buf_y(OVPicture *const ref_pic, struct MV mv, int pos_x, int pos_y,
-                 OVSample *edge_buff, int log2_pu_w, int log2_pu_h, int log2_ctu_s)
+                 OVSample *edge_buff, int log2_pu_w, int log2_pu_h, int log2_ctu_s,
+                 const struct SPRect *const sp_rect)
 {
     struct OVBuffInfo ref_buff;
     OVSample *const ref_y  = (OVSample *) ref_pic->frame->data[0];
@@ -405,10 +498,7 @@ derive_ref_buf_y(OVPicture *const ref_pic, struct MV mv, int pos_x, int pos_y,
     int pu_w = 1 << log2_pu_w;
     int pu_h = 1 << log2_pu_h;
 
-    const int pic_w = ref_pic->frame->width;
-    const int pic_h = ref_pic->frame->height;
-
-    uint8_t emulate_edge = test_for_edge_emulation(ref_pos_x, ref_pos_y, pic_w, pic_h,
+    uint8_t emulate_edge = test_for_edge_emulation(ref_pos_x, ref_pos_y, sp_rect,
                                                    pu_w, pu_h);;
 
     /*Frame thread synchronization to ensure data is available
@@ -426,10 +516,10 @@ derive_ref_buf_y(OVPicture *const ref_pic, struct MV mv, int pos_x, int pos_y,
         int start_pos_x = ref_pos_x - REF_PADDING_L;
         int start_pos_y = ref_pos_y - REF_PADDING_L;
 
-        emulate_block_border(edge_buff + 2 * RCN_CTB_STRIDE + 2, (src_y - src_off),
-                             RCN_CTB_STRIDE, src_stride,
-                             cpy_w, cpy_h, start_pos_x, start_pos_y,
-                             pic_w, pic_h);
+        emulate_block_border2(edge_buff + 2 * RCN_CTB_STRIDE + 2, (src_y - src_off),
+                              RCN_CTB_STRIDE, src_stride,
+                              cpy_w, cpy_h, start_pos_x, start_pos_y,
+                              sp_rect);
         ref_buff.y  = edge_buff + buff_off + 2 * RCN_CTB_STRIDE + 2;
         ref_buff.stride = RCN_CTB_STRIDE;
 
@@ -443,7 +533,8 @@ derive_ref_buf_y(OVPicture *const ref_pic, struct MV mv, int pos_x, int pos_y,
 
 static struct OVBuffInfo
 derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, struct MV mv, int pos_x, int pos_y,
-                      OVSample *edge_buff, int pu_w, int pu_h, int log2_ctu_s)
+                      OVSample *edge_buff, int pu_w, int pu_h, int log2_ctu_s,
+                      const struct SPRect *const sp_rect)
 {
     struct OVBuffInfo ref_buff;
     OVSample *const ref_y  = (OVSample *) ref_pic->frame->data[0];
@@ -453,13 +544,7 @@ derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, struct MV mv, int pos_x, i
 
     int src_stride = ref_pic->frame->linesize[0]/sizeof(OVSample);
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = pic_w,
-        .h = pic_h
-    };
-    struct MV mv_clipped = clip_mv(pos_x, pos_y, &sp_rect, pu_w, pu_h, mv);
+    struct MV mv_clipped = clip_mv(pos_x, pos_y, sp_rect, pu_w, pu_h, mv);
 
     int ref_pos_x = pos_x + (mv_clipped.x >> 4);
     int ref_pos_y = pos_y + (mv_clipped.y >> 4);
@@ -478,10 +563,10 @@ derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, struct MV mv, int pos_x, i
     /* Frame thread synchronization to ensure data is available */
     rcn_inter_synchronization(ref_pic, ref_pos_x, ref_pos_y, pu_w, pu_h, log2_ctu_s);
 
-    emulate_block_border(edge_buff + 2 * RCN_CTB_STRIDE + 2, (src_y - src_off),
-                         RCN_CTB_STRIDE, src_stride,
-                         cpy_w, cpy_h, start_pos_x, start_pos_y,
-                         pic_w, pic_h);
+    emulate_block_border2(edge_buff + 2 * RCN_CTB_STRIDE + 2, (src_y - src_off),
+                          RCN_CTB_STRIDE, src_stride,
+                          cpy_w, cpy_h, start_pos_x, start_pos_y,
+                          sp_rect);
 
     ref_buff.y  = edge_buff + buff_off + 2 * RCN_CTB_STRIDE + 2;
     ref_buff.stride = RCN_CTB_STRIDE;
@@ -491,7 +576,8 @@ derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, struct MV mv, int pos_x, i
 
 static struct OVBuffInfo
 derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, struct MV mv, int pos_x, int pos_y,
-                      OVSample *edge_buff0, OVSample *edge_buff1, int pu_w, int pu_h)
+                      OVSample *edge_buff0, OVSample *edge_buff1, int pu_w, int pu_h,
+                      const struct SPRect *const sp_rect)
 {
     struct OVBuffInfo ref_buff;
     OVSample *const ref_cb  = (OVSample *) ref_pic->frame->data[1];
@@ -502,14 +588,7 @@ derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, struct MV mv, int pos_x, i
 
     int src_stride = ref_pic->frame->linesize[1]/sizeof(OVSample);
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = pic_w << 1,
-        .h = pic_h << 1
-    };
-
-    struct MV mv_clipped = clip_mv(pos_x << 1, pos_y << 1, &sp_rect, pu_w << 1, pu_h << 1, mv);
+    struct MV mv_clipped = clip_mv(pos_x << 1, pos_y << 1, sp_rect, pu_w << 1, pu_h << 1, mv);
 
     int ref_pos_x = pos_x + (mv_clipped.x >> 5);
     int ref_pos_y = pos_y + (mv_clipped.y >> 5);
@@ -571,23 +650,20 @@ motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = ref0->frame->width,
-        .h = ref0->frame->height
-    };
+    const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
-    mv0.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+    mv0.mv = clip_mv(pos_x, pos_y, sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
 
-    mv1.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
+    mv1.mv = clip_mv(pos_x, pos_y, sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
     struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0.mv, pos_x, pos_y, edge_buff0,
-                                                log2_pu_w, log2_pu_h, log2_ctb_s);
+                                                log2_pu_w, log2_pu_h, log2_ctb_s,
+                                                sp_rect);
 
     struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1.mv, pos_x, pos_y, edge_buff1,
-                                                log2_pu_w, log2_pu_h, log2_ctb_s);
+                                                log2_pu_w, log2_pu_h, log2_ctb_s,
+                                                sp_rect);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
@@ -935,12 +1011,15 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     struct MV tmp0 = mv0->mv;
     struct MV tmp1 = mv1->mv;
+    const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
     struct OVBuffInfo ref0_b = derive_dmvr_ref_buf_y(ref0, mv0->mv, pos_x, pos_y, edge_buff0,
-                                                     pu_w, pu_h, ctudec->part_ctx->log2_ctu_s);
+                                                     pu_w, pu_h, ctudec->part_ctx->log2_ctu_s,
+                                                     sp_rect);
 
     struct OVBuffInfo ref1_b = derive_dmvr_ref_buf_y(ref1, mv1->mv, pos_x, pos_y, edge_buff1,
-                                                     pu_w, pu_h, ctudec->part_ctx->log2_ctu_s);
+                                                     pu_w, pu_h, ctudec->part_ctx->log2_ctu_s,
+                                                     sp_rect);
 
     uint8_t prec_x0 = (mv0->mv.x) & 0xF;
     uint8_t prec_y0 = (mv0->mv.y) & 0xF;
@@ -1117,12 +1196,12 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct OVBuffInfo ref0_c = derive_dmvr_ref_buf_c(ref0, tmp0,
                                                      pos_x >> 1, pos_y >> 1,
                                                      edge_buff0, edge_buff0_1,
-                                                     pu_w, pu_h);
+                                                     pu_w, pu_h, sp_rect);
 
     struct OVBuffInfo ref1_c = derive_dmvr_ref_buf_c(ref1, tmp1,
                                                      pos_x >> 1, pos_y >> 1,
                                                      edge_buff1, edge_buff1_1,
-                                                     pu_w, pu_h);
+                                                     pu_w, pu_h, sp_rect);
 
     padd_dmvr_c(ref0_c.cb, ref0_c.stride_c, pu_w, pu_h);
     padd_dmvr_c(ref0_c.cr, ref0_c.stride_c, pu_w, pu_h);
@@ -1196,23 +1275,20 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = ref0->frame->width,
-        .h = ref0->frame->height
-    };
+    const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
-    mv0.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+    mv0.mv = clip_mv(pos_x, pos_y, sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
 
-    mv1.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
+    mv1.mv = clip_mv(pos_x, pos_y, sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
     struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0.mv, pos_x, pos_y, edge_buff0,
-                                                log2_pu_w, log2_pu_h, log2_ctb_s);
+                                                log2_pu_w, log2_pu_h, log2_ctb_s,
+                                                sp_rect);
 
     struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1.mv, pos_x, pos_y, edge_buff1,
-                                                log2_pu_w, log2_pu_h, log2_ctb_s);
+                                                log2_pu_w, log2_pu_h, log2_ctb_s,
+                                                sp_rect);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
@@ -1322,23 +1398,20 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = ref0->frame->width,
-        .h = ref0->frame->height
-    };
+    const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
-    mv0.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+    mv0.mv = clip_mv(pos_x, pos_y, sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
 
-    mv1.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
+    mv1.mv = clip_mv(pos_x, pos_y, sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
     const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0.mv, pos_x, pos_y, edge_buff0,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s,
+                                                      sp_rect);
 
     const struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1.mv, pos_x, pos_y, edge_buff1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s,
+                                                      sp_rect);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
@@ -1476,16 +1549,11 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = ref0->frame->width,
-        .h = ref0->frame->height
-    };
+    const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
-    mv0.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
+    mv0.mv = clip_mv(pos_x, pos_y, sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv0.mv);
 
-    mv1.mv = clip_mv(pos_x, pos_y, &sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
+    mv1.mv = clip_mv(pos_x, pos_y, sp_rect, 1 << log2_pu_w, 1 << log2_pu_h, mv1.mv);
 
 
     const int pu_w = 1 << (log2_pu_w - 1);
@@ -1497,12 +1565,14 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0.mv,
                                                       pos_x >> 1, pos_y >> 1,
                                                       edge_buff0, edge_buff0_1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s,
+                                                      sp_rect);
 
     const struct OVBuffInfo ref1_c = derive_ref_buf_c(ref1, mv1.mv,
                                                       pos_x >> 1, pos_y >> 1,
                                                       edge_buff1, edge_buff1_1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s,
+                                                      sp_rect);
     uint8_t prec_x0 = (mv0.mv.x) & 0x1F;
     uint8_t prec_y0 = (mv0.mv.y) & 0x1F;
 
@@ -1584,14 +1654,9 @@ mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = pic_w,
-        .h = pic_h
-    };
+    const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
-    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w, pu_h, mv.mv);
+    mv.mv = clip_mv(pos_x, pos_y, sp_rect, pu_w, pu_h, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
@@ -1605,7 +1670,7 @@ mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
 
     int prec_mc_type   = (prec_x  > 0) + ((prec_y > 0)   << 1);
 
-    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, pic_w, pic_h,
+    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, sp_rect,
                                                    pu_w, pu_h);;
 
     const OVSample *src_y  = &ref0_y [ ref_x       + ref_y        * src_stride];
@@ -1619,11 +1684,11 @@ mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
         int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
         int buff_off = REF_PADDING_L * (RCN_CTB_STRIDE) + (REF_PADDING_L);
 
-        emulate_block_border(tmp_buff, (src_y - src_off),
-                             RCN_CTB_STRIDE, src_stride,
-                             pu_w + QPEL_EXTRA, pu_h + QPEL_EXTRA,
-                             ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
-                             pic_w, pic_h);
+        emulate_block_border2(tmp_buff, (src_y - src_off),
+                              RCN_CTB_STRIDE, src_stride,
+                              pu_w + QPEL_EXTRA, pu_h + QPEL_EXTRA,
+                              ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
+                              sp_rect);
 
         src_y = tmp_buff + buff_off;
         src_stride = RCN_CTB_STRIDE;
@@ -1682,14 +1747,9 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = pic_w,
-        .h = pic_h
-    };
+    const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
-    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w, pu_h, mv.mv);
+    mv.mv = clip_mv(pos_x, pos_y, sp_rect, pu_w, pu_h, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
@@ -1703,7 +1763,7 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
 
     int prec_mc_type   = (prec_x  > 0) + ((prec_y > 0)   << 1);
 
-    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, pic_w, pic_h,
+    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, sp_rect,
                                                    pu_w, pu_h);;
 
     const OVSample *src_y  = &ref0_y [ ref_x + ref_y * src_stride];
@@ -1717,11 +1777,11 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
         int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
         int buff_off = REF_PADDING_L * (RCN_CTB_STRIDE) + (REF_PADDING_L);
 
-        emulate_block_border(tmp_buff, (src_y - src_off),
-                             RCN_CTB_STRIDE, src_stride,
-                             pu_w + QPEL_EXTRA, pu_h + QPEL_EXTRA,
-                             ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
-                             pic_w, pic_h);
+        emulate_block_border2(tmp_buff, (src_y - src_off),
+                              RCN_CTB_STRIDE, src_stride,
+                              pu_w + QPEL_EXTRA, pu_h + QPEL_EXTRA,
+                              ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
+                              sp_rect);
 
         src_y = tmp_buff + buff_off;
         src_stride = RCN_CTB_STRIDE;
@@ -1770,14 +1830,9 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = pic_w,
-        .h = pic_h
-    };
+    const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
-    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w, pu_h, mv.mv);
+    mv.mv = clip_mv(pos_x, pos_y, sp_rect, pu_w, pu_h, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
@@ -1791,7 +1846,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     int prec_mc_type   = (prec_x  > 0) + ((prec_y > 0)   << 1);
 
-    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, pic_w, pic_h,
+    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, sp_rect,
                                                    pu_w, pu_h);;
 
     const OVSample *src_y  = &ref0_y [ ref_x       + ref_y        * src_stride];
@@ -1810,11 +1865,11 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
         int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
         int buff_off = REF_PADDING_L * (RCN_CTB_STRIDE) + (REF_PADDING_L);
 
-        emulate_block_border(tmp_buff, (src_y - src_off),
-                             RCN_CTB_STRIDE, src_stride,
-                             pu_w + QPEL_EXTRA, pu_h + QPEL_EXTRA,
-                             ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
-                             pic_w, pic_h);
+        emulate_block_border2(tmp_buff, (src_y - src_off),
+                              RCN_CTB_STRIDE, src_stride,
+                              pu_w + QPEL_EXTRA, pu_h + QPEL_EXTRA,
+                              ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
+                              sp_rect);
 
         src_y = tmp_buff + buff_off;
         src_stride = RCN_CTB_STRIDE;
@@ -1884,14 +1939,9 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = pic_w,
-        .h = pic_h
-    };
+    const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
-    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w, pu_h, mv.mv);
+    mv.mv = clip_mv(pos_x, pos_y, sp_rect, pu_w, pu_h, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
@@ -1905,7 +1955,7 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
 
     int prec_mc_type   = (prec_x  > 0) + ((prec_y > 0)   << 1);
 
-    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, pic_w, pic_h,
+    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, sp_rect,
                                                    pu_w, pu_h);;
 
     const OVSample *src_y  = &ref0_y [ ref_x       + ref_y        * src_stride];
@@ -1924,11 +1974,11 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
         int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
         int buff_off = REF_PADDING_L * (RCN_CTB_STRIDE) + (REF_PADDING_L);
 
-        emulate_block_border(tmp_buff, (src_y - src_off),
-                             RCN_CTB_STRIDE, src_stride,
-                             pu_w + QPEL_EXTRA, pu_h + QPEL_EXTRA,
-                             ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
-                             pic_w, pic_h);
+        emulate_block_border2(tmp_buff, (src_y - src_off),
+                              RCN_CTB_STRIDE, src_stride,
+                              pu_w + QPEL_EXTRA, pu_h + QPEL_EXTRA,
+                              ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
+                              sp_rect);
 
         src_y = tmp_buff + buff_off;
         src_stride = RCN_CTB_STRIDE;
@@ -1986,14 +2036,9 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = pic_w,
-        .h = pic_h
-    };
+    const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
-    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w << 1, pu_h << 1, mv.mv);
+    mv.mv = clip_mv(pos_x, pos_y, sp_rect, pu_w << 1, pu_h << 1, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
@@ -2006,16 +2051,22 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     const OVSample *src_cb = &ref0_cb[(ref_x >> 1) + (ref_y >> 1) * src_stride_c];
     const OVSample *src_cr = &ref0_cr[(ref_x >> 1) + (ref_y >> 1) * src_stride_c];
 
-    uint8_t emulate_edge = test_for_edge_emulation_c(ref_x >> 1, ref_y >> 1, pic_w >> 1, pic_h >> 1,
+    struct SPRect sp_rect2 = *sp_rect;
+    sp_rect2.x >>= 1;
+    sp_rect2.y >>= 1;
+    sp_rect2.w >>= 1;
+    sp_rect2.h >>= 1;
+
+    uint8_t emulate_edge = test_for_edge_emulation_c(ref_x >> 1, ref_y >> 1, &sp_rect2,
                                                      pu_w, pu_h);
 
     if (emulate_edge) {
         int src_off  = REF_PADDING_C * (src_stride_c) + (REF_PADDING_C);
         int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
-        emulate_block_border(tmp_buff, (src_cb - src_off), RCN_CTB_STRIDE, src_stride_c,
+        emulate_block_border2(tmp_buff, (src_cb - src_off), RCN_CTB_STRIDE, src_stride_c,
                              pu_w  + EPEL_EXTRA, pu_h + EPEL_EXTRA,
                              (pos_x >> 1) + (mv.mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.mv.y >> 5) - REF_PADDING_C,
-                             (pic_w >> 1), (pic_h >> 1));
+                             &sp_rect2);
         src_cb = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
     }
@@ -2096,14 +2147,9 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
     const int pic_w = frame0->width;
     const int pic_h = frame0->height;
 
-    struct SPRect sp_rect = {
-        .x = 0,
-        .y = 0,
-        .w = pic_w,
-        .h = pic_h
-    };
+    const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
-    mv.mv = clip_mv(pos_x, pos_y, &sp_rect, pu_w << 1, pu_h << 1, mv.mv);
+    mv.mv = clip_mv(pos_x, pos_y, sp_rect, pu_w << 1, pu_h << 1, mv.mv);
 
     int ref_x = pos_x + (mv.mv.x >> 4);
     int ref_y = pos_y + (mv.mv.y >> 4);
@@ -2116,16 +2162,22 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
     const OVSample *src_cb = &ref0_cb[(ref_x >> 1) + (ref_y >> 1) * src_stride_c];
     const OVSample *src_cr = &ref0_cr[(ref_x >> 1) + (ref_y >> 1) * src_stride_c];
 
-    uint8_t emulate_edge = test_for_edge_emulation_c(ref_x >> 1, ref_y >> 1, pic_w >> 1, pic_h >> 1,
+    struct SPRect sp_rect2 = *sp_rect;
+    sp_rect2.x >>= 1;
+    sp_rect2.y >>= 1;
+    sp_rect2.w >>= 1;
+    sp_rect2.h >>= 1;
+
+    uint8_t emulate_edge = test_for_edge_emulation_c(ref_x >> 1, ref_y >> 1, &sp_rect2,
                                                      pu_w, pu_h);;
 
     if (emulate_edge) {
         int src_off  = REF_PADDING_C * (src_stride_c) + (REF_PADDING_C);
         int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
-        emulate_block_border(tmp_buff, (src_cb - src_off), RCN_CTB_STRIDE, src_stride_c,
+        emulate_block_border2(tmp_buff, (src_cb - src_off), RCN_CTB_STRIDE, src_stride_c,
                              pu_w  + EPEL_EXTRA, pu_h + EPEL_EXTRA,
                              (pos_x >> 1) + (mv.mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.mv.y >> 5) - REF_PADDING_C,
-                             (pic_w >> 1), (pic_h >> 1));
+                             &sp_rect2);
         src_cb = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
     }
@@ -2250,18 +2302,26 @@ mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
      */
     rcn_inter_synchronization(ref_pic, ref_x, ref_y, ref_pu_w, ref_pu_h, log2_ctb_s);
 
-    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, ref_pic_w, ref_pic_h,
+    const struct SPRect tmp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = ref_pic_w,
+        .h = ref_pic_h
+    };
+    const struct SPRect *const sp_rect = &tmp_rect;
+
+    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, sp_rect,
                                                    ref_pu_w + 1, ref_pu_h + 1);;
 
     const OVSample *src  = &ref0_y [ ref_x + ref_y * src_stride];
     int buff_off = REF_PADDING_L * (tmp_emul_str) + (REF_PADDING_L);
     int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
     if (emulate_edge) {
-        emulate_block_border(tmp_emul, (src - src_off),
-                             tmp_emul_str, src_stride,
-                             ref_pu_w + QPEL_EXTRA, ref_pu_h + QPEL_EXTRA,
-                             ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
-                             ref_pic_w, ref_pic_h);
+        emulate_block_border2(tmp_emul, (src - src_off),
+                              tmp_emul_str, src_stride,
+                              ref_pu_w + QPEL_EXTRA, ref_pu_h + QPEL_EXTRA,
+                              ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
+                              sp_rect);
 
         src = tmp_emul + REF_PADDING_L;
         src_stride = tmp_emul_str;
@@ -2365,18 +2425,27 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
      */
     rcn_inter_synchronization(ref_pic, ref_x, ref_y, ref_pu_w, ref_pu_h, log2_ctb_s);
 
-    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, ref_pic_w, ref_pic_h,
+    const struct SPRect tmp_rect = {
+        .x = 0,
+        .y = 0,
+        .w = ref_pic_w,
+        .h = ref_pic_h
+    };
+    const struct SPRect *const sp_rect = &tmp_rect;
+    //const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
+
+    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, sp_rect,
                                                    ref_pu_w + 1, ref_pu_h + 1);;
 
     const OVSample *src  = &ref0_y [ ref_x + ref_y * src_stride];
     int buff_off = REF_PADDING_L * (tmp_emul_str) + (REF_PADDING_L);
     int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
     if (emulate_edge) {
-        emulate_block_border(tmp_emul, (src - src_off),
-                             tmp_emul_str, src_stride,
-                             ref_pu_w + QPEL_EXTRA, ref_pu_h + QPEL_EXTRA,
-                             ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
-                             ref_pic_w, ref_pic_h);
+        emulate_block_border2(tmp_emul, (src - src_off),
+                              tmp_emul_str, src_stride,
+                              ref_pu_w + QPEL_EXTRA, ref_pu_h + QPEL_EXTRA,
+                              ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
+                              sp_rect);
 
         src = tmp_emul + REF_PADDING_L;
         src_stride = tmp_emul_str;
@@ -2497,7 +2566,13 @@ mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
             dst_c = dst.cr;
         }
 
-        uint8_t emulate_edge = test_for_edge_emulation_c(ref_x, ref_y, ref_pic_w, ref_pic_h,
+        struct SPRect sp_rect2 = {
+            .x = ref_x,
+            .y = ref_y,
+            .w = ref_pic_w,
+            .h = ref_pic_h
+        };
+        uint8_t emulate_edge = test_for_edge_emulation_c(ref_x, ref_y, &sp_rect2,
                                                          ref_pu_w + 2, ref_pu_h + 2);;
 
         int buff_off = REF_PADDING_C * (tmp_emul_str) + (REF_PADDING_C);
@@ -2626,7 +2701,13 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
             dst_c = dst_cr;
         }
 
-        uint8_t emulate_edge = test_for_edge_emulation_c(ref_x, ref_y, ref_pic_w, ref_pic_h,
+        struct SPRect sp_rect2 = {
+            .x = ref_x,
+            .y = ref_y,
+            .w = ref_pic_w,
+            .h = ref_pic_h
+        };
+        uint8_t emulate_edge = test_for_edge_emulation_c(ref_x, ref_y, &sp_rect2,
                                                          ref_pu_w + 2, ref_pu_h + 2);;
 
         int buff_off = REF_PADDING_C * (tmp_emul_str) + (REF_PADDING_C);

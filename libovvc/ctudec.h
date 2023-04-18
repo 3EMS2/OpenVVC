@@ -473,6 +473,14 @@ struct InterDRVCtx
     } tmvp_ctx;
 
     struct AffineDRVInfo affine_ctx;
+
+    struct SPRect {
+        int16_t x;
+        int16_t y;
+        int16_t w;
+        int16_t h;
+    } subpic_rect;
+
 };
 
 /* Structure reserved for Intra Modes dervivation
