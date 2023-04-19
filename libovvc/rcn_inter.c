@@ -407,14 +407,14 @@ derive_ref_buf_c(const OVPicture *const ref_pic, struct MV mv, int pos_x, int po
         int start_pos_x = ref_pos_x - REF_PADDING_C;
         int start_pos_y = ref_pos_y - REF_PADDING_C;
 
-        emulate_block_border(edge_buff0, (src_cb - src_off),
+        emulate_block_border2(edge_buff0, (src_cb - src_off),
                              RCN_CTB_STRIDE, src_stride,
                              cpy_w, cpy_h, start_pos_x, start_pos_y,
-                             pic_w, pic_h);
-        emulate_block_border(edge_buff1, (src_cr - src_off),
+                             &sp_rect2);
+        emulate_block_border2(edge_buff1, (src_cr - src_off),
                              RCN_CTB_STRIDE, src_stride,
                              cpy_w, cpy_h, start_pos_x, start_pos_y,
-                             pic_w, pic_h);
+                             &sp_rect2);
 
         ref_buff.cb = edge_buff0 + buff_off;
         ref_buff.cr = edge_buff1 + buff_off;
@@ -605,15 +605,21 @@ derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, struct MV mv, int pos_x, i
     int start_pos_x = ref_pos_x - REF_PADDING_C;
     int start_pos_y = ref_pos_y - REF_PADDING_C;
 
-    emulate_block_border(edge_buff0 + 2 * RCN_CTB_STRIDE + 2, (src_cb - src_off),
-                         RCN_CTB_STRIDE, src_stride,
-                         cpy_w, cpy_h, start_pos_x, start_pos_y,
-                         pic_w, pic_h);
+    struct SPRect sp_rect2 = *sp_rect;
+    sp_rect2.x >>= 1;
+    sp_rect2.y >>= 1;
+    sp_rect2.w >>= 1;
+    sp_rect2.h >>= 1;
 
-    emulate_block_border(edge_buff1 + 2 * RCN_CTB_STRIDE + 2, (src_cr - src_off),
+    emulate_block_border2(edge_buff0 + 2 * RCN_CTB_STRIDE + 2, (src_cb - src_off),
                          RCN_CTB_STRIDE, src_stride,
                          cpy_w, cpy_h, start_pos_x, start_pos_y,
-                         pic_w, pic_h);
+                         &sp_rect2);
+
+    emulate_block_border2(edge_buff1 + 2 * RCN_CTB_STRIDE + 2, (src_cr - src_off),
+                         RCN_CTB_STRIDE, src_stride,
+                         cpy_w, cpy_h, start_pos_x, start_pos_y,
+                         &sp_rect2);
 
     ref_buff.cb  = edge_buff0 + buff_off + 2 * RCN_CTB_STRIDE + 2;
     ref_buff.cr  = edge_buff1 + buff_off + 2 * RCN_CTB_STRIDE + 2;
@@ -2087,11 +2093,11 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     if (emulate_edge) {
         int src_off  = REF_PADDING_C * (frame0->linesize[1]/sizeof(OVSample)) + (REF_PADDING_C);
         int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
-        emulate_block_border(tmp_buff, (src_cr - src_off),
+        emulate_block_border2(tmp_buff, (src_cr - src_off),
                              RCN_CTB_STRIDE, frame0->linesize[1]/sizeof(OVSample),
                              pu_w + EPEL_EXTRA, pu_h + EPEL_EXTRA,
                              (pos_x >> 1) + (mv.mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.mv.y >> 5) - REF_PADDING_C,
-                             (pic_w >> 1), (pic_h >> 1));
+                             &sp_rect2);
         src_cr = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
     }
@@ -2190,10 +2196,10 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
     if (emulate_edge) {
         int src_off  = REF_PADDING_C * src_stride_c + (REF_PADDING_C);
         int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
-        emulate_block_border(tmp_buff, (src_cr - src_off), RCN_CTB_STRIDE, src_stride_c,
+        emulate_block_border2(tmp_buff, (src_cr - src_off), RCN_CTB_STRIDE, src_stride_c,
                              pu_w + EPEL_EXTRA, pu_h + EPEL_EXTRA,
                              (pos_x >> 1) + (mv.mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.mv.y >> 5) - REF_PADDING_C,
-                             (pic_w >> 1), (pic_h >> 1));
+                             &sp_rect2);
         src_cr = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
     }
@@ -2567,8 +2573,8 @@ mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
         }
 
         struct SPRect sp_rect2 = {
-            .x = ref_x,
-            .y = ref_y,
+            .x = 0,
+            .y = 0,
             .w = ref_pic_w,
             .h = ref_pic_h
         };
@@ -2702,8 +2708,8 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
         }
 
         struct SPRect sp_rect2 = {
-            .x = ref_x,
-            .y = ref_y,
+            .x = 0,
+            .y = 0,
             .w = ref_pic_w,
             .h = ref_pic_h
         };
