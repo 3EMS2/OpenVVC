@@ -382,13 +382,14 @@ tmvp_compress_uncompress_mv(int32_t val)
 static void
 load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 {
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     uint8_t nb_pb_ctb_w = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
+    uint16_t nb_ctb_w2 = (inter_ctx->subpic_rect.w + ((1 << log2_ctb_s) -1)) >> log2_ctb_s;
     uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
-    uint8_t is_border_pic = nb_ctb_w - 1 == ctb_x;
+    uint8_t is_border_pic = nb_ctb_w2 - 1 == ctb_x - (inter_ctx->subpic_rect.x >> log2_ctb_s);
 
-    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct VVCTMVP *const tmvp_ctx = &inter_ctx->tmvp_ctx;
 
     const struct MVPlane *plane0 = tmvp_ctx->col_plane0;
@@ -1700,7 +1701,9 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
         .log2_h = log2_pu_h
     };
     const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
-    uint8_t is_bnd = tmvp->ctudec->ctb_x == tmvp->ctudec->nb_ctb_pic_w - 1;
+    uint8_t log2_ctb_s = tmvp->ctudec->part_ctx->log2_ctu_s;
+    uint16_t nb_ctb_w2 = (inter_ctx->subpic_rect.w + ((1 << log2_ctb_s) -1)) >> log2_ctb_s;
+    uint8_t is_bnd = nb_ctb_w2 - 1 == tmvp->ctudec->ctb_x - (inter_ctx->subpic_rect.x >> log2_ctb_s);
 
     int16_t ctu_w = tmvp->ctu_w;
     int16_t ctu_h = tmvp->ctu_h;
@@ -1801,7 +1804,9 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
     int nb_sb_h = OVMAX((1 << log2_pu_h) >> LOG2_SBTMVP_S, 1);
     uint16_t ctu_w = tmvp->ctu_w;
     uint16_t ctu_h = tmvp->ctu_h;
-    uint8_t is_bnd = tmvp->ctudec->ctb_x == tmvp->ctudec->nb_ctb_pic_w - 1;
+    uint8_t log2_ctb_s = tmvp->ctudec->part_ctx->log2_ctu_s;
+    uint16_t nb_ctb_w2 = (inter_ctx->subpic_rect.w + ((1 << log2_ctb_s) -1)) >> log2_ctb_s;
+    uint8_t is_bnd = nb_ctb_w2 - 1 == tmvp->ctudec->ctb_x - (inter_ctx->subpic_rect.x >> log2_ctb_s);
 
     /* FIXME check if this clipping is needed */
     int sb_h = nb_sb_h == 1 ? 1 << log2_pu_h : 1 << LOG2_SBTMVP_S;

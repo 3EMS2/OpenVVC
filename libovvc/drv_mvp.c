@@ -360,12 +360,13 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 
     uint8_t nb_unit_ctb = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
+    uint16_t nb_ctb_w2 = (inter_ctx->subpic_rect.w + ((1 << log2_ctb_s) -1)) >> log2_ctb_s;
 
     if (tmvp_ctx->col_ref && tmvp_ctx->col_ref->frame) {
         tmvp_inter_synchronization(tmvp_ctx->col_ref, ctb_x, ctb_y, log2_ctb_s);
     }
 
-    uint8_t is_border_pic = nb_ctb_w - 1 == ctb_x;
+    uint8_t is_border_pic = nb_ctb_w2 - 1 == ctb_x - (inter_ctx->subpic_rect.x >> log2_ctb_s);
 
     if (plane0 || plane1) {
         uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
