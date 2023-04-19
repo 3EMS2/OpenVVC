@@ -2248,8 +2248,12 @@ mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
           OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    int scaling_hor = rpl_idx ? inter_ctx->inter_params.scale_fact_rpl1[ref_idx][0] : inter_ctx->inter_params.scale_fact_rpl0[ref_idx][0];
-    int scaling_ver = rpl_idx ? inter_ctx->inter_params.scale_fact_rpl1[ref_idx][1] : inter_ctx->inter_params.scale_fact_rpl0[ref_idx][1];
+
+    int scaling_hor = rpl_idx ? inter_ctx->inter_params.scale_fact_rpl1[ref_idx][0]
+                              : inter_ctx->inter_params.scale_fact_rpl0[ref_idx][0];
+    int scaling_ver = rpl_idx ? inter_ctx->inter_params.scale_fact_rpl1[ref_idx][1]
+                              : inter_ctx->inter_params.scale_fact_rpl0[ref_idx][1];
+
     struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
 
@@ -2267,7 +2271,9 @@ mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     OVPicture *ref0 = inter_ctx->inter_params.rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->inter_params.rpl1[ref_idx];
+
     OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
+
     if (!ref_pic) return;
 
     const OVFrame *const frame0 = ref_pic->frame;
@@ -2278,9 +2284,8 @@ mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     const int ref_pic_w = frame0->width;
     const int ref_pic_h = frame0->height;
 
-    //MV precision is 4 bits for luma
-    int shift_mv  = 4;
-    int shift_pos = RPR_SCALE_BITS + shift_mv;
+    int shift_mv  = MV_FRACTIONAL_BITS_INTERNAL;
+    int shift_pos = RPR_SCALE_BITS + MV_FRACTIONAL_BITS_INTERNAL;
     int offset    = 1 << (RPR_SCALE_BITS - 1);
     uint8_t flag_4x4     = (log2_pu_w == 2 && log2_pu_h == 2);
     uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor, flag_4x4);
@@ -2300,6 +2305,7 @@ mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     //Clip ref position now that ref_pu_w and ref_pu_h are computed
     clip_rpr_position(&ref_pos_x, &ref_pos_y, ref_pic_w, ref_pic_h, ref_pu_w, ref_pu_h, shift_pos);
+
     ref_x = (ref_pos_x + offset) >> shift_pos;
     ref_y = (ref_pos_y + offset) >> shift_pos;
 
