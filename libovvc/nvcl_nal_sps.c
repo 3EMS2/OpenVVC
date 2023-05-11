@@ -79,6 +79,11 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
         ov_log(NULL, OVLOG_WARNING, "Unsupported weighted pred\n");
     }
 
+    if (sps->sps_chroma_format_idc != 1) {
+        ov_log(NULL, OVLOG_ERROR, "Unsupported chroma format\n");
+        return OVVC_EINDATA;
+    }
+
     if (sps->sps_subpic_info_present_flag) {
         ov_log(NULL, OVLOG_ERROR, "Unsupported subpicture\n");
     }

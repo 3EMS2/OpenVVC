@@ -403,7 +403,7 @@ nvcl_read_scaling_list_data(OVNVCLReader *const rdr, struct OVScalingListData* s
             }
         }
 
-        for (id = 8; id < 14; id += 3) {
+        for (id = 8; id < 11; id += 3) {
             sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
             if (!sl->scaling_list_copy_mode_flag[id]) {
                 sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
@@ -509,7 +509,6 @@ nvcl_read_scaling_list_data(OVNVCLReader *const rdr, struct OVScalingListData* s
             }
 
             if (!sl->scaling_list_copy_mode_flag[id]) {
-
                 int i;
                 sl->scaling_list_dc_coef[id - 14] = nvcl_read_s_expgolomb(rdr);
 
@@ -545,7 +544,6 @@ nvcl_aps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     } else if (aps->aps_params_type == APS_LMCS) {
         nvcl_read_lmcs_data(rdr, &aps->aps_lmcs_data, aps->aps_chroma_present_flag);
     } else if (aps->aps_params_type == APS_SCALING_LIST) {
-        ov_log(NULL, OVLOG_WARNING, "Ignored unsupported scaling list APS.\n");
         nvcl_read_scaling_list_data(rdr, &aps->aps_scaling_list_data, aps->aps_chroma_present_flag);
 
     }

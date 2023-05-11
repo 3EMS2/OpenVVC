@@ -126,7 +126,7 @@ mvpool_uninit(struct MVPool **mv_pool_p)
 
     ov_freep(mv_pool_p);
 }
-
+#include "string.h"
 int
 mvpool_request_mv_plane(struct MVPool *mv_pool, struct MVPlane *mv_plane)
 {
@@ -148,6 +148,7 @@ mvpool_request_mv_plane(struct MVPool *mv_pool, struct MVPlane *mv_plane)
 
     mv_plane->mvs  = mv_elem->data;
     mv_plane->dirs = dir_elem->data;
+    memset(mv_plane->dirs, 0, mv_pool->dir_pool->elem_size);
 
     return 0;
 

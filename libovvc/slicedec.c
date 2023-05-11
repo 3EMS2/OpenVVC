@@ -1701,6 +1701,9 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         if (sp_rect.x + sp_rect.w > pic_w) sp_rect.w = pic_w - sp_rect.x;
         if (sp_rect.y + sp_rect.h > pic_h) sp_rect.h = pic_h - sp_rect.y;
 
+        ov_log(NULL, OVLOG_WARNING, "subpic %d (%d,%d) %dx%d as pic \n", actual_subpic_id,
+               sp_rect.x, sp_rect.y, sp_rect.w, sp_rect.h);
+
         ctudec->drv_ctx.inter_ctx.subpic_rect = sp_rect;
     } else {
         struct SPRect sp_rect = {
@@ -1709,6 +1712,12 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
             .w = sldec->pic->frame->width,
             .h = sldec->pic->frame->height,
         };
+        if (prms->pps->pps_ref_wraparound_enabled_flag) {
+            int16_t wrap_offset = ((prms->pps->pps_pic_width_in_luma_samples >> ctudec->part_ctx->log2_min_cb_s) - prms->pps->pps_pic_width_minus_wraparound_offset) << ctudec->part_ctx->log2_min_cb_s;
+            //sp_rect.x = wrap_offset;
+            ctudec->drv_ctx.inter_ctx.wrap_around = prms->pps->pps_ref_wraparound_enabled_flag;
+            ctudec->drv_ctx.inter_ctx.wrap_offset = wrap_offset;
+        }
 
         ctudec->drv_ctx.inter_ctx.subpic_rect = sp_rect;
     }
@@ -1861,7 +1870,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms, const 
     tools->bcw_enabled = !sps->sps_weighted_pred_flag && sps->sps_bcw_enabled_flag;
     tools->amvr_enabled = sps->sps_amvr_enabled_flag;
     tools->affine_amvr_enabled = sps->sps_affine_amvr_enabled_flag;
-    tools->scaling_list_enabled = ph->ph_explicit_scaling_list_enabled_flag || sh->sh_explicit_scaling_list_used_flag;
+    tools->scaling_list_enabled = sh->sh_explicit_scaling_list_used_flag;
     tools->lfnst_scaling_list_enabled = tools->scaling_list_enabled && !sps->sps_scaling_matrix_for_lfnst_disabled_flag;
     tools->sao_luma_flag   =  sh->sh_sao_luma_used_flag | ph->ph_sao_luma_enabled_flag;
     tools->sao_chroma_flag =  sh->sh_sao_chroma_used_flag | ph->ph_sao_chroma_enabled_flag;

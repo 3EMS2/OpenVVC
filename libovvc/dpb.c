@@ -47,6 +47,7 @@
 #include "slicedec.h"
 #include "ovdec_internal.h"
 #include "ovtime.h"
+#include "mempool_internal.h"
 
 /* FIXME More global scope for this enum
  */
@@ -968,13 +969,13 @@ tmvp_request_mv_plane(OVPicture *const pic, const OVDec *ovdec, uint8_t slice_ty
         return ret;
     }
 
-    if (slice_type == SLICE_B) {
+    //if (slice_type == SLICE_B) {
         ret = mvpool_request_mv_plane(pool, &pic->mv_plane1);
         if (ret < 0) {
             mvpool_release_mv_plane(&pic->mv_plane0);
             return ret;
         }
-    }
+    //}
 
     return 0;
 }
@@ -992,6 +993,10 @@ init_tmvp_info(OVPicture *const pic, const OVPS *const ps, const OVDec *ovdec)
 
         /* Request MV buffer to MV Pool */
         tmvp_request_mv_plane(pic, ovdec, slice_type);
+        if (ph->ph_intra_slice_allowed_flag) {
+            memset(pic->mv_plane0.dirs, 0, ovdec->mv_pool->dir_pool->elem_size);
+            memset(pic->mv_plane1.dirs, 0, ovdec->mv_pool->dir_pool->elem_size);
+        }
     }
 
     return 0;

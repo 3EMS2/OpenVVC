@@ -480,6 +480,8 @@ struct InterDRVCtx
         int16_t w;
         int16_t h;
     } subpic_rect;
+    uint8_t wrap_around;
+    int16_t wrap_offset;
 
 };
 

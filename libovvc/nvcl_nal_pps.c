@@ -325,6 +325,7 @@ nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
         pps_read_pic_partition(rdr, pps);
     } else {
+        if (nvcl_ctx->sps_list[pps->pps_seq_parameter_set_id]) {
         const OVSPS *sps = (OVSPS *)nvcl_ctx->sps_list[pps->pps_seq_parameter_set_id]->data;
 	    const int log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
 
@@ -341,6 +342,7 @@ nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 	    pps->part_info.tile_col_w[0] = nb_ctu_w;
 	    pps->part_info.tile_row_h[0] = nb_ctu_h;
 	    pps->part_info.log2_ctb_s = log2_ctb_s;
+        }
     }
 
     pps->pps_cabac_init_present_flag = nvcl_read_flag(rdr);
