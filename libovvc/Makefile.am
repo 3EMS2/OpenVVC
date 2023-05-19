@@ -21,6 +21,9 @@ if HAVE_NEON
 SUBDIRS = arm/
 libovvc_la_LIBADD += ./arm/libarmoptim.la
 endif
+if HAVE_NEON_SIMDE
+libovvc_la_LIBADD += ./arm/libsimde.la
+endif
 
 dsp_template_SOURCES = \
 							rcn_alf.c                \

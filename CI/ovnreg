@@ -207,7 +207,7 @@ main_loop() {
     increment file_id
 
     ref_md5=$(echo $var | cut -f 1 -d ' ');
-    vvc_vid="${OVSTREAM}"/$(echo $var | cut -f 2 -d ' ');
+    vvc_vid="${OVSTREAM:-.}"/$(echo $var | cut -f 2 -d ' ');
 
     name=$(basename ${vvc_vid});
 

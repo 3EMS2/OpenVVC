@@ -1927,18 +1927,18 @@ idct_x_4 4
 idct_x_4 8
 
 // idct-ii butterfly 
-idct_ii_8 2 8
-idct_ii_8 2 4
-idct_ii_8 4 8
-idct_ii_8 4 4
+idct_ii_8 2, 8
+idct_ii_8 2, 4
+idct_ii_8 4, 8
+idct_ii_8 4, 4
 
 // 8-pt dxt-2
-idct_x_8 2 4
-idct_x_8 2 8
-idct_x_8 4 4
-idct_x_8 4 8
-idct_x_8 8 4
-idct_x_8 8 8
+idct_x_8 2, 4
+idct_x_8 2, 8
+idct_x_8 4, 4
+idct_x_8 4, 8
+idct_x_8 8, 4
+idct_x_8 8, 8
 
 // 16-pt dct-2
 idct_ii_16_2 4
