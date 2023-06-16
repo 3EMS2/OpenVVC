@@ -545,7 +545,7 @@ rcn_attach_ctu_buff(struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s, uint8_t 
 {
      struct CTURCNData *rcn_data = &rcn_ctx->data;
      struct OVBuffInfo *ctu_binfo = &rcn_ctx->ctu_buff;
-     uint16_t stride = (256 * 128 >> log2_ctb_s) + 4 + 64;
+     uint16_t stride = (256 * 128 >> log2_ctb_s) + 4 + 32;
      uint16_t stride_c = stride >> 1;
      uint8_t ctb_addr_msk = (256 * 128 >> (2 * log2_ctb_s)) - 1;
 
