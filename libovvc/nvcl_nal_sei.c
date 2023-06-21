@@ -196,6 +196,7 @@ nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
     }
 
     struct OVSEIPayload payload = nvcl_sei_payload(rdr);
+    int br_val = 1;
 
     switch (payload.type) {
         uint8_t sei_byte;
@@ -227,6 +228,31 @@ nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
 #endif
         break;
 
+        case USER_DATA_UNREGISTERED:
+        ov_log(NULL, OVLOG_INFO, "SEI: SLHDR parameter extension (type = %d) with size %d.\n",
+                                  payload.type, payload.size);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+nvcl_read_bits(rdr, 8);
+
+sei->br_scale = nvcl_read_u_expgolomb(rdr) + 1;
+//sei->br_scale = nvcl_read_bits(rdr, 8) + 1;
+        ov_log(NULL, OVLOG_ERROR, "SEI: val = %d\n", sei->br_scale);
+
+        break;
         default:
 
         for (int i = 0; i < payload.size; i++) {
@@ -237,6 +263,7 @@ nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
         ov_log(NULL, OVLOG_INFO, "SEI: Unknown prefix message (type = %d) was found!\n", payload.type);
 
         break;
+
     }
 
     *sei_p = sei;

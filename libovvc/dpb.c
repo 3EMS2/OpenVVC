@@ -238,12 +238,12 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
 
         dpb->status &= ~(uint64_t)((uint64_t)1 << idx);
 
-	ov_log(NULL, OVLOG_ERROR, "DPB R state 0x%.64lb, %ld, %ld \n", dpb->status, cvs_id_pic, cvs_id_dpb);
+	//ov_log(NULL, OVLOG_ERROR, "DPB R state 0x%.64lb, %ld, %ld \n", dpb->status, cvs_id_pic, cvs_id_dpb);
     }
         ptrdiff_t idx = pic - dpb->pictures;
         uint64_t cvs_id_pic = pic->cvs_id;
         uint64_t cvs_id_dpb = dpb->cvs_id;
-    ov_log(NULL, OVLOG_WARNING, "DPB R state 0x%.64lb, %ld, %ld %d \n", dpb->status, cvs_id_pic, cvs_id_dpb, ref_count);
+    //ov_log(NULL, OVLOG_WARNING, "DPB R state 0x%.64lb, %ld, %ld %d \n", dpb->status, cvs_id_pic, cvs_id_dpb, ref_count);
     pthread_mutex_unlock(&pic->pic_mtx);
 }
 
@@ -371,8 +371,8 @@ log_pic_flags(const OVDPB *dpb)
     while (status) {
         uint8_t idx = next_used_slot(status);
         pic = &dpb->pictures[idx];
-        ov_log(NULL, OVLOG_WARNING,
-               "Picture %d ref_count: %d, flags: %d.\n",pic->poc, atomic_load(&pic->ref_count), pic->flags);
+        //ov_log(NULL, OVLOG_WARNING,
+         //      "Picture %d ref_count: %d, flags: %d.\n",pic->poc, atomic_load(&pic->ref_count), pic->flags);
 
         status &= ~(uint64_t)((uint64_t)1 << idx);
     }
@@ -402,7 +402,7 @@ alloc_frame(OVDPB *dpb, int poc)
         atomic_init(&pic->ref_count, 0);
 
         ov_log(NULL, OVLOG_DEBUG, "Attached frame %p to Picture with POC %d\n", pic->frame, poc);
-	ov_log(NULL, OVLOG_ERROR, "DPB N state 0x%.64lb\n", dpb->status);
+	//ov_log(NULL, OVLOG_ERROR, "DPB N state 0x%.64lb\n", dpb->status);
 
         return pic;
     }
@@ -553,7 +553,7 @@ rpl_info_print(const OVDPB *const dpb, const struct RPLInfo *const rpl_info)
     if (printed) a_lst[printed - 2] = '\0';
     if (printed_na) na_lst[printed_na - 2] = '\0';
 
-    ov_log(NULL, OVLOG_ERROR, "POC: %d: active: (%s), non active: (%s)\n", dpb->poc, a_lst, na_lst);
+    ov_log(NULL, OVLOG_TRACE, "POC: %d: active: (%s), non active: (%s)\n", dpb->poc, a_lst, na_lst);
 }
 
 static int
@@ -693,7 +693,7 @@ vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_
     if (printed) a_lst[printed - 2] = '\0';
     if (printed2) na_lst[printed2 - 2] = '\0';
 
-    ov_log(NULL, OVLOG_ERROR, "POC: %d: active: (%s), non active: (%s)\n", dpb->poc, a_lst, na_lst);
+    ov_log(NULL, OVLOG_TRACE, "POC: %d: active: (%s), non active: (%s)\n", dpb->poc, a_lst, na_lst);
 
     return 0;
 }

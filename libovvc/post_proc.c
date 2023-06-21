@@ -48,7 +48,7 @@
 #endif
 
 void
-pp_init_functions(const struct PostProcessCtx *ppctx, const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
+pp_init_functions(struct PostProcessCtx *ppctx, const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
 {
     pp_funcs->pp_apply_flag = 0;
 
@@ -73,6 +73,11 @@ pp_init_functions(const struct PostProcessCtx *ppctx, const OVSEI* sei, struct P
             pp_funcs->pp_apply_flag = 1;
         }
 #endif
+        if (sei->br_scale) {
+                ov_log (NULL, OVLOG_WARNING, "BR SCALE %d\n", sei->br_scale);
+
+            ppctx->brightness = 10000 / (32 * (sei->br_scale));
+        }
     }
 
     if (ppctx->upscale_flag) {
@@ -91,12 +96,19 @@ pp_uninit(struct PostProcessCtx *ppctx)
 }
 
 int
-pp_process_frame2(const struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **frame_p)
+pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **frame_p)
 {
     struct PostProcFunctions pp_funcs;
 
     /* FIXME  find another place to init this */
     pp_init_functions(ppctx, sei, &pp_funcs);
+
+        if (sei->br_scale) {
+                ov_log (NULL, OVLOG_WARNING, "BR SCALE %d\n", sei->br_scale);
+
+//            ppctx->brightness = 10000 / (32 / (sei->br_scale));
+            ppctx->brightness =  sei->br_scale;
+        }
 
     if (pp_funcs.pp_apply_flag) {
         OVFrame* src_frm = *frame_p;
@@ -153,7 +165,7 @@ pp_process_frame2(const struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame 
 
                 static const struct ColorDescription pq_bt2020 = {.colour_primaries = 9, .matrix_coeffs = 9, .transfer_characteristics=16, .full_range = 0} ;
 
-                ov_log (NULL, OVLOG_DEBUG, "Updating SLHDR peak luminance %d\n", ppctx->brightness);
+                ov_log (NULL, OVLOG_WARNING, "Updating SLHDR peak luminance %d\n", ppctx->brightness);
                 pp_set_display_peak(ppctx->slhdr_ctx, ppctx->brightness);
 
                 pp_funcs.pp_sdr_to_hdr(ppctx->slhdr_ctx, src_planes, dst_planes,
