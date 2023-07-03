@@ -170,7 +170,7 @@ void
 nvcl_slhdr_read(OVNVCLReader *const rdr, struct OVSEISLHDR* sei_slhdr, uint32_t payloadSize)
 {
     uint8_t* payload_array = sei_slhdr->payload_array;
-    for (int i = 0; i < payloadSize; i++) {
+    for (int i = 0; i < 83; i++) {
         payload_array[i] = nvcl_read_bits(rdr, 8);
     }
 }
@@ -224,10 +224,11 @@ nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
             sei->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
         }
 
+    payload.size = 83;
         nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
-        printf("size: %d\n" payload.size);
-        for (int i = 0; i < payloadSize; i++) {
-            printf(" %.2x"sei->sei_slhdr->payload_array[i])
+        printf("size: %d\n", payload.size);
+        for (int i = 0; i < payload.size; i++) {
+            printf(" %.2x", sei->sei_slhdr->payload_array[i]);
         }
 #endif
         break;
