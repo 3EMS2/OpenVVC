@@ -96,12 +96,11 @@ pp_uninit(struct PostProcessCtx *ppctx)
 }
 
 int
-pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **frame_p)
+pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **frame_p,
+                  const struct PostProcFunctions *const pp_funcs )
 {
-    struct PostProcFunctions pp_funcs;
 
     /* FIXME  find another place to init this */
-    pp_init_functions(ppctx, sei, &pp_funcs);
 
         if (sei->br_scale) {
                 ov_log (NULL, OVLOG_WARNING, "BR SCALE %d\n", sei->br_scale);
@@ -110,7 +109,7 @@ pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **fram
             ppctx->brightness =  sei->br_scale;
         }
 
-    if (pp_funcs.pp_apply_flag) {
+    if (pp_funcs->pp_apply_flag) {
         OVFrame* src_frm = *frame_p;
 
         /* Request a writable picture from same src_frm pool */
@@ -154,7 +153,7 @@ pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **fram
 
             uint8_t enable_deblock = 1;
 
-            pp_funcs.pp_film_grain(dst_planes, src_planes, sei->sei_fg,
+            pp_funcs->pp_film_grain(dst_planes, src_planes, sei->sei_fg,
                                    src_frm->width, src_frm->height,
                                    src_frm->poc, 0, enable_deblock);
 
@@ -168,7 +167,7 @@ pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **fram
                 ov_log (NULL, OVLOG_WARNING, "Updating SLHDR peak luminance %d\n", ppctx->brightness);
                 pp_set_display_peak(ppctx->slhdr_ctx, ppctx->brightness);
 
-                pp_funcs.pp_sdr_to_hdr(ppctx->slhdr_ctx, src_planes, dst_planes,
+                pp_funcs->pp_sdr_to_hdr(ppctx->slhdr_ctx, src_planes, dst_planes,
                                        sei->sei_slhdr->payload_array, src_frm->width, src_frm->height);
 
                 //memcpy(pp_frm->data[0], src_frm->data[0], pp_frm->size[0]);
@@ -238,8 +237,12 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
                 slhdr_sei = 1;
             }
 
+            struct PostProcFunctions pp_funcs ={0};
+            if (! slhdr_sei)
+                pp_init_functions(pctx, sei, &pp_funcs);
+
             /* Check SEI SEI */
-            ret = pp_process_frame2(pctx, sei, frame_p);
+            ret = pp_process_frame2(pctx, sei, frame_p, &pp_funcs);
 
             if (sei) {
                 if (sei->sei_fg) {
