@@ -186,6 +186,189 @@ nvcl_sei_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 }
 #endif
 
+struct SLHDRInfo {
+    uint8_t itu_t_t35_country_code[8];
+    uint16_t terminal_provider_code;
+    uint8_t terminal_provider_oriented_code_message_idc;
+    uint8_t sl_hdr_mode_value_minus1;
+    uint8_t sl_hdr_spec_major_version_idc;
+    uint8_t sl_hdr_spec_minor_version_idc;
+    uint8_t sl_hdr_cancel_flag;
+    uint8_t sl_hdr_persistence_flag;
+    uint8_t coded_picture_info_present_flag;
+    uint8_t target_picture_info_present_flag;
+    uint8_t src_mdcv_info_present_flag;
+    uint8_t sl_hdr_extension_present_flag;
+    uint8_t sl_hdr_payload_mode;
+    uint8_t coded_picture_primaries;
+    uint16_t coded_picture_max_luminance;
+    uint16_t coded_picture_min_luminance;
+    uint8_t target_picture_primaries;
+    uint16_t target_picture_max_luminance;
+    uint16_t target_picture_min_luminance;
+    uint16_t src_mdcv_primaries_x[3];
+    uint16_t src_mdcv_primaries_y[3];
+    uint16_t src_mdcv_ref_white_x;
+    uint16_t src_mdcv_ref_white_y;
+    uint16_t src_mdcv_max_mastering_luminance;
+    uint16_t src_mdcv_min_mastering_luminance;
+    uint16_t matrix_coefficient_value[4];
+    uint16_t chroma_to_luma_injection[2];
+    uint8_t k_coefficient_value[ 3 ];
+    uint8_t tone_mapping_input_signal_black_level_offset;
+    uint8_t tone_mapping_input_signal_white_level_offset;
+    uint8_t shadow_gain_control;
+    uint8_t highlight_gain_control;
+    uint8_t mid_tone_width_adjustment_factor;
+    uint8_t tone_mapping_output_fine_tuning_num_val;
+    uint8_t saturation_gain_num_val;
+    uint8_t tone_mapping_output_fine_tuning_x[10];
+    uint8_t tone_mapping_output_fine_tuning_y[10];
+    uint8_t saturation_gain_x[6];
+    uint8_t saturation_gain_y[6];
+    uint8_t lm_uniform_sampling_flag;
+    uint8_t luminance_mapping_num_val;
+    uint16_t luminance_mapping_x[65];
+    uint16_t luminance_mapping_y[65];
+    uint8_t cc_uniform_sampling_flag;
+    uint8_t colour_correction_num_val;
+    uint16_t colour_correction_x[65];
+    uint16_t colour_correction_y[65];
+    uint8_t gamut_mapping_mode;
+    uint8_t sl_hdr_extension_6bits;
+    uint16_t sl_hdr_extension_length;
+    uint8_t sl_hdr_extension_data_byte;
+};
+
+static void
+tmp_read_slhdr(struct OVNVCLReader *const rdr, struct SLHDRInfo *const slhdr)
+{
+    int i;
+
+    for (i = 0; i < 8; ++i) {
+        slhdr->itu_t_t35_country_code[i] = nvcl_read_bits(rdr, 8);
+    }
+
+    slhdr->terminal_provider_code = nvcl_read_bits(rdr, 16);
+    slhdr->terminal_provider_oriented_code_message_idc = nvcl_read_bits(rdr, 8);
+    slhdr->sl_hdr_mode_value_minus1 = nvcl_read_bits(rdr, 4);
+    slhdr->sl_hdr_spec_major_version_idc = nvcl_read_bits(rdr, 4);
+    slhdr->sl_hdr_spec_minor_version_idc = nvcl_read_bits(rdr, 7);
+    slhdr->sl_hdr_cancel_flag = nvcl_read_bits(rdr, 1);
+
+    if( !slhdr->sl_hdr_cancel_flag ) {
+
+        slhdr->sl_hdr_persistence_flag = nvcl_read_bits(rdr, 1);
+        slhdr->coded_picture_info_present_flag = nvcl_read_bits(rdr, 1);
+        slhdr->target_picture_info_present_flag = nvcl_read_bits(rdr, 1);
+        slhdr->src_mdcv_info_present_flag = nvcl_read_bits(rdr, 1);
+        slhdr->sl_hdr_extension_present_flag = nvcl_read_bits(rdr, 1);
+        slhdr->sl_hdr_payload_mode = nvcl_read_bits(rdr, 3);
+
+        if( slhdr->coded_picture_info_present_flag ) {
+            slhdr->coded_picture_primaries = nvcl_read_bits(rdr, 8);
+            slhdr->coded_picture_max_luminance = nvcl_read_bits(rdr, 16);
+            slhdr->coded_picture_min_luminance = nvcl_read_bits(rdr, 16);
+        }
+
+        if( slhdr->target_picture_info_present_flag ) {
+            slhdr->target_picture_primaries = nvcl_read_bits(rdr, 8);
+            slhdr->target_picture_max_luminance = nvcl_read_bits(rdr, 16);
+            slhdr->target_picture_min_luminance = nvcl_read_bits(rdr, 16);
+        }
+
+        if( slhdr->src_mdcv_info_present_flag ) {
+
+            for( int c = 0; c < 3; c++ ) {
+                slhdr->src_mdcv_primaries_x[ c ] = nvcl_read_bits(rdr, 16);
+                slhdr->src_mdcv_primaries_y[ c ] = nvcl_read_bits(rdr, 16);
+            }
+
+            slhdr->src_mdcv_ref_white_x = nvcl_read_bits(rdr, 16);
+            slhdr->src_mdcv_ref_white_y = nvcl_read_bits(rdr, 16);
+            slhdr->src_mdcv_max_mastering_luminance = nvcl_read_bits(rdr, 16);
+            slhdr->src_mdcv_min_mastering_luminance = nvcl_read_bits(rdr, 16);
+        }
+
+        for( i = 0; i < 4; i++) {
+            slhdr->matrix_coefficient_value[ i ] = nvcl_read_bits(rdr, 16);
+        }
+
+        for( i = 0; i < 2; i++) {
+            slhdr->chroma_to_luma_injection[ i ] = nvcl_read_bits(rdr, 16);
+        }
+
+        for( i = 0; i < 3; i++) {
+            slhdr->k_coefficient_value[ i ] = nvcl_read_bits(rdr, 8);
+        }
+
+        if( slhdr->sl_hdr_payload_mode == 0 ) {
+            slhdr->tone_mapping_input_signal_black_level_offset = nvcl_read_bits(rdr, 8);
+            slhdr->tone_mapping_input_signal_white_level_offset = nvcl_read_bits(rdr, 8);
+            slhdr->shadow_gain_control = nvcl_read_bits(rdr, 8);
+            slhdr->highlight_gain_control = nvcl_read_bits(rdr, 8);
+            slhdr->mid_tone_width_adjustment_factor = nvcl_read_bits(rdr, 8);
+            slhdr->tone_mapping_output_fine_tuning_num_val = nvcl_read_bits(rdr, 4);
+            slhdr->saturation_gain_num_val = nvcl_read_bits(rdr, 4);
+
+            for( i = 0; i < slhdr->tone_mapping_output_fine_tuning_num_val; i++) {
+                slhdr->tone_mapping_output_fine_tuning_x[ i ] = nvcl_read_bits(rdr, 8);
+                slhdr->tone_mapping_output_fine_tuning_y[ i ] = nvcl_read_bits(rdr, 8);
+            }
+
+            for( i = 0; i < slhdr->saturation_gain_num_val; i++) {
+                slhdr->saturation_gain_x[ i ] = nvcl_read_bits(rdr, 8);
+                slhdr->saturation_gain_y[ i ] = nvcl_read_bits(rdr, 8);
+            }
+
+        } else if( slhdr->sl_hdr_payload_mode == 1 ) {
+            slhdr->lm_uniform_sampling_flag = nvcl_read_bits(rdr, 1);
+            slhdr->luminance_mapping_num_val = nvcl_read_bits(rdr, 7);
+
+            for( i = 0; i < slhdr->luminance_mapping_num_val; i++) {
+                if( !slhdr->lm_uniform_sampling_flag ) {
+                    slhdr->luminance_mapping_x[ i ] = nvcl_read_bits(rdr, 16);
+                }
+                slhdr->luminance_mapping_y[ i ] = nvcl_read_bits(rdr, 16);
+            }
+
+            slhdr->cc_uniform_sampling_flag = nvcl_read_bits(rdr, 1);
+            slhdr->colour_correction_num_val = nvcl_read_bits(rdr, 7);
+
+            for( i = 0; i < slhdr->colour_correction_num_val; i++) {
+                if( !slhdr->cc_uniform_sampling_flag ) {
+                    slhdr->colour_correction_x[ i ] = nvcl_read_bits(rdr, 16);
+                }
+                slhdr->colour_correction_y[ i ] = nvcl_read_bits(rdr, 16);
+            }
+        }
+        int hdr_pic_colour_space = 1;
+        int sdr_pic_colour_space = hdr_pic_colour_space;
+        if (slhdr->target_picture_primaries == 1)
+            sdr_pic_colour_space = 0;
+        if (slhdr->target_picture_primaries == 9)
+            sdr_pic_colour_space = 1;
+        int GamutMappingEnabledFlag = sdr_pic_colour_space < hdr_pic_colour_space;
+
+        if( GamutMappingEnabledFlag ) {
+            ov_log(NULL, OVLOG_ERROR, "SLHDR GAMUT Mapping \n");
+            slhdr->gamut_mapping_mode = nvcl_read_bits(rdr, 8);
+            if (slhdr->gamut_mapping_mode == 1) {
+                //gamut_mapping_params( )
+            }
+        }
+
+        if( slhdr->sl_hdr_extension_present_flag ) {
+            slhdr->sl_hdr_extension_6bits = nvcl_read_bits(rdr, 6);
+            slhdr->sl_hdr_extension_length = nvcl_read_bits(rdr, 10);
+
+            for( i = 0; i< slhdr->sl_hdr_extension_length; i++ ) {
+                slhdr->sl_hdr_extension_data_byte = nvcl_read_bits(rdr, 8);
+            }
+        }
+    }
+}
+
 int
 nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
 {
@@ -224,12 +407,15 @@ nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
             sei->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
         }
 
-    payload.size = 83;
+        struct OVNVCLReader rdr2 = *rdr;
+        struct SLHDRInfo slhdr_info = {0};
         nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
         printf("size: %d\n", payload.size);
         for (int i = 0; i < payload.size; i++) {
             printf(" %.2x", sei->sei_slhdr->payload_array[i]);
         }
+
+        tmp_read_slhdr(&rdr2, &slhdr_info);
 #endif
         break;
 
