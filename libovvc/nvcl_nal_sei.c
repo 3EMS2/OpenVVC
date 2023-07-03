@@ -225,6 +225,10 @@ nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
         }
 
         nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
+        printf("size: %d\n" payload.size);
+        for (int i = 0; i < payloadSize; i++) {
+            printf(" %.2x"sei->sei_slhdr->payload_array[i])
+        }
 #endif
         break;
 
