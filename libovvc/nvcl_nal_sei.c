@@ -186,6 +186,28 @@ nvcl_sei_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 }
 #endif
 
+struct GamutMappingParams {
+	uint8_t sat_mapping_mode;
+	uint8_t sat_global_1seg_ratio;
+	uint8_t sat_global_2seg_ratio_wcg;
+	uint8_t sat_global_2seg_ratio_scg;
+	uint8_t sat_1seg_ratio[6];
+	uint8_t sat_2seg_ratio_wcg[6];
+	uint8_t sat_2seg_ratio_scg[6];
+	uint8_t lightness_mapping_mode;
+	uint8_t lm_weight_factor[6];
+	uint8_t cropping_mode_scg;
+	uint8_t cm_weight_factor[6];
+	uint8_t cm_cropped_lm_enabled_flag;
+	uint8_t hue_adjustment_mode;
+	uint8_t hue_global_preservation_ratio;
+	uint8_t hue_preservation_ratio[6];
+	uint8_t hue_adjustment_correction_info_present_flag;
+	uint8_t hue_alignment_correction[6];
+	uint8_t chrom_adjustment_info_present_flag;
+	uint8_t chrom_adjustment_param[6];
+};
+
 struct SLHDRInfo {
     uint8_t itu_t_t35_country_code;
     uint16_t terminal_provider_code;
@@ -235,10 +257,56 @@ struct SLHDRInfo {
     uint16_t colour_correction_x[65];
     uint16_t colour_correction_y[65];
     uint8_t gamut_mapping_mode;
+    struct GamutMappingParams gmp;
     uint8_t sl_hdr_extension_6bits;
     uint16_t sl_hdr_extension_length;
     uint8_t sl_hdr_extension_data_byte;
 };
+
+static void
+gamut_mapping_params(struct OVNVCLReader *const rdr, struct GamutMappingParams *const gmp)
+{
+    int c;
+    gmp->sat_mapping_mode = nvcl_read_bits(rdr, 2);
+    if (gmp->sat_mapping_mode == 1) {
+        gmp->sat_global_1seg_ratio = nvcl_read_bits(rdr, 3);
+        gmp->sat_global_2seg_ratio_wcg = nvcl_read_bits(rdr, 3);
+        gmp->sat_global_2seg_ratio_scg = nvcl_read_bits(rdr, 3);
+    }
+    else if (gmp->sat_mapping_mode == 2) {
+        for (c = 0; c < 6; c++) {
+            gmp->sat_1seg_ratio[c] = nvcl_read_bits(rdr, 3);
+            gmp->sat_2seg_ratio_wcg[c] = nvcl_read_bits(rdr, 3);
+            gmp->sat_2seg_ratio_scg[c] = nvcl_read_bits(rdr, 3);
+        }
+    }
+    gmp->lightness_mapping_mode = nvcl_read_bits(rdr, 2);
+    if (gmp->lightness_mapping_mode == 3)
+        for (c = 0; c < 6; c++)
+            gmp->lm_weight_factor[c] = nvcl_read_bits(rdr, 3);
+    gmp->cropping_mode_scg = nvcl_read_bits(rdr, 2);
+    if (gmp->cropping_mode_scg == 3)
+        for (c =0; c < 6; c++)
+            gmp->cm_weight_factor[c] = nvcl_read_bits(rdr, 3);
+                if (gmp->cropping_mode_scg != 0)
+                    gmp->cm_cropped_lm_enabled_flag = nvcl_read_bits(rdr, 1);
+    gmp->hue_adjustment_mode = nvcl_read_bits(rdr, 2);
+    if (gmp->hue_adjustment_mode == 2)
+        gmp->hue_global_preservation_ratio = nvcl_read_bits(rdr, 3);
+    if (gmp->hue_adjustment_mode == 3)
+        for (c = 0; c < 6; c++)
+            gmp->hue_preservation_ratio[c] = nvcl_read_bits(rdr, 3);
+    if (gmp->hue_adjustment_mode != 0) {
+        gmp->hue_adjustment_correction_info_present_flag = nvcl_read_bits(rdr, 1);
+        if (gmp->hue_adjustment_correction_info_present_flag)
+            for (c = 0; c < 6; c++)
+                gmp->hue_alignment_correction[c] = nvcl_read_bits(rdr, 3);
+        gmp->chrom_adjustment_info_present_flag = nvcl_read_bits(rdr, 1);
+        if (gmp->chrom_adjustment_info_present_flag)
+            for (c = 0; c < 6; c++)
+                gmp->chrom_adjustment_param[c] = nvcl_read_bits(rdr, 2);
+    }
+}
 
 static void
 tmp_read_slhdr(struct OVNVCLReader *const rdr, struct SLHDRInfo *const slhdr)
@@ -367,7 +435,7 @@ tmp_read_slhdr(struct OVNVCLReader *const rdr, struct SLHDRInfo *const slhdr)
             ov_log(NULL, OVLOG_ERROR, "SLHDR GAMUT Mapping \n");
             slhdr->gamut_mapping_mode = nvcl_read_bits(rdr, 8);
             if (slhdr->gamut_mapping_mode == 1) {
-                //gamut_mapping_params( )
+                gamut_mapping_params(rdr, &slhdr->gmp);
             }
         }
 
