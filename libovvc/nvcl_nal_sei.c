@@ -170,7 +170,7 @@ void
 nvcl_slhdr_read(OVNVCLReader *const rdr, struct OVSEISLHDR* sei_slhdr, uint32_t payloadSize)
 {
     uint8_t* payload_array = sei_slhdr->payload_array;
-    for (int i = 0; i < 83; i++) {
+    for (int i = 0; i < payloadSize; i++) {
         payload_array[i] = nvcl_read_bits(rdr, 8);
     }
 }
