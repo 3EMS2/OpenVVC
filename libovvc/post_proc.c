@@ -213,7 +213,6 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
     int i;
     int ret = 0;
     int slhdr_sei = 0;
-#if 1
 
     struct PostProcFunctions pp_funcs ={0};
 
@@ -261,7 +260,6 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
             }
         }
     }
-#endif
 
     return ret;
 }
