@@ -464,7 +464,7 @@ nvcl_decode_nalu_sei2(OVSEI *sei, OVNVCLReader *const rdr, uint8_t nalu_type)
                                   "(type = %d) with size %d.\n",
                                   payload.type, payload.size);
 
-        if(!sei->sei_fg) {
+        if (!sei->sei_fg) {
             sei->sei_fg = ov_mallocz(sizeof(struct OVSEIFGrain));
         }
 
