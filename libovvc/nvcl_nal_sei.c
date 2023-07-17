@@ -466,67 +466,6 @@ fail:
     return OVVC_ENOMEM;
 }
 
-#if 1
-int 
-nvcl_decode_nalu_sei(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t nalu_type)
-{   
-#if 0
-    if(!nvcl_ctx->sei)
-        nvcl_ctx->sei = ov_mallocz(sizeof(struct OVSEI));    
-
-    struct OVSEI* sei = nvcl_ctx->sei;
-#else
-    struct OVSEI* sei = ov_mallocz(sizeof(struct OVSEI));
-#endif
-
-    struct OVSEIPayload payload = nvcl_sei_payload(rdr);
-    switch (payload.type)
-    {
-        uint8_t sei_byte;
-        case FILM_GRAIN_CHARACTERISTICS:
-
-        ov_log(NULL, OVLOG_DEBUG, "SEI: FILM_GRAIN_CHARACTERISTICS"
-                                  " (type = %d) with size %d.\n",
-                                  payload.type, payload.size);
-
-        if (!sei->sei_fg) {
-            sei->sei_fg = ov_mallocz(sizeof(struct OVSEIFGrain));
-        }
-
-        nvcl_film_grain_read(rdr, sei->sei_fg);
-
-        break;
-
-        case USER_DATA_REGISTERED_ITU_T_T35:
-
-        ov_log(NULL, OVLOG_DEBUG, "SEI: USER_DATA_REGISTERED_ITU_T_T35"
-                                  " (type = %d) with size %d.\n",
-                                  payload.type, payload.size);
-
-#if HAVE_SLHDR
-        if (!sei->sei_slhdr) {
-            sei->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
-        }
-
-        nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
-#endif
-        break;
-        default:
-
-        for (int i = 0; i < payload.size; i++) {
-            sei_byte = nvcl_read_bits(rdr, 8);
-            sei_byte++;
-        }
-
-        ov_log(NULL, OVLOG_INFO, "SEI: Unknown prefix message"
-                                 " (type = %d) was found!\n",
-                                 payload.type);
-        break;
-    }
-
-    return 0;
-}
-#endif
 
 #if 0
 const struct HLSReader sei_manager =

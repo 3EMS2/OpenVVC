@@ -337,20 +337,6 @@ static int decode_nvcl_hls(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
     return 0;
 }
 
-#if 0
-static int tmp_sei_wrap(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
-{
-    uint8_t nalu_type = nalu->type & 0x1F;
-    OVNVCLReader rdr;
-
-    nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
-
-    nvcl_skip_bits(&rdr, 16);
-
-    return nvcl_decode_nalu_sei(nvcl_ctx, &rdr, nalu_type);
-}
-#endif
-
 static const NALUnitAction nalu_action[32] =
 {
     &decode_nvcl_hls                , /* TRAIL */
