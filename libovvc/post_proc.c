@@ -165,14 +165,11 @@ pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **fram
                 static const struct ColorDescription pq_bt2020 = {.colour_primaries = 9, .matrix_coeffs = 9, .transfer_characteristics=16, .full_range = 0} ;
 
                 ov_log (NULL, OVLOG_WARNING, "Updating SLHDR peak luminance %d\n", ppctx->brightness);
+
                 pp_set_display_peak(ppctx->slhdr_ctx, ppctx->brightness);
 
                 pp_funcs->pp_sdr_to_hdr(ppctx->slhdr_ctx, src_planes, dst_planes,
                                        sei->sei_slhdr->payload_array, src_frm->width, src_frm->height);
-
-                //memcpy(pp_frm->data[0], src_frm->data[0], pp_frm->size[0]);
-                //memcpy(pp_frm->data[1], src_frm->data[1], pp_frm->size[1]);
-                //memcpy(pp_frm->data[2], src_frm->data[2], pp_frm->size[2]);
 
                 pp_frm->frame_info.color_desc = pq_bt2020;
 
