@@ -100,6 +100,6 @@ int nvcl_decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNALUnit *nal_unit);
 
 int nvcl_decode_nalu_sh(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
-int nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type);
+int nvcl_decode_nalu_sei2(OVSEI *sei_p, OVNVCLReader *const rdr, uint8_t nalu_type);
 
 #endif

@@ -451,14 +451,8 @@ tmp_read_slhdr(struct OVNVCLReader *const rdr, struct SLHDRInfo *const slhdr)
 }
 
 int
-nvcl_decode_nalu_sei2(OVSEI **sei_p, OVNVCLReader *const rdr, uint8_t nalu_type)
+nvcl_decode_nalu_sei2(OVSEI *sei, OVNVCLReader *const rdr, uint8_t nalu_type)
 {
-    OVSEI *sei = *sei_p;
-    if (!sei) {
-        sei = ov_mallocz(sizeof(struct OVSEI));
-        if (!sei) goto fail;
-    }
-
     struct OVSEIPayload payload = nvcl_sei_payload(rdr);
     int br_val = 1;
 
@@ -538,13 +532,8 @@ sei->br_scale = nvcl_read_u_expgolomb(rdr) + 1;
 
     }
 
-    *sei_p = sei;
 
     return 0;
-
-fail:
-    ov_log(NULL, OVLOG_ERROR, "Could not alloc SEI.\n");
-    return OVVC_ENOMEM;
 }
 
 

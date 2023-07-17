@@ -198,7 +198,7 @@ no_writable_pic:
 }
 
 
-static int tmp_sei_wrap(OVNALUnit *const nalu, OVSEI **dst)
+static int tmp_sei_wrap(OVNALUnit *const nalu, OVSEI *dst)
 {
     uint8_t nalu_type = nalu->type & 0x1F;
     OVNVCLReader rdr;
@@ -217,29 +217,37 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
     int ret = 0;
     int slhdr_sei = 0;
 #if 1
-    OVSEI *sei = NULL;
+
+    struct PostProcFunctions pp_funcs ={0};
 
     for (i = 0; i < pu->nb_nalus; ++i) {
         if (pu->nalus[i]->type == OVNALU_PREFIX_SEI ||
             pu->nalus[i]->type == OVNALU_SUFFIX_SEI) {
 
-            ret = tmp_sei_wrap(pu->nalus[i], &sei);
+            OVSEI *sei = ov_mallocz(sizeof(struct OVSEI));
+            if (!sei) {
+                ov_log(NULL, OVLOG_ERROR, "Could not alloc SEI.\n");
+            }
+
+            ret = tmp_sei_wrap(pu->nalus[i], sei);
 
             if (ret < 0) {
-                goto fail;
+                ov_log(NULL, OVLOG_ERROR, "Error reading SEI\n");
             }
 
             if (slhdr_sei && sei->sei_slhdr) {
                 ov_freep(&sei->sei_slhdr);
+                ov_freep(&sei);
+                ov_log(NULL, OVLOG_ERROR, "Skip duplicated SLHDR SEI\n");
+                continue;
             }
+
+            pp_init_functions(pctx, sei, &pp_funcs);
 
             if (sei->sei_slhdr) {
                 slhdr_sei = 1;
             }
 
-            struct PostProcFunctions pp_funcs ={0};
-            if (! slhdr_sei)
-                pp_init_functions(pctx, sei, &pp_funcs);
 
             /* Check SEI SEI */
             ret = pp_process_frame2(pctx, sei, frame_p, &pp_funcs);
@@ -255,9 +263,7 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
                 ov_freep(&sei);
             }
         }
-
     }
-fail:
 #endif
 
     return ret;
