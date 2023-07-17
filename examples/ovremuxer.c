@@ -297,7 +297,11 @@ write_pu(const OVPictureUnit *const pu, FILE *out)
         if (nalu->type == OVNALU_PREFIX_SEI || nalu->type == OVNALU_SUFFIX_SEI) {
 
             uint16_t nb_bits = eu(br_scale, &tmp_val);
+#if 0
             uint16_t nb_bytes = (nb_bits + 0x7) >> 3;
+#else
+            uint16_t nb_bytes = 2;
+#endif
             /* Start code */
             fwrite(start_code, 1, 3, out);
             /* NAL Unit header */
@@ -312,6 +316,7 @@ write_pu(const OVPictureUnit *const pu, FILE *out)
 
             /* SEI 16 byte for uuid */
             //fputc(br_scale, out);
+#if 0
             int t = 3;
             do {
                 uint8_t tmp2 [4];
@@ -327,6 +332,11 @@ write_pu(const OVPictureUnit *const pu, FILE *out)
 #endif
                 fwrite(tmp2, 1, 1, out);
             } while (--nb_bytes);
+#else
+	    fputc(((br_scale >> 8) & 0xFF), out);
+	    fputc((br_scale & 0xFF), out);
+
+#endif
             /* RBSP stop bit*/
             fputc(0x80, out);
         }

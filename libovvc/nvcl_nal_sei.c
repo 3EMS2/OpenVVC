@@ -485,37 +485,35 @@ nvcl_decode_nalu_sei2(OVSEI *sei, OVNVCLReader *const rdr, uint8_t nalu_type)
         struct OVNVCLReader rdr2 = *rdr;
         struct SLHDRInfo slhdr_info = {0};
         nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
-        printf("size: %d\n", payload.size);
-        for (int i = 0; i < payload.size; i++) {
-            printf(" %.2x", sei->sei_slhdr->payload_array[i]);
-        }
 
         tmp_read_slhdr(&rdr2, &slhdr_info);
 #endif
         break;
 
         case USER_DATA_UNREGISTERED:
+
         ov_log(NULL, OVLOG_INFO, "SEI: SLHDR parameter extension (type = %d) with size %d.\n",
                                   payload.type, payload.size);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
-nvcl_read_bits(rdr, 8);
 
-sei->br_scale = nvcl_read_u_expgolomb(rdr) + 1;
-//sei->br_scale = nvcl_read_bits(rdr, 8) + 1;
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+        nvcl_read_bits(rdr, 8);
+
+        sei->br_scale = nvcl_read_bits(rdr, 16) + 1;
+
         ov_log(NULL, OVLOG_ERROR, "SEI: val = %d\n", sei->br_scale);
 
         break;
