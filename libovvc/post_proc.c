@@ -62,7 +62,6 @@ pp_init_functions(struct PostProcessCtx *ppctx, const OVSEI* sei, struct PostPro
 
 #if HAVE_SLHDR
         if (sei->sei_slhdr) {
-
             if (!ppctx->slhdr_ctx) {
                 ov_log (NULL, OVLOG_DEBUG, "Init SLHDR Post Processor with peak luminance: %d\n", ppctx->brightness);
                 pp_init_slhdr_lib(&ppctx->slhdr_ctx);
@@ -91,6 +90,7 @@ pp_uninit(struct PostProcessCtx *ppctx)
     if (ppctx->slhdr_ctx) {
 #if HAVE_SLHDR
         pp_uninit_slhdr_lib(ppctx->slhdr_ctx);
+        ppctx->slhdr_ctx = NULL;
 #endif
     }
 }
