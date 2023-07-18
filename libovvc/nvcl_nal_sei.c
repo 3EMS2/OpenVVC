@@ -267,44 +267,71 @@ static void
 gamut_mapping_params(struct OVNVCLReader *const rdr, struct GamutMappingParams *const gmp)
 {
     int c;
+
     gmp->sat_mapping_mode = nvcl_read_bits(rdr, 2);
+
     if (gmp->sat_mapping_mode == 1) {
-        gmp->sat_global_1seg_ratio = nvcl_read_bits(rdr, 3);
+        gmp->sat_global_1seg_ratio     = nvcl_read_bits(rdr, 3);
         gmp->sat_global_2seg_ratio_wcg = nvcl_read_bits(rdr, 3);
         gmp->sat_global_2seg_ratio_scg = nvcl_read_bits(rdr, 3);
-    }
-    else if (gmp->sat_mapping_mode == 2) {
+    } else if (gmp->sat_mapping_mode == 2) {
         for (c = 0; c < 6; c++) {
-            gmp->sat_1seg_ratio[c] = nvcl_read_bits(rdr, 3);
+            gmp->sat_1seg_ratio[c]     = nvcl_read_bits(rdr, 3);
             gmp->sat_2seg_ratio_wcg[c] = nvcl_read_bits(rdr, 3);
             gmp->sat_2seg_ratio_scg[c] = nvcl_read_bits(rdr, 3);
         }
     }
+
     gmp->lightness_mapping_mode = nvcl_read_bits(rdr, 2);
-    if (gmp->lightness_mapping_mode == 3)
-        for (c = 0; c < 6; c++)
+
+    if (gmp->lightness_mapping_mode == 3) {
+        for (c = 0; c < 6; c++) {
             gmp->lm_weight_factor[c] = nvcl_read_bits(rdr, 3);
+        }
+    }
+
     gmp->cropping_mode_scg = nvcl_read_bits(rdr, 2);
-    if (gmp->cropping_mode_scg == 3)
-        for (c =0; c < 6; c++)
+
+    if (gmp->cropping_mode_scg == 3) {
+
+        for (c =0; c < 6; c++) {
             gmp->cm_weight_factor[c] = nvcl_read_bits(rdr, 3);
-                if (gmp->cropping_mode_scg != 0)
-                    gmp->cm_cropped_lm_enabled_flag = nvcl_read_bits(rdr, 1);
+        }
+
+        if (gmp->cropping_mode_scg != 0) {
+            gmp->cm_cropped_lm_enabled_flag = nvcl_read_bits(rdr, 1);
+        }
+    }
+
     gmp->hue_adjustment_mode = nvcl_read_bits(rdr, 2);
-    if (gmp->hue_adjustment_mode == 2)
+
+    if (gmp->hue_adjustment_mode == 2) {
         gmp->hue_global_preservation_ratio = nvcl_read_bits(rdr, 3);
-    if (gmp->hue_adjustment_mode == 3)
-        for (c = 0; c < 6; c++)
+    }
+
+    if (gmp->hue_adjustment_mode == 3) {
+        for (c = 0; c < 6; c++) {
             gmp->hue_preservation_ratio[c] = nvcl_read_bits(rdr, 3);
+        }
+    }
+
     if (gmp->hue_adjustment_mode != 0) {
+
         gmp->hue_adjustment_correction_info_present_flag = nvcl_read_bits(rdr, 1);
-        if (gmp->hue_adjustment_correction_info_present_flag)
-            for (c = 0; c < 6; c++)
+
+        if (gmp->hue_adjustment_correction_info_present_flag) {
+            for (c = 0; c < 6; c++) {
                 gmp->hue_alignment_correction[c] = nvcl_read_bits(rdr, 3);
+            }
+        }
+
         gmp->chrom_adjustment_info_present_flag = nvcl_read_bits(rdr, 1);
-        if (gmp->chrom_adjustment_info_present_flag)
-            for (c = 0; c < 6; c++)
+
+        if (gmp->chrom_adjustment_info_present_flag) {
+            for (c = 0; c < 6; c++) {
                 gmp->chrom_adjustment_param[c] = nvcl_read_bits(rdr, 2);
+            }
+        }
     }
 }
 
