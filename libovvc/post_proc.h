@@ -50,7 +50,6 @@ typedef void (*SLHDRFunc)(void* slhdr_context, int16_t** sdr_pic, int16_t** hdr_
 
 struct PostProcFunctions
 {
-    uint8_t pp_apply_flag;
     FGFunc pp_film_grain;
     SLHDRFunc pp_sdr_to_hdr;
 };
