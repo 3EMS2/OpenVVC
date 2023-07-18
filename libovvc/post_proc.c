@@ -94,6 +94,7 @@ film_grain(const struct PostProcessCtx *const ppctx, const struct Frame *const s
     return 0;
 }
 
+#if HAVE_SLHDR
 static int
 pp_slhdr(const struct PostProcessCtx *const ppctx,
          const struct Frame *const src, struct Frame *dst, void *params)
@@ -111,9 +112,12 @@ pp_slhdr(const struct PostProcessCtx *const ppctx,
 
     dst->frame_info.color_desc = pq_bt2020;
 
-    dst->width = src->width;
+    dst->width  = src->width;
     dst->height = src->height;
+
+    return 0;
 }
+#endif
 
 int
 pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **frame_p)
