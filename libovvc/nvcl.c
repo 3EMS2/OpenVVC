@@ -326,7 +326,7 @@ static int decode_nvcl_hls(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
 
     if (hls_reader != &todo) {
         struct HLSDataRef **storage = hls_reader->find_storage(&rdr, nvcl_ctx);
-        int ret =  decode_nalu_hls_data(nvcl_ctx, storage, &rdr, hls_reader, nalu_type);
+        int ret = decode_nalu_hls_data(nvcl_ctx, storage, &rdr, hls_reader, nalu_type);
         if (*storage) {
             hlsdata_newref((struct HLSDataRef **)&nalu->hls_data, *storage);
         }

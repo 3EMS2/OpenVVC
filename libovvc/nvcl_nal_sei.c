@@ -352,11 +352,12 @@ tmp_read_slhdr(struct OVNVCLReader *const rdr, struct SLHDRInfo *const slhdr)
 
     if (!slhdr->sl_hdr_cancel_flag) {
 
-        slhdr->sl_hdr_persistence_flag = nvcl_read_bits(rdr, 1);
-        slhdr->coded_picture_info_present_flag = nvcl_read_bits(rdr, 1);
+        slhdr->sl_hdr_persistence_flag          = nvcl_read_bits(rdr, 1);
+        slhdr->coded_picture_info_present_flag  = nvcl_read_bits(rdr, 1);
         slhdr->target_picture_info_present_flag = nvcl_read_bits(rdr, 1);
-        slhdr->src_mdcv_info_present_flag = nvcl_read_bits(rdr, 1);
-        slhdr->sl_hdr_extension_present_flag = nvcl_read_bits(rdr, 1);
+        slhdr->src_mdcv_info_present_flag       = nvcl_read_bits(rdr, 1);
+        slhdr->sl_hdr_extension_present_flag    = nvcl_read_bits(rdr, 1);
+
         slhdr->sl_hdr_payload_mode = nvcl_read_bits(rdr, 3);
 
         if (slhdr->coded_picture_info_present_flag) {
@@ -467,7 +468,7 @@ tmp_read_slhdr(struct OVNVCLReader *const rdr, struct SLHDRInfo *const slhdr)
         }
 
         if (slhdr->sl_hdr_extension_present_flag) {
-            slhdr->sl_hdr_extension_6bits = nvcl_read_bits(rdr, 6);
+            slhdr->sl_hdr_extension_6bits  = nvcl_read_bits(rdr, 6);
             slhdr->sl_hdr_extension_length = nvcl_read_bits(rdr, 10);
 
             for (i = 0; i< slhdr->sl_hdr_extension_length; i++) {

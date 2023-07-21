@@ -221,9 +221,9 @@ pp_process_frame(struct PostProcessCtx *pctx, const OVPictureUnit * pu, OVFrame 
             }
 
             if (slhdr_sei && sei->sei_slhdr) {
+                ov_log(NULL, OVLOG_ERROR, "Skip duplicated SLHDR SEI\n");
                 ov_freep(&sei->sei_slhdr);
                 ov_freep(&sei);
-                ov_log(NULL, OVLOG_ERROR, "Skip duplicated SLHDR SEI\n");
                 continue;
             }
 
