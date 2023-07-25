@@ -209,7 +209,7 @@ wrap_around(OVSample *dst, const OVSample *src,
     }
 #endif
 
-    OVSample *src2 = src;
+    const OVSample *src2 = src;
 #if 0
     if (src_x >= w) {
         src_x -= off;
