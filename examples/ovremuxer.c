@@ -350,8 +350,8 @@ write_pu(const OVPictureUnit *const pu, FILE *out)
 
             do {
                 int epb_pos = nalu->epb_pos[nalu->nb_epb - nb_epb];
-                uint8_t *sgmt_start = nalu->rbsp_data + 0 + cursor;
-                uint8_t *sgmt_end = nb_epb != 0 ? nalu->rbsp_data + epb_pos + 1 : nalu->rbsp_data + nalu->rbsp_size + 2;
+                const uint8_t *sgmt_start = nalu->rbsp_data + 0 + cursor;
+                const uint8_t *sgmt_end = nb_epb != 0 ? nalu->rbsp_data + epb_pos + 1 : nalu->rbsp_data + nalu->rbsp_size + 2;
 
                 fwrite (sgmt_start, 1, sgmt_end - sgmt_start, out);
 
