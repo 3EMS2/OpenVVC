@@ -161,9 +161,9 @@ pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **fram
 
                 pp_slhdr(ppctx, src_frm, pp_frm, sei->sei_slhdr);
 
-            }
+            } else
 #endif
-            else {
+            {
                 ov_log (NULL, OVLOG_DEBUG, "No SLHDR SEI\n");
             }
         }
