@@ -502,10 +502,10 @@ update_sh_info(struct SHInfo *const sh_info, const OVSH *const sh)
 }
 
 
-static OVAPS *
+const static OVAPS *
 retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, uint8_t aps_id)
 {
-    OVAPS *aps = NULL;
+    const OVAPS *aps = NULL;
     if (aps_id < 16 && nvcl_ctx->aps_list[0][aps_id]) {
         aps = (OVAPS *)nvcl_ctx->aps_list[0][aps_id]->data;
     } else {
@@ -515,11 +515,11 @@ retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, uint8_t aps_id)
 }
 
 
-static OVAPS *
+const static OVAPS *
 retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 {
     uint8_t aps_id = ph->ph_lmcs_aps_id;
-    OVAPS *aps = NULL;
+    const OVAPS *aps = NULL;
     if (aps_id < 16 && nvcl_ctx->aps_list[1][aps_id]) {
         aps = (OVAPS *)nvcl_ctx->aps_list[1][aps_id]->data;
     } else {
@@ -528,11 +528,11 @@ retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     return aps;
 }
 
-static OVAPS *
+const static OVAPS *
 retrieve_aps_scaling_list(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 {
     uint8_t aps_id = ph->ph_scaling_list_aps_id;
-    OVAPS *aps = NULL;
+    const OVAPS *aps = NULL;
     if (aps_id < 16 && nvcl_ctx->aps_list[2][aps_id]) {
         aps = (OVAPS *)nvcl_ctx->aps_list[2][aps_id]->data;
     } else {
@@ -541,11 +541,11 @@ retrieve_aps_scaling_list(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     return aps;
 }
 
-static OVSPS *
+const static OVSPS *
 retrieve_sps(const OVNVCLCtx *const nvcl_ctx, const OVPPS *const pps)
 {
     uint8_t sps_id = pps->pps_seq_parameter_set_id;
-    OVSPS *sps = NULL;
+    const OVSPS *sps = NULL;
     if (sps_id < 16) {
         sps = (OVSPS *)nvcl_ctx->sps_list[sps_id]->data;
     } else {
@@ -555,11 +555,11 @@ retrieve_sps(const OVNVCLCtx *const nvcl_ctx, const OVPPS *const pps)
     return sps;
 }
 
-static OVPPS *
+const static OVPPS *
 retrieve_pps(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 {
     uint8_t pps_id = ph->ph_pic_parameter_set_id;
-    OVPPS *pps = NULL;
+    const OVPPS *pps = NULL;
     if (pps_id < 16) {
         pps = (OVPPS *)nvcl_ctx->pps_list[pps_id]->data;
     } else {
@@ -614,10 +614,10 @@ int
 decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
 {
     int ret;
-    OVSH *sh = (OVSH *)nvcl_ctx->sh->data;
-    OVPH *ph = (OVPH *)nvcl_ctx->ph->data;
-    OVPPS *pps = retrieve_pps(nvcl_ctx, ph);
-    OVSPS *sps = retrieve_sps(nvcl_ctx, pps);
+    const OVSH *sh = (OVSH *)nvcl_ctx->sh->data;
+    const OVPH *ph = (OVPH *)nvcl_ctx->ph->data;
+    const OVPPS *pps = retrieve_pps(nvcl_ctx, ph);
+    const OVSPS *sps = retrieve_sps(nvcl_ctx, pps);
 
     if (!sh || !ph || !pps || !sps) {
         ov_log(NULL, OVLOG_ERROR, "Missing Parameter sets for dec initialisation\n");
@@ -678,7 +678,7 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
 
     for(int i = 0; i < (sh->sh_num_alf_aps_ids_luma | ph->ph_num_alf_aps_ids_luma); i++){
         uint8_t aps_id = sh->sh_alf_aps_id_luma[i] | ph->ph_alf_aps_id_luma[i];
-        OVAPS * aps_alf = retrieve_aps_alf(nvcl_ctx, aps_id);
+        const OVAPS * aps_alf = retrieve_aps_alf(nvcl_ctx, aps_id);
         if (ps->aps_alf[i] != aps_alf) {
             hlsdata_unref(&ps->aps_alf_ref[i]);
             if (aps_alf)
@@ -692,7 +692,7 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         ps->aps_alf[i] = NULL;
     }
 
-    OVAPS * aps_alf_c = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_aps_id_chroma | ph->ph_alf_aps_id_chroma);
+    const OVAPS * aps_alf_c = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_aps_id_chroma | ph->ph_alf_aps_id_chroma);
     if (ps->aps_alf_c != aps_alf_c) {
         hlsdata_unref(&ps->aps_alf_c_ref);
         if (aps_alf_c)
@@ -700,14 +700,14 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         ps->aps_alf_c = aps_alf_c;
     }
 
-    OVAPS * aps_cc_alf_cb = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cb_aps_id | ph->ph_alf_cc_cb_aps_id);
+    const OVAPS * aps_cc_alf_cb = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cb_aps_id | ph->ph_alf_cc_cb_aps_id);
     if (ps->aps_cc_alf_cb != aps_cc_alf_cb) {
         hlsdata_unref(&ps->aps_cc_alf_cb_ref);
         if (aps_cc_alf_cb)
             hlsdata_newref(&ps->aps_cc_alf_cb_ref, nvcl_ctx->aps_list[0][sh->sh_alf_cc_cb_aps_id | ph->ph_alf_cc_cb_aps_id]);
         ps->aps_cc_alf_cb = aps_cc_alf_cb;
     }
-    OVAPS * aps_cc_alf_cr = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cr_aps_id | ph->ph_alf_cc_cr_aps_id);
+    const OVAPS * aps_cc_alf_cr = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cr_aps_id | ph->ph_alf_cc_cr_aps_id);
     if (ps->aps_cc_alf_cr != aps_cc_alf_cr) {
         hlsdata_unref(&ps->aps_cc_alf_cr_ref);
         if (aps_cc_alf_cr)
@@ -715,7 +715,7 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         ps->aps_cc_alf_cr = aps_cc_alf_cr;
     }
 
-    OVAPS * aps_lmcs = retrieve_aps_lmcs(nvcl_ctx, ph);
+    const OVAPS * aps_lmcs = retrieve_aps_lmcs(nvcl_ctx, ph);
     if (ps->aps_lmcs != aps_lmcs) {
         hlsdata_unref(&ps->aps_lmcs_ref);
         if (aps_lmcs)
@@ -723,7 +723,7 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         ps->aps_lmcs = aps_lmcs;
     }
 
-    OVAPS * aps_scaling_list = retrieve_aps_scaling_list(nvcl_ctx, ph);
+    const OVAPS * aps_scaling_list = retrieve_aps_scaling_list(nvcl_ctx, ph);
     if (ps->aps_scaling_list != aps_scaling_list) {
         hlsdata_unref(&ps->aps_scaling_list_ref);
         if (aps_scaling_list)
