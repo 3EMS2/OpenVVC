@@ -383,7 +383,7 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
     for (i = 1; i < nb_entries; ++i) {
         sh_info->rbsp_entry[i] = OVMIN(nal->rbsp_data + rbsp_offset[i] + nb_sh_bytes, rbsp_end);
         if (rbsp_end == sh_info->rbsp_entry[i])
-            ov_log(NULL, 3, "Empty entry\n");
+            ov_log(NULL, OVLOG_ERROR, "Empty entry\n");
     }
 
     /* Note this is so we can retrieve entry end by using rbsp_entry [i + 1] */
@@ -509,7 +509,7 @@ retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, uint8_t aps_id)
     if (aps_id < 16 && nvcl_ctx->aps_list[0][aps_id]) {
         aps = (OVAPS *)nvcl_ctx->aps_list[0][aps_id]->data;
     } else {
-        ov_log(NULL, 3, "Invalid APS ID  %d\n", aps_id);
+        ov_log(NULL, OVLOG_ERROR, "Invalid APS ID  %d\n", aps_id);
     }
     return aps;
 }
@@ -523,7 +523,7 @@ retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     if (aps_id < 16 && nvcl_ctx->aps_list[1][aps_id]) {
         aps = (OVAPS *)nvcl_ctx->aps_list[1][aps_id]->data;
     } else {
-        ov_log(NULL, 3, "Invalid APS ID  %d\n", aps_id);
+        ov_log(NULL, OVLOG_ERROR, "Invalid APS ID  %d\n", aps_id);
     }
     return aps;
 }
@@ -536,7 +536,7 @@ retrieve_aps_scaling_list(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     if (aps_id < 16 && nvcl_ctx->aps_list[2][aps_id]) {
         aps = (OVAPS *)nvcl_ctx->aps_list[2][aps_id]->data;
     } else {
-        ov_log(NULL, 3, "Invalid APS ID  %d\n", aps_id);
+        ov_log(NULL, OVLOG_ERROR, "Invalid APS ID  %d\n", aps_id);
     }
     return aps;
 }
@@ -549,7 +549,7 @@ retrieve_sps(const OVNVCLCtx *const nvcl_ctx, const OVPPS *const pps)
     if (sps_id < 16) {
         sps = (OVSPS *)nvcl_ctx->sps_list[sps_id]->data;
     } else {
-        ov_log(NULL, 3, "Invalid SPS ID  %d\n", sps_id);
+        ov_log(NULL, OVLOG_ERROR, "Invalid SPS ID  %d\n", sps_id);
     }
 
     return sps;
@@ -563,7 +563,7 @@ retrieve_pps(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     if (pps_id < 16) {
         pps = (OVPPS *)nvcl_ctx->pps_list[pps_id]->data;
     } else {
-        ov_log(NULL, 3, "Invalid PPS ID  %d\n", pps_id);
+        ov_log(NULL, OVLOG_ERROR, "Invalid PPS ID  %d\n", pps_id);
     }
 
     return pps;
