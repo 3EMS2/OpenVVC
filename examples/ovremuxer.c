@@ -280,7 +280,6 @@ eu(int val, uint32_t * tostr)
     uint8_t pfx_sz = sfx_sz + 1;
     uint32_t ue_val = ((1 << sfx_sz) | (val - ((1 << sfx_sz) - 1) )) << (32 - (pfx_sz + sfx_sz));
 
-    printf("%.32b\n", ue_val);
     *tostr = ue_val;
     return pfx_sz + sfx_sz;
 }
