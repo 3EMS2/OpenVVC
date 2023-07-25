@@ -295,7 +295,7 @@ write_pu(const OVPictureUnit *const pu, FILE *out)
 
         if (nalu->type == OVNALU_PREFIX_SEI || nalu->type == OVNALU_SUFFIX_SEI) {
 
-            uint16_t nb_bits = eu(br_scale, &tmp_val);
+            uint16_t nb_bits = eu(br_scale, (uint32_t *)&tmp_val);
 #if 0
             uint16_t nb_bytes = (nb_bits + 0x7) >> 3;
 #else
