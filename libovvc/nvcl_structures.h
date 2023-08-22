@@ -175,6 +175,7 @@ struct OVSEI
     struct OVSEISLHDR* sei_slhdr;
 
     uint32_t br_scale;
+    uint32_t peak_lum;
     struct ScalingInfo scaling_info;
 };
 

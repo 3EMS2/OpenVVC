@@ -62,6 +62,8 @@ struct FrameInfo
 
     uint8_t chroma_hor_col_flag;
     uint8_t chroma_ver_col_flag;
+    uint32_t peak_luminance;
+    uint32_t peak_luminance_lim;
 };
 
 struct FramePool;

@@ -111,6 +111,9 @@ pp_slhdr(const struct PostProcessCtx *const ppctx,
                   slhdr_sei->payload_array, src->width, src->height);
 
     dst->frame_info.color_desc = pq_bt2020;
+    dst->frame_info.peak_luminance_lim = slhdr_sei->br_scale;
+    dst->frame_info.peak_luminance = slhdr_sei->peak_luminance;
+    dst->frame_info.color_desc = pq_bt2020;
 
     dst->width  = src->width;
     dst->height = src->height;

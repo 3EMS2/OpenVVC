@@ -513,6 +513,8 @@ nvcl_decode_nalu_sei2(OVSEI *sei, OVNVCLReader *const rdr, uint8_t nalu_type)
         struct SLHDRInfo slhdr_info = {0};
         nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
 
+        sei->sei_slhdr->peak_luminance = slhdr_info.target_picture_max_luminance;
+
         tmp_read_slhdr(&rdr2, &slhdr_info);
 #endif
         break;
