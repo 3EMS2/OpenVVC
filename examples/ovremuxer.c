@@ -75,6 +75,23 @@ static void print_version(void);
 static void print_usage(void);
 
 static int br_scale = 1;
+#include "string.h"
+static int
+analyse_list(const char *const str)
+{ 
+    char *tmpstr = strdup(str);
+    const char *bck;
+    int nb_tkn = 0;
+    tmpstr = strtok_r(tmpstr, ",", &bck);
+    while (tmpstr) {
+        ++nb_tkn;
+        printf("%s\n", tmpstr);
+        tmpstr = strtok_r(NULL, ",", &bck);
+    }
+    printf("%d\n", nb_tkn);
+    printf("%s\n", str);
+    free(tmpstr);
+}
 
 int
 main(int argc, char** argv)
@@ -95,11 +112,12 @@ main(int argc, char** argv)
             {"log-level", required_argument, 0, 'l'},
             {"output", required_argument, 0, 'o'},
             {"peak-luminance_scale", required_argument, 0, 's'},
+            {"advanced", required_argument, 0, 'a'},
         };
 
         int option_index = 0;
 
-        c = getopt_long(argc, argv, "-vhl:o:s:", long_options,
+        c = getopt_long(argc, argv, "-vhl:o:s:a:", long_options,
                         &option_index);
 
         if (c == -1) {
@@ -108,6 +126,10 @@ main(int argc, char** argv)
 
         switch (c)
         {
+            case 'a':
+                analyse_list(optarg);
+                return 0;
+
             case 'v':
                 print_version();
                 return 0;
@@ -274,6 +296,25 @@ static uint8_t sei_uuid[16] =
 static int count = 0;
 
 static int
+set_br_scale(int poc)
+{
+    static uint32_t poc_range[16] =
+    { 0, 130, 260, 390, 520, 650, 780, 910, 1040, 1170, 1300, 0, 0, 0, 0, 0};
+    static uint32_t scale[16] =
+    { 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1000, 1000, 1000, 1000, 1000, 1000};
+    int i = 0;
+    for (i = 1; i < 16; ++i) {
+        if (poc < poc_range[i] && poc > poc_range[i - 1] )
+            break;
+    }
+    printf("POC: %d, scale:%d, \n", poc, i);
+    
+    int val = scale[i];
+
+    return val;
+}
+
+static int
 eu(int val, uint32_t * tostr)
 {
     uint8_t sfx_sz = 31 - ov_clz(val + !!val);
@@ -283,9 +324,9 @@ eu(int val, uint32_t * tostr)
     *tostr = ue_val;
     return pfx_sz + sfx_sz;
 }
-
+static int poc = 0;
 static int
-write_pu(const OVPictureUnit *const pu, FILE *out)
+write_pu(const OVPictureUnit *const pu, FILE *out, int poc)
 {
     int i;
     char tmp_sei[256] = {0};
@@ -296,6 +337,7 @@ write_pu(const OVPictureUnit *const pu, FILE *out)
         if (nalu->type == OVNALU_PREFIX_SEI || nalu->type == OVNALU_SUFFIX_SEI) {
 
             uint16_t nb_bits = eu(br_scale, (uint32_t *)&tmp_val);
+            br_scale = set_br_scale(poc);
 #if 0
             uint16_t nb_bytes = (nb_bits + 0x7) >> 3;
 #else
@@ -365,25 +407,93 @@ write_pu(const OVPictureUnit *const pu, FILE *out)
 }
 
 
-    static int
+static int
+derive_poc(int poc_lsb, int log2_max_poc_lsb, int prev_poc)
+{
+    int max_poc_lsb  = 1 << log2_max_poc_lsb;
+    int prev_poc_lsb = prev_poc & (max_poc_lsb - 1);
+    int poc_msb = prev_poc - prev_poc_lsb;
+    if((poc_lsb < prev_poc_lsb) &&
+      ((prev_poc_lsb - poc_lsb) >= (max_poc_lsb >> 1))){
+        poc_msb += max_poc_lsb;
+    } else if((poc_lsb > prev_poc_lsb) &&
+             ((poc_lsb - prev_poc_lsb) > (max_poc_lsb >> 1))){
+        poc_msb -= max_poc_lsb;
+    }
+    return poc_msb + poc_lsb;
+}
+
+#if 0
+        if (idr_flag){
+            /* New IDR involves a POC refresh and mark the start of
+             * a new coded video sequence
+             */
+            dpb->cvs_id = (dpb->cvs_id + 1) & 0xFF;
+            if (ps->ph->ph_poc_msb_cycle_present_flag) {
+                uint8_t log2_max_poc_lsb = ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
+                poc = ps->ph->ph_poc_msb_cycle_val << log2_max_poc_lsb;
+            } else {
+                poc = 0;
+            }
+            poc += ps->ph->ph_pic_order_cnt_lsb;
+        } else {
+            int32_t last_poc = dpb->poc;
+            poc = derive_poc(ps->ph->ph_pic_order_cnt_lsb,
+                             ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
+                             last_poc);
+        }
+#endif
+
+static int
 rw_stream(OVVCHdl *const hdl)
 {
     int ret;
+    int poc = 0;
+    int i;
     OVNVCLCtx nvcl_ctx = {0};
     struct OVPS ps = {0};
-    int poc = 0;
 
     fputc(0, hdl->out);
 
     do {
         OVPictureUnit *pu = NULL;
+        uint8_t idr_flag = 0;
         ret = ovdmx_extract_picture_unit(hdl->dmx, &pu);
-        if (ret < 0) {
+        if (ret < 0 || !pu) {
             break;
         }
 
+        for (i = 0; i < pu->nb_nalus; ++i) {
+            OVNALUnit *const nalu = pu->nalus[i];
+
+            nvcl_decode_nalu_hls_data(&nvcl_ctx, nalu);
+
+            idr_flag |= nalu->type == OVNALU_IDR_W_RADL;
+            idr_flag |= nalu->type == OVNALU_IDR_N_LP;
+        }
+
+        ret = decinit_update_params(&ps, &nvcl_ctx);
+
+        if (ps.ph) {
+        if (idr_flag ){
+            if (ps.ph->ph_poc_msb_cycle_present_flag) {
+                uint8_t log2_max_poc_lsb = ps.sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
+                poc = ps.ph->ph_poc_msb_cycle_val << log2_max_poc_lsb;
+            } else {
+                poc = 0;
+            }
+            poc += ps.ph->ph_pic_order_cnt_lsb;
+        } else {
+            int32_t last_poc = poc;
+            poc = derive_poc(ps.ph->ph_pic_order_cnt_lsb,
+                             ps.sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
+                             last_poc);
+        }
+        }
+        printf("%d\n", poc);
+
         if (pu) {
-            write_pu(pu, hdl->out);
+            write_pu(pu, hdl->out, poc);
         } else {
             break;
         }

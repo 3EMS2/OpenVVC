@@ -509,7 +509,7 @@ retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, uint8_t aps_id)
     if (aps_id < 16 && nvcl_ctx->aps_list[0][aps_id]) {
         aps = (OVAPS *)nvcl_ctx->aps_list[0][aps_id]->data;
     } else {
-        ov_log(NULL, OVLOG_ERROR, "Invalid APS ID  %d\n", aps_id);
+        ov_log(NULL, OVLOG_TRACE, "Invalid APS ID  %d\n", aps_id);
     }
     return aps;
 }
@@ -523,7 +523,7 @@ retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     if (aps_id < 16 && nvcl_ctx->aps_list[1][aps_id]) {
         aps = (OVAPS *)nvcl_ctx->aps_list[1][aps_id]->data;
     } else {
-        ov_log(NULL, OVLOG_ERROR, "Invalid APS ID  %d\n", aps_id);
+        ov_log(NULL, OVLOG_TRACE, "Invalid APS ID  %d\n", aps_id);
     }
     return aps;
 }
@@ -536,7 +536,7 @@ retrieve_aps_scaling_list(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     if (aps_id < 16 && nvcl_ctx->aps_list[2][aps_id]) {
         aps = (OVAPS *)nvcl_ctx->aps_list[2][aps_id]->data;
     } else {
-        ov_log(NULL, OVLOG_ERROR, "Invalid APS ID  %d\n", aps_id);
+        ov_log(NULL, OVLOG_TRACE, "Invalid APS ID  %d\n", aps_id);
     }
     return aps;
 }

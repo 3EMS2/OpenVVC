@@ -111,8 +111,6 @@ pp_slhdr(const struct PostProcessCtx *const ppctx,
                   slhdr_sei->payload_array, src->width, src->height);
 
     dst->frame_info.color_desc = pq_bt2020;
-    dst->frame_info.peak_luminance_lim = slhdr_sei->br_scale;
-    dst->frame_info.peak_luminance = slhdr_sei->peak_luminance;
     dst->frame_info.color_desc = pq_bt2020;
 
     dst->width  = src->width;
@@ -129,8 +127,9 @@ pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **fram
 
     /* FIXME  find another place to init this */
     if (sei->br_scale) {
-        ov_log (NULL, OVLOG_WARNING, "BR SCALE %d\n", sei->br_scale);
+        ov_log (NULL, OVLOG_TRACE, "BR SCALE %d\n", sei->br_scale);
         ppctx->brightness =  sei->br_scale;
+	(*frame_p)->frame_info.peak_luminance_lim = sei->br_scale;
     }
 
     if (pp_apply_flag) {
@@ -163,6 +162,9 @@ pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **fram
                 }
 
                 pp_slhdr(ppctx, src_frm, pp_frm, sei->sei_slhdr);
+
+		ov_log (NULL, OVLOG_TRACE, "br_scale: %d peak luminance :%d\n", sei->br_scale, sei->peak_lum);
+		pp_frm->frame_info.peak_luminance = sei->peak_lum;
 
             } else
 #endif

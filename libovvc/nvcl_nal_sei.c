@@ -514,9 +514,9 @@ nvcl_decode_nalu_sei2(OVSEI *sei, OVNVCLReader *const rdr, uint8_t nalu_type)
         struct SLHDRInfo slhdr_info = {0};
         nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
 
-        sei->sei_slhdr->peak_luminance = slhdr_info.target_picture_max_luminance;
 
         tmp_read_slhdr(&rdr2, &slhdr_info);
+        sei->peak_lum = slhdr_info.src_mdcv_max_mastering_luminance;
 #endif
         break;
 
@@ -544,7 +544,7 @@ nvcl_decode_nalu_sei2(OVSEI *sei, OVNVCLReader *const rdr, uint8_t nalu_type)
 
         sei->br_scale = nvcl_read_bits(rdr, 16) + 1;
 
-        ov_log(NULL, OVLOG_ERROR, "SEI: val = %d\n", sei->br_scale);
+        ov_log(NULL, OVLOG_TRACE, "SEI: val = %d\n", sei->br_scale);
 
         break;
         default:
