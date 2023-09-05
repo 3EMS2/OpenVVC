@@ -274,6 +274,7 @@ struct OVDec
         uint8_t upscale_flag;
         uint8_t pp_disable;
         int brightness;
+        int nobr;
 
     } ppctx;
     

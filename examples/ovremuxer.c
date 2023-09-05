@@ -304,12 +304,12 @@ set_br_scale(int poc)
     { 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1000, 1000, 1000, 1000, 1000, 1000};
     int i = 0;
     for (i = 1; i < 16; ++i) {
-        if (poc < poc_range[i] && poc > poc_range[i - 1] )
+        if (poc < poc_range[i] && poc >= poc_range[i - 1] )
             break;
     }
     printf("POC: %d, scale:%d, \n", poc, i);
     
-    int val = scale[i];
+    int val = scale[i] * 10;
 
     return val;
 }

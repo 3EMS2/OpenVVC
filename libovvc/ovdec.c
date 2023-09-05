@@ -72,6 +72,7 @@ static const char *option_names[OVDEC_NB_OPTIONS] =
 
 static const struct OVOption ovdecopt[] = {
    {"brightness", "Define the target peak luminance of SLHDR library", .type=OVOPT_INT, .min=100, .max=10000,  .offset= offsetof(struct OVDec, ppctx.brightness)},
+   {"nobrscale", "Ignore peak luminance limitation SEI", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ppctx.nobr)},
    {"upscale", "Define if the decoder is responsible of upscaling output pictures when RPR is present", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ppctx.upscale_flag)},
    {"nopostproc", "Disable picture post processing", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ppctx.pp_disable)},
    {"nodf", "Forcefully disable Deblocking Filter", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ovrd_opt.disable_df)},
@@ -598,7 +599,13 @@ ovdec_receive_picture(OVDec *ovdec, OVFrame **frame_p)
     if (*frame_p) {
         if (punit && !ovdec->ppctx.pp_disable) {
             pp_process_frame(&ovdec->ppctx, punit, frame_p);
-        }
+
+            //(*frame_p)->frame_info.peak_luminance_lim = ovdec->ppctx.brightness;
+            ov_log(NULL, OVLOG_ERROR, "test to pic :%d\n", (*frame_p)->frame_info.peak_luminance_lim);
+       } else {
+            (*frame_p)->frame_info.peak_luminance_lim = -1;
+            (*frame_p)->frame_info.peak_luminance = 100;
+       }
         ovpu_unref(&punit);
     }
 
@@ -636,7 +643,12 @@ ovdec_drain_picture(OVDec *ovdec, OVFrame **frame_p)
     if (*frame_p) {
         if (punit && !ovdec->ppctx.pp_disable) {
             pp_process_frame(&ovdec->ppctx, punit, frame_p);
-        }
+            //(*frame_p)->frame_info.peak_luminance_lim = ovdec->ppctx.brightness;
+            ov_log(NULL, OVLOG_ERROR, "test to pic2 :%d\n", (*frame_p)->frame_info.peak_luminance_lim);
+       } else {
+            (*frame_p)->frame_info.peak_luminance_lim = -1;
+            (*frame_p)->frame_info.peak_luminance = 100;
+       }
         ovpu_unref(&punit);
     }
 
@@ -706,7 +718,8 @@ ovdec_set_option(OVDec *ovdec, enum OVOptions opt_id, int value)
             set_nb_frame_threads(ovdec, value);
             break;
         case OVDEC_BRIGHTNESS:
-            ovdec->ppctx.brightness = ov_clip(value, 100, 10000);
+                ov_log(ovdec, OVLOG_ERROR, "Invalid option id %d.", opt_id);
+            //ovdec->ppctx.brightness = ov_clip(value, 100, 10000);
             break;
         default :
             if (opt_id < OVDEC_NB_OPTIONS) {

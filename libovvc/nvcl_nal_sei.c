@@ -514,7 +514,6 @@ nvcl_decode_nalu_sei2(OVSEI *sei, OVNVCLReader *const rdr, uint8_t nalu_type)
         struct SLHDRInfo slhdr_info = {0};
         nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
 
-
         tmp_read_slhdr(&rdr2, &slhdr_info);
         sei->peak_lum = slhdr_info.src_mdcv_max_mastering_luminance;
 #endif

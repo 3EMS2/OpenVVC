@@ -96,7 +96,7 @@ film_grain(const struct PostProcessCtx *const ppctx, const struct Frame *const s
 
 #if HAVE_SLHDR
 static int
-pp_slhdr(const struct PostProcessCtx *const ppctx,
+pp_slhdr(struct PostProcessCtx *const ppctx,
          const struct Frame *const src, struct Frame *dst, void *params)
 {
     static const struct ColorDescription pq_bt2020 = {.colour_primaries = 9, .matrix_coeffs = 9, .transfer_characteristics=16, .full_range = 0} ;
@@ -104,7 +104,9 @@ pp_slhdr(const struct PostProcessCtx *const ppctx,
     struct OVSEISLHDR *const slhdr_sei = params;
 
     ov_log (NULL, OVLOG_WARNING, "Updating SLHDR peak luminance %d\n", ppctx->brightness);
+    ov_log(NULL, OVLOG_ERROR, "Using brightness:%d poc: %d\n", ppctx->brightness, dst->poc);
 
+    ppctx->brightness = OVMIN(ppctx->brightness, src->frame_info.peak_luminance);
     pp_set_display_peak(ppctx->slhdr_ctx, ppctx->brightness);
 
     pp_sdr_to_hdr(ppctx->slhdr_ctx, (int16_t **)src->data, (int16_t **)dst->data,
@@ -121,15 +123,23 @@ pp_slhdr(const struct PostProcessCtx *const ppctx,
 #endif
 
 int
-pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **frame_p)
+pp_process_frame2(struct PostProcessCtx *ppctx, OVSEI* sei, OVFrame **frame_p)
 {
     uint8_t pp_apply_flag = (sei && (sei->sei_fg || sei->sei_slhdr)) || ppctx->upscale_flag;
 
     /* FIXME  find another place to init this */
-    if (sei->br_scale) {
+    if (sei->br_scale && !ppctx->nobr &&sei->br_scale != 1) {
+        if (!sei->peak_lum) sei->peak_lum = 1000;
         ov_log (NULL, OVLOG_TRACE, "BR SCALE %d\n", sei->br_scale);
-        ppctx->brightness =  sei->br_scale;
-	(*frame_p)->frame_info.peak_luminance_lim = sei->br_scale;
+        (*frame_p)->frame_info.peak_luminance_lim = sei->br_scale / (10000 / sei->peak_lum);
+        ppctx->brightness = (sei->br_scale * sei->peak_lum / 10000);
+        ov_log(NULL, OVLOG_ERROR, "SCALE SEI:%d, %d poc: %d\n", sei->br_scale, ppctx->brightness, (*frame_p)->poc);
+    } else if (ppctx->nobr) {
+        if (!sei->peak_lum) sei->peak_lum = 1000;
+        ppctx->brightness = OVMIN(ppctx->brightness, (*frame_p)->frame_info.peak_luminance);
+        (*frame_p)->frame_info.peak_luminance_lim = ppctx->brightness;
+    } else if (sei->br_scale == 1) {
+        (*frame_p)->frame_info.peak_luminance_lim = 100;
     }
 
     if (pp_apply_flag) {
@@ -171,6 +181,9 @@ pp_process_frame2(struct PostProcessCtx *ppctx, const OVSEI* sei, OVFrame **fram
             {
                 ov_log (NULL, OVLOG_DEBUG, "No SLHDR SEI\n");
             }
+            pp_frm->frame_info.peak_luminance = sei->peak_lum;
+            pp_frm->frame_info.peak_luminance_lim = ppctx->brightness;
+            ov_log(NULL, OVLOG_ERROR, "BRIGHTNESS OUT:%d, peak luminance: %d\n", ppctx->brightness, sei->peak_lum);
         }
 
         /* Replace pointer to output picture by post processed picture. */
