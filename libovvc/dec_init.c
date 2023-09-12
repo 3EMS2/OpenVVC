@@ -501,8 +501,7 @@ update_sh_info(struct SHInfo *const sh_info, const OVSH *const sh)
     return 0;
 }
 
-
-const static OVAPS *
+static const OVAPS *
 retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, uint8_t aps_id)
 {
     const OVAPS *aps = NULL;
@@ -514,8 +513,7 @@ retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, uint8_t aps_id)
     return aps;
 }
 
-
-const static OVAPS *
+static const OVAPS *
 retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 {
     uint8_t aps_id = ph->ph_lmcs_aps_id;
@@ -528,7 +526,7 @@ retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     return aps;
 }
 
-const static OVAPS *
+static const OVAPS *
 retrieve_aps_scaling_list(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 {
     uint8_t aps_id = ph->ph_scaling_list_aps_id;
@@ -541,7 +539,7 @@ retrieve_aps_scaling_list(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     return aps;
 }
 
-const static OVSPS *
+static const OVSPS *
 retrieve_sps(const OVNVCLCtx *const nvcl_ctx, const OVPPS *const pps)
 {
     uint8_t sps_id = pps->pps_seq_parameter_set_id;
@@ -555,7 +553,7 @@ retrieve_sps(const OVNVCLCtx *const nvcl_ctx, const OVPPS *const pps)
     return sps;
 }
 
-const static OVPPS *
+static const OVPPS *
 retrieve_pps(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 {
     uint8_t pps_id = ph->ph_pic_parameter_set_id;
