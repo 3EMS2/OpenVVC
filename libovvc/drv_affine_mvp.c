@@ -3744,7 +3744,7 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                        uint8_t merge_idx)
 {
     struct AffineDRVInfo *affine_ctx = &inter_ctx->affine_ctx;
-    struct AffineMergeInfo mv_info;
+    struct AffineMergeInfo affmv_info;
 
     uint8_t x_pb = x0 >> 2;
     uint8_t y_pb = y0 >> 2;
@@ -3755,8 +3755,8 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
     uint8_t is_sbtmvp = 0;
     uint8_t log2_pmerge_lvl = inter_ctx->inter_params.log2_parallel_merge_level;
 
-    mv_info.cinfo[0].ref_idx = 100;
-    mv_info.cinfo[1].ref_idx = 100;
+    affmv_info.cinfo[0].ref_idx = 100;
+    affmv_info.cinfo[1].ref_idx = 100;
 
     if (sbtmvp_enabled) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
@@ -3789,7 +3789,7 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                              0x1);
 #endif
             is_sbtmvp = 1;
-      } else if (!inter_ctx->tmvp_ctx.ctudec->tools.affine_enabled) {
+        } else if (!inter_ctx->tmvp_ctx.ctudec->tools.affine_enabled) {
 
             set_zero_mvs_p(inter_ctx, &inter_ctx->tmvp_ctx,
                            x0, y0, log2_cu_w, log2_cu_h);
@@ -3798,60 +3798,67 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                              nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
                              0x1);
             is_sbtmvp = 1;
-      }
+        }
 
         merge_idx -= sb_cand;
     }
 
     if (!is_sbtmvp) {
-        derive_affine_merge_mv(inter_ctx, affine_ctx, &mv_info,
+        uint8_t prof_dir = inter_ctx->inter_params.prof_enabled ? 0x1 : 0;
+
+        derive_affine_merge_mv(inter_ctx, affine_ctx, &affmv_info,
                                x_pb, y_pb, nb_pb_w, nb_pb_h,
                                log2_cu_w, log2_cu_h,
                                merge_idx);
-    }
 
-    mv_info.cinfo[0].mv_spec.prec_amvr = 0;
 
-    mv_info.cinfo[1].mv_spec.prec_amvr = 0;
+        affmv_info.cinfo[0].mv_spec.prec_amvr = 0;
 
-    mv_info.inter_dir = 0x1;
+        affmv_info.cinfo[1].mv_spec.prec_amvr = 0;
 
-    if (!is_sbtmvp) {
-        uint8_t prof_dir = inter_ctx->inter_params.prof_enabled ? 0x1 : 0;
+        affmv_info.inter_dir = 0x1;
 
-        uint8_t affine_type = mv_info.affine_type;
-        const struct AffineControlInfo *const cinfo = mv_info.cinfo;
+
+        uint8_t affine_type = affmv_info.affine_type;
+        const struct AffineControlInfo *const cinfo = affmv_info.cinfo;
 
         const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0].cp_mv,
                                                                    log2_cu_w, log2_cu_h,
                                                                    affine_type);
 
-        prof_dir &= update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb,
+        prof_dir &= update_mv_ctx_b(inter_ctx, affmv_info, x_pb, y_pb,
                                     nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
                                     0x1);
 
         if (prof_dir) {
-            uint8_t prof_0 = check_affine_prof(&mv_info, RPL_0);
+            uint8_t prof_0 = check_affine_prof(&affmv_info, RPL_0);
 
             prof_dir &= prof_0;
 
-            prof_dir &= mv_info.inter_dir;
+            prof_dir &= affmv_info.inter_dir;
         }
 
         if (!prof_dir) {
             rcn_affine_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
                                log2_cu_w, log2_cu_h,
-                               mv_info.inter_dir);
+                               affmv_info.inter_dir);
         } else {
             rcn_affine_prof_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
                                     log2_cu_w, log2_cu_h,
-                                    mv_info.inter_dir, prof_dir, &dmv_0, NULL);
+                                    affmv_info.inter_dir, prof_dir, &dmv_0, NULL);
         }
 
         rcn_affine_mcp_b_c(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
                            log2_cu_w, log2_cu_h,
-                           mv_info.inter_dir);
+                           affmv_info.inter_dir);
 
+    } else {
+        affmv_info.cinfo[0].mv_spec.prec_amvr = 0;
+
+        affmv_info.cinfo[1].mv_spec.prec_amvr = 0;
+
+        affmv_info.inter_dir = 0x1;
+        affmv_info.affine_type = 0;
     }
 
     struct PBInfo pb = {
@@ -3864,10 +3871,10 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
     };
 
     struct AffineInfo aff_info = {
-        .cps[0] = mv_info.cinfo[0],
-        .cps[1] = mv_info.cinfo[1],
+        .cps[0] = affmv_info.cinfo[0],
+        .cps[1] = affmv_info.cinfo[1],
         .pb = pb,
-        .type = mv_info.affine_type
+        .type = affmv_info.affine_type
     };
 
     store_affine_info(affine_ctx, aff_info, x_pb, y_pb, nb_pb_w, nb_pb_h);
