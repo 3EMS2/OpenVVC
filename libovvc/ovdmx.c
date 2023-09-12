@@ -800,7 +800,7 @@ process_emulation_prevention_byte(OVDemux *const dmx)
 {
     struct EPBCacheInfo *const epb_info = &dmx->epb_info;
 
-    if (epb_info->nb_epb + 1 > (epb_info->cache_size) / sizeof(*epb_info->epb_pos)) {
+    if ((unsigned) epb_info->nb_epb + 1 > (epb_info->cache_size) / sizeof(*epb_info->epb_pos)) {
         int ret = extend_epb_cache(epb_info);
         if (ret < 0) {
             ov_log(dmx, OVLOG_ERROR, "ERROR extending cache\n");

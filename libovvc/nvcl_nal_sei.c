@@ -152,10 +152,10 @@ nvcl_film_grain_read(OVNVCLReader *const rdr, struct OVSEIFGrain *const fg)
                 fg->fg_num_intensity_intervals_minus1[c] = nvcl_read_bits(rdr, 8);
                 fg->fg_num_model_values_minus1[c]        = nvcl_read_bits(rdr, 3);
 
-                for (uint32_t i = 0; i< fg->fg_num_intensity_intervals_minus1[c] + 1 ; i++) {
+                for (uint32_t i = 0; i < (unsigned) fg->fg_num_intensity_intervals_minus1[c] + 1 ; i++) {
                     fg->fg_intensity_interval_lower_bound[c][i] = nvcl_read_bits(rdr, 8);
                     fg->fg_intensity_interval_upper_bound[c][i] = nvcl_read_bits(rdr, 8);
-                    for (uint32_t j = 0; j < fg->fg_num_model_values_minus1[c] + 1; j++) {
+                    for (uint32_t j = 0; j < (unsigned) fg->fg_num_model_values_minus1[c] + 1; j++) {
                         fg->fg_comp_model_value[c][i][j] = nvcl_read_s_expgolomb(rdr);
                     }
                 }
@@ -548,7 +548,7 @@ nvcl_decode_nalu_sei2(OVSEI *sei, OVNVCLReader *const rdr, uint8_t nalu_type)
         break;
         default:
 
-        for (int i = 0; i < payload.size; i++) {
+        for (unsigned int i = 0; i < payload.size; i++) {
             sei_byte = nvcl_read_bits(rdr, 8);
             sei_byte++;
         }

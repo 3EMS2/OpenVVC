@@ -273,7 +273,7 @@ ovcabac_read_ae_bcw_idx(OVCABACCtx *const cabac_ctx, uint8_t is_ldc){
     int32_t nb_bcw_cand = is_ldc ? 5 : 3;
     uint32_t nb_idx_bits = nb_bcw_cand - 2;
     uint8_t bcw_idx = 1;
-    int i;
+    uint8_t i;
 
     for (i = 0; i < nb_idx_bits; ++i) {
         if(!ovcabac_bypass_read(cabac_ctx)){

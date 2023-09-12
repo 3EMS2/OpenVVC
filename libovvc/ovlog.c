@@ -60,7 +60,7 @@ ovlog_set_log_level(OVLogLevel log_level)
 static void
 ov_log_default(void* ctx, int log_level, const char* log_content, va_list vl)
 {
-    if (log_level <= ov_log_level) {
+    if (log_level <= (int)ov_log_level) {
         const char* type = "NULL";
         if (ctx != NULL) {
             type = vvctype;
@@ -85,7 +85,7 @@ ovlog_set_callback(void (*log_function)(void* ctx, int log_level, const char* lo
 void
 ov_log(void* ctx, int log_level, const char* log_content, ...)
 {
-    if (log_level <= ov_log_level) {
+    if (log_level <= (int)ov_log_level) {
         va_list args;
 
         va_start(args, log_content);

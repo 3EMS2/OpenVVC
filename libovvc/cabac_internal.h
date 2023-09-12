@@ -234,7 +234,7 @@ vvc_get_cabac_truncated(OVCABACCtx *const cabac_ctx, unsigned int max_symbol){
         val |= ovcabac_bypass_read(cabac_ctx);
     }
 
-    if (val >= suffix) {
+    if ((int)val >= suffix) {
         uint8_t bit = ovcabac_bypass_read(cabac_ctx);
         val <<= 1;
         val |= bit;
