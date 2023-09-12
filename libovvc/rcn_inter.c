@@ -1293,19 +1293,25 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int delta_v3 = (mv1->mv.y >> 4) - (tmp1.y >> 4);
 
     if (inter_ctx->wrap_around) {
-        ref0_b = derive_dmvr_ref_buf_y(inter_ctx, ref0, tmp0, pos_x + delta_h2, pos_y + delta_v2, edge_buff0,
+        ref0_b = derive_dmvr_ref_buf_y(inter_ctx, ref0, tmp0,
+                                       pos_x + delta_h2,
+                                       pos_y + delta_v2,
+                                       edge_buff0,
                                        pu_w, pu_h, ctudec->part_ctx->log2_ctu_s,
                                        sp_rect);
 
-        ref1_b = derive_dmvr_ref_buf_y(inter_ctx, ref1, tmp1, pos_x + delta_h3, pos_y + delta_v3, edge_buff1,
+        ref1_b = derive_dmvr_ref_buf_y(inter_ctx, ref1, tmp1,
+                                       pos_x + delta_h3,
+                                       pos_y + delta_v3,
+                                       edge_buff1,
                                        pu_w, pu_h, ctudec->part_ctx->log2_ctu_s,
                                        sp_rect);
 
         padd_dmvr(ref0_b.y, ref0_b.stride, pu_w, pu_h);
         padd_dmvr(ref1_b.y, ref1_b.stride, pu_w, pu_h);
     } else {
-    padd_dmvr(ref0_b.y, ref0_b.stride, pu_w, pu_h);
-    padd_dmvr(ref1_b.y, ref1_b.stride, pu_w, pu_h);
+        padd_dmvr(ref0_b.y, ref0_b.stride, pu_w, pu_h);
+        padd_dmvr(ref1_b.y, ref1_b.stride, pu_w, pu_h);
     }
 
     prec_x0 = (mv0->mv.x) & 0xF;
@@ -1446,8 +1452,8 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     mc_c->bidir0[prec_0_mc_type][log2_pu_w - 2](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h, prec_x0, prec_y0, pu_w);
 
     if (!use_wp_c) {
-    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cb, dst.stride_c, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h, prec_x1, prec_y1, pu_w);
-    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cr, dst.stride_c, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h, prec_x1, prec_y1, pu_w);
+        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cb, dst.stride_c, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h, prec_x1, prec_y1, pu_w);
+        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cr, dst.stride_c, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h, prec_x1, prec_y1, pu_w);
     } else {
     }
 
