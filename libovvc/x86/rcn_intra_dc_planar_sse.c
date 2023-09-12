@@ -1660,7 +1660,7 @@ vvc_intra_planar_pdpc_w4_h4_sse(const uint16_t *const src_above,
         STORE1(_mm_storel_epi64, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 3; y < height; ++y){
+    for (uint8_t y = 3; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(1)
@@ -1709,7 +1709,7 @@ vvc_intra_planar_pdpc_w4_h8_sse(const uint16_t *const src_above,
         STORE1(_mm_storel_epi64, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 3; y < height; ++y){
+    for (uint8_t y = 3; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(1)
@@ -1758,7 +1758,7 @@ vvc_intra_planar_pdpc_w4_h16_sse(const uint16_t *const src_above,
         STORE1(_mm_storel_epi64, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(1)
@@ -1807,7 +1807,7 @@ vvc_intra_planar_pdpc_w4_h32_sse(const uint16_t *const src_above,
         STORE1(_mm_storel_epi64, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(1)
@@ -1856,7 +1856,7 @@ vvc_intra_planar_pdpc_w4_h64_sse(const uint16_t *const src_above,
         STORE1(_mm_storel_epi64, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR2(1)
@@ -1905,7 +1905,7 @@ vvc_intra_planar_pdpc_w8_h4_sse(const uint16_t *const src_above,
         STORE1(_mm_storeu_si128, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 3; y < height; ++y){
+    for (uint8_t y = 3; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(1)
@@ -1954,7 +1954,7 @@ vvc_intra_planar_pdpc_w8_h8_sse(const uint16_t *const src_above,
         STORE1(_mm_storeu_si128, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(1)
@@ -2003,7 +2003,7 @@ vvc_intra_planar_pdpc_w8_h16_sse(const uint16_t *const src_above,
         STORE1(_mm_storeu_si128, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(1)
@@ -2052,7 +2052,7 @@ vvc_intra_planar_pdpc_w8_h32_sse(const uint16_t *const src_above,
         STORE1(_mm_storeu_si128, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(1)
@@ -2101,7 +2101,7 @@ vvc_intra_planar_pdpc_w8_h64_sse(const uint16_t *const src_above,
         STORE1(_mm_storeu_si128, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR2(1)
@@ -2140,7 +2140,7 @@ vvc_intra_planar_pdpc_w16_h4_sse(const uint16_t *const src_above,
     STORE1(_mm_storel_epi64, (r_col),rc_v, 8)
     STORE1(_mm_storel_epi64, (l_col),lc_v, 8)
 
-    for (int y = 0; y < height; ++y){
+    for (uint8_t y = 0; y < height; ++y){
         INIT_LOOP_PDPC()
 
         COMPUTE_PLANAR_VECTOR(2)
@@ -2191,7 +2191,7 @@ vvc_intra_planar_pdpc_w16_h8_sse(const uint16_t *const src_above,
 
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(2)
@@ -2241,7 +2241,7 @@ vvc_intra_planar_pdpc_w16_h16_sse(const uint16_t *const src_above,
 
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(2)
@@ -2291,7 +2291,7 @@ vvc_intra_planar_pdpc_w16_h32_sse(const uint16_t *const src_above,
 
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(2)
@@ -2340,7 +2340,7 @@ vvc_intra_planar_pdpc_w16_h64_sse(const uint16_t *const src_above,
         STORE2(_mm_storeu_si128, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 12; y < height; ++y){
+    for (uint8_t y = 12; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR2(2)
@@ -2379,7 +2379,7 @@ vvc_intra_planar_pdpc_w32_h4_sse(const uint16_t *const src_above,
     STORE1(_mm_storel_epi64, (r_col),rc_v, 8)
     STORE1(_mm_storel_epi64, (l_col),lc_v, 8)
 
-    for (int y = 0; y < height; ++y){
+    for (uint8_t y = 0; y < height; ++y){
         INIT_LOOP_PDPC()
 
         COMPUTE_PLANAR_VECTOR(4)
@@ -2430,7 +2430,7 @@ vvc_intra_planar_pdpc_w32_h8_sse(const uint16_t *const src_above,
 
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(4)
@@ -2480,7 +2480,7 @@ vvc_intra_planar_pdpc_w32_h16_sse(const uint16_t *const src_above,
 
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(4)
@@ -2530,7 +2530,7 @@ vvc_intra_planar_pdpc_w32_h32_sse(const uint16_t *const src_above,
 
         _dst += dst_stride;
     }
-    for (int y = 12; y < height; ++y){
+    for (uint8_t y = 12; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR(4)
@@ -2579,7 +2579,7 @@ vvc_intra_planar_pdpc_w32_h64_sse(const uint16_t *const src_above,
         STORE4(_mm_storeu_si128, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 12; y < height; ++y){
+    for (uint8_t y = 12; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR2(4)
@@ -2618,7 +2618,7 @@ vvc_intra_planar_pdpc_w64_h4_sse(const uint16_t *const src_above,
     STORE1(_mm_storel_epi64, (r_col),rc_v, 8)
     STORE1(_mm_storel_epi64, (l_col),lc_v, 8)
 
-    for (int y = 0; y < height; ++y){
+    for (uint8_t y = 0; y < height; ++y){
         INIT_LOOP_PDPC()
 
         COMPUTE_PLANAR_VECTOR2(8)
@@ -2669,7 +2669,7 @@ vvc_intra_planar_pdpc_w64_h8_sse(const uint16_t *const src_above,
 
         _dst += dst_stride;
     }
-    for (int y = 7; y < height; ++y){
+    for (uint8_t y = 7; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR2(8)
@@ -2719,7 +2719,7 @@ vvc_intra_planar_pdpc_w64_h16_sse(const uint16_t *const src_above,
 
         _dst += dst_stride;
     }
-    for (int y = 12; y < height; ++y){
+    for (uint8_t y = 12; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR2(8)
@@ -2769,7 +2769,7 @@ vvc_intra_planar_pdpc_w64_h32_sse(const uint16_t *const src_above,
 
         _dst += dst_stride;
     }
-    for (int y = 12; y < height; ++y){
+    for (uint8_t y = 12; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR2(8)
@@ -2818,7 +2818,7 @@ vvc_intra_planar_pdpc_w64_h64_sse(const uint16_t *const src_above,
         STORE8(_mm_storeu_si128, _dst, out_v, 8)
         _dst += dst_stride;
     }
-    for (int y = 12; y < height; ++y){
+    for (uint8_t y = 12; y < height; ++y){
         INIT_LOOP_NOPDPC()
 
         COMPUTE_PLANAR_VECTOR2(8)
