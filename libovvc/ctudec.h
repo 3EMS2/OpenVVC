@@ -321,13 +321,16 @@ struct OVMVCtx
 
 struct AffineControlInfo
 {
-    struct MV lt;
-    struct MV rt;
-    struct MV lb;
+    struct CPMV {
+        struct MV lt;
+        struct MV rt;
+        struct MV lb;
+    } cp_mv;
+
     uint8_t ref_idx;
     struct {
-    uint8_t bcw_idx_plus1;
-    uint8_t prec_amvr;
+        uint8_t bcw_idx_plus1;
+        uint8_t prec_amvr;
     }mv_spec;
 };
 

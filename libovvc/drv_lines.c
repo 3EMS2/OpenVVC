@@ -291,10 +291,10 @@ rotate_affine_cp(struct AffineInfo *const aff_info, struct AffineInfo *const lns
         if (msk & 0x1) {
             int x_pb = aff_info[i].pb.x_pb;
             int nb_pb_w = aff_info[i].pb.nb_pb_w;
-            lns[i].cps[0].lt = mv0[x_pb + (nb_pb_ctb * 34)+ 1].mv;
-            lns[i].cps[0].rt = mv0[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].mv;
-            lns[i].cps[1].lt = mv1[x_pb + (nb_pb_ctb * 34)+ 1].mv;
-            lns[i].cps[1].rt = mv1[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].mv;
+            lns[i].cps[0].cp_mv.lt = mv0[x_pb + (nb_pb_ctb * 34)+ 1].mv;
+            lns[i].cps[0].cp_mv.rt = mv0[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].mv;
+            lns[i].cps[1].cp_mv.lt = mv1[x_pb + (nb_pb_ctb * 34)+ 1].mv;
+            lns[i].cps[1].cp_mv.rt = mv1[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].mv;
 
             lns[i].cps[0].ref_idx = mv0[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].ref_idx;
             lns[i].cps[1].ref_idx = mv1[x_pb + (nb_pb_ctb * 34)+ nb_pb_w].ref_idx;
