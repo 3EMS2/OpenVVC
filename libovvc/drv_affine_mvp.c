@@ -977,8 +977,6 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
     uint8_t is_abv_ctu = y0 == 0 && is_above_cand(cand_name);
     uint8_t is_lft_ctu = x0 == 0 && (!is_above_cand(cand_name) || cand_name == B2);
     uint8_t is_abv_rgt_ctu = cand_name == B0 && is_abv_ctu && x0 + (1 << log2_pb_w) == 1 << log2_ctu_s;
-
-    /* FIXME use correct log2_ctu_s */
     int delta_pos_x = ((is_lft_ctu << log2_ctu_s) + x0 - ((is_abv_rgt_ctu << log2_ctu_s) + ngh_x0));
     int delta_pos_y = is_abv_ctu ? 0 : (y0 - ngh_y0);
 

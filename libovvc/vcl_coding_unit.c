@@ -1808,8 +1808,6 @@ drv_rcn_wrap_mvp_p(OVCTUDec *const ctu_dec,
     uint8_t ref_idx1 = 0;
     uint8_t cu_type = OV_INTER;
     if (mvp_info.cu_type == OV_AFFINE) {
-        //struct AffineMVPDataP *const mvp_data = &mvp_info.data.cp_mvd_info;
-
         drv_affine_mvp_p(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
                          &mvp_info, inter_dir);
 
