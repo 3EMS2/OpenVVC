@@ -3742,7 +3742,7 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                        uint8_t merge_idx)
 {
     struct AffineDRVInfo *affine_ctx = &inter_ctx->affine_ctx;
-    struct AffineMergeInfo affmv_info;
+    struct AffineMergeInfo affmv_info = {0};
 
     uint8_t x_pb = x0 >> 2;
     uint8_t y_pb = y0 >> 2;
@@ -3851,12 +3851,12 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                            affmv_info.inter_dir);
 
     } else {
+        /*
         affmv_info.cinfo[0].mv_spec.prec_amvr = 0;
-
         affmv_info.cinfo[1].mv_spec.prec_amvr = 0;
-
         affmv_info.inter_dir = 0x1;
         affmv_info.affine_type = 0;
+        */
     }
 
     struct PBInfo pb = {
@@ -3876,7 +3876,6 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
     };
 
     store_affine_info(affine_ctx, aff_info, x_pb, y_pb, nb_pb_w, nb_pb_h);
-
 }
 
 void
@@ -3886,9 +3885,9 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                        uint8_t merge_idx)
 {
     struct AffineDRVInfo *affine_ctx = &inter_ctx->affine_ctx;
-    struct AffineMergeInfo mv_info;
-        mv_info.cinfo[0].ref_idx = 100;
-        mv_info.cinfo[1].ref_idx = 100;
+    struct AffineMergeInfo affmv_info = {0};
+        affmv_info.cinfo[0].ref_idx = 100;
+        affmv_info.cinfo[1].ref_idx = 100;
 
 
     uint8_t x_pb = x0 >> 2;
@@ -3948,14 +3947,14 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     }
 
     if (!is_sbtmvp) {
-        derive_affine_merge_mv(inter_ctx, affine_ctx, &mv_info,
+        derive_affine_merge_mv(inter_ctx, affine_ctx, &affmv_info,
                                x_pb, y_pb, nb_pb_w, nb_pb_h,
                                log2_cu_w, log2_cu_h,
                                merge_idx);
     }
 
-    mv_info.cinfo[0].mv_spec.prec_amvr = 0;
-    mv_info.cinfo[1].mv_spec.prec_amvr = 0;
+    affmv_info.cinfo[0].mv_spec.prec_amvr = 0;
+    affmv_info.cinfo[1].mv_spec.prec_amvr = 0;
     //mv_info.cinfo[0].mv_spec.bcw_idx_plus1 = 0;
     //mv_info.cinfo[1].mv_spec.bcw_idx_plus1 = 0;
     /* FIXME can we have small blocks bidir requiring inter_dir
@@ -3964,26 +3963,26 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     if (!is_sbtmvp) {
         uint8_t prof_dir = inter_ctx->inter_params.prof_enabled ? 0x3 : 0;
 
-        uint8_t affine_type = mv_info.affine_type;
-        const struct AffineControlInfo *const cinfo = mv_info.cinfo;
+        uint8_t affine_type = affmv_info.affine_type;
+        const struct AffineControlInfo *const cinfo = affmv_info.cinfo;
 
-        prof_dir &= update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb,
+        prof_dir &= update_mv_ctx_b(inter_ctx, affmv_info, x_pb, y_pb,
                                     nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
-                                    mv_info.inter_dir);
+                                    affmv_info.inter_dir);
 
         if (prof_dir) {
-            uint8_t prof_0 = prof_dir & 0x1 && check_affine_prof(&mv_info, RPL_0);
-            uint8_t prof_1 = prof_dir & 0x2 && check_affine_prof(&mv_info, RPL_1);
+            uint8_t prof_0 = prof_dir & 0x1 && check_affine_prof(&affmv_info, RPL_0);
+            uint8_t prof_1 = prof_dir & 0x2 && check_affine_prof(&affmv_info, RPL_1);
 
             prof_dir &= (prof_0) | (prof_1 << 1);
 
-            prof_dir &= mv_info.inter_dir;
+            prof_dir &= affmv_info.inter_dir;
         }
 
         if (!prof_dir) {
             rcn_affine_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
                                log2_cu_w, log2_cu_h,
-                               mv_info.inter_dir);
+                               affmv_info.inter_dir);
         } else {
             struct AffineDeltaMV dmv_0;
             struct AffineDeltaMV dmv_1;
@@ -3997,12 +3996,12 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 
             rcn_affine_prof_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
                                     log2_cu_w, log2_cu_h,
-                                    mv_info.inter_dir, prof_dir, &dmv_0, &dmv_1);
+                                    affmv_info.inter_dir, prof_dir, &dmv_0, &dmv_1);
         }
 
         rcn_affine_mcp_b_c(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
                            log2_cu_w, log2_cu_h,
-                           mv_info.inter_dir);
+                           affmv_info.inter_dir);
 
     }
 
@@ -4016,10 +4015,10 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     };
 
     struct AffineInfo aff_info = {
-        .cps[0] = mv_info.cinfo[0],
-        .cps[1] = mv_info.cinfo[1],
+        .cps[0] = affmv_info.cinfo[0],
+        .cps[1] = affmv_info.cinfo[1],
         .pb = pb,
-        .type = mv_info.affine_type
+        .type = affmv_info.affine_type
     };
 
     store_affine_info(affine_ctx, aff_info, x_pb, y_pb, nb_pb_w, nb_pb_h);
