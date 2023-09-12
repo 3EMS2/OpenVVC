@@ -123,8 +123,8 @@ simdFilter5x5Blk_sse(OVSample *const dst, const OVSample *const src,
     const int SHIFT = NUM_BITS - 1;
     const int ROUND = 1 << (SHIFT - 1);
 
-    const size_t STEP_X = 8;
-    const size_t STEP_Y = 4;
+    const int STEP_X = 8;
+    const int STEP_Y = 4;
 
     const int clpMin = 0;
     const int clpMax = (1<<10) - 1;
@@ -146,9 +146,9 @@ simdFilter5x5Blk_sse(OVSample *const dst, const OVSample *const src,
     params[1][1] = _mm_shuffle_epi32(fc, 0x55);
     params[1][2] = _mm_shuffle_epi32(fc, 0xaa);
 
-    for (size_t i = 0; i < blk_dst.height; i += STEP_Y) {
-        for (size_t j = 0; j < blk_dst.width; j += STEP_X) {
-            for (size_t ii = 0; ii < STEP_Y; ii++) {
+    for (int i = 0; i < blk_dst.height; i += STEP_Y) {
+        for (int j = 0; j < blk_dst.width; j += STEP_X) {
+            for (int ii = 0; ii < STEP_Y; ii++) {
                 const uint16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4;
 
                 pImg0 = (uint16_t*)_src + j + ii * srcStride ;
@@ -194,8 +194,8 @@ simdFilter5x5BlkVB_sse(OVSample *const dst, const OVSample *const src,
     const int SHIFT = NUM_BITS - 1;
     const int ROUND = 1 << (SHIFT - 1);
 
-    const size_t STEP_X = 8;
-    const size_t STEP_Y = 4;
+    const int STEP_X = 8;
+    const int STEP_Y = 4;
 
     const int clpMin = 0;
     const int clpMax = (1<<10) - 1;
@@ -221,9 +221,9 @@ simdFilter5x5BlkVB_sse(OVSample *const dst, const OVSample *const src,
     params[1][1] = _mm_shuffle_epi32(fc, 0x55);
     params[1][2] = _mm_shuffle_epi32(fc, 0xaa);
 
-    for (size_t i = 0; i < blk_dst.height; i += STEP_Y) {
-        for (size_t j = 0; j < blk_dst.width; j += STEP_X) {
-            for (size_t ii = 0; ii < STEP_Y; ii++) {
+    for (int i = 0; i < blk_dst.height; i += STEP_Y) {
+        for (int j = 0; j < blk_dst.width; j += STEP_X) {
+            for (int ii = 0; ii < STEP_Y; ii++) {
                 const uint16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4;
 
                 pImg0 = (uint16_t*)_src + j + ii * srcStride ;
@@ -301,8 +301,8 @@ simdFilter7x7Blk_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSam
     const int SHIFT = NUM_BITS - 1;
     const int ROUND = 1 << (SHIFT - 1);
 
-    const size_t STEP_X = 8;
-    const size_t STEP_Y = 4;
+    const int STEP_X = 8;
+    const int STEP_Y = 4;
 
     const int clpMin = 0;
     const int clpMax = (1<<10) - 1;
@@ -317,9 +317,9 @@ simdFilter7x7Blk_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSam
     const __m128i mmMin = _mm_set1_epi16( clpMin );
     const __m128i mmMax = _mm_set1_epi16( clpMax );
 
-    for (size_t i = 0; i < blk_dst.height; i += STEP_Y)
+    for (int i = 0; i < blk_dst.height; i += STEP_Y)
     {
-        for (size_t j = 0; j < blk_dst.width; j += STEP_X)
+        for (int j = 0; j < blk_dst.width; j += STEP_X)
         {
             __m128i params[2][2][6];
 
@@ -347,7 +347,7 @@ simdFilter7x7Blk_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSam
                 params[k][1][5] = _mm_shuffle_epi32(rawClipHi, 0x55);
             }
 
-            for (size_t ii = 0; ii < STEP_Y; ii++)
+            for (int ii = 0; ii < STEP_Y; ii++)
             {
                 const uint16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
@@ -395,8 +395,8 @@ simdFilter7x7BlkVB_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVS
     const int SHIFT = NUM_BITS - 1;
     const int ROUND = 1 << (SHIFT - 1);
 
-    const size_t STEP_X = 8;
-    const size_t STEP_Y = 4;
+    const int STEP_X = 8;
+    const int STEP_Y = 4;
 
     const int clpMin = 0;
     const int clpMax = (1<<10) - 1;
@@ -414,9 +414,9 @@ simdFilter7x7BlkVB_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVS
     const __m128i mmOffsetborder = _mm_set1_epi32(1 << ((SHIFT + 3) - 1));
     const int SHIFTborder = SHIFT+3;
 
-    for (size_t i = 0; i < blk_dst.height; i += STEP_Y)
+    for (int i = 0; i < blk_dst.height; i += STEP_Y)
     {
-        for (size_t j = 0; j < blk_dst.width; j += STEP_X)
+        for (int j = 0; j < blk_dst.width; j += STEP_X)
         {
             __m128i params[2][2][6];
 
@@ -444,7 +444,7 @@ simdFilter7x7BlkVB_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVS
                 params[k][1][5] = _mm_shuffle_epi32(rawClipHi, 0x55);
             }
 
-            for (size_t ii = 0; ii < STEP_Y; ii++)
+            for (int ii = 0; ii < STEP_Y; ii++)
             {
                 const uint16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
@@ -567,8 +567,8 @@ cc_alf_filterBlkVB_sse(OVSample * chroma_dst, OVSample * luma_src, const int chr
                        const Area blk_dst, const int8_t *filt_coeff,
                        const int ctu_s, int virbnd_pos)
 {
-    const size_t STEP_X = 8;
-    const size_t STEP_Y = 4;
+    const int STEP_X = 8;
+    const int STEP_Y = 4;
 
     __m128i filter01 = _mm_set1_epi32((filt_coeff[0] & 0xFFFF) | ((uint32_t)(filt_coeff[1] & 0xFFFF) << 16));
     __m128i filter23 = _mm_set1_epi32((filt_coeff[2] & 0xFFFF) | ((uint32_t)(filt_coeff[3] & 0xFFFF) << 16));
@@ -714,9 +714,9 @@ static void simdDeriveClassificationBlk_sse(uint8_t * class_idx_arr, uint8_t * t
         const int y = blk.y - 2 + i;
         int j;
 
-        if (y > 0 && (y & ctb_msk) == virbnd_pos - 2) {
+        if (y > 0 && (int)(y & ctb_msk) == virbnd_pos - 2) {
             src3 = src2;
-        } else if (y > 0 && (y & ctb_msk) == virbnd_pos) {
+        } else if (y > 0 && (int)(y & ctb_msk) == virbnd_pos) {
             src0 = src1;
         }
 
@@ -765,13 +765,13 @@ static void simdDeriveClassificationBlk_sse(uint8_t * class_idx_arr, uint8_t * t
 
     for (i = 0; i < (blk_h >> 1); i += 4) {
         __m128i class_idx[4], transpose_idx[4];
-        const uint32_t z = (2 * i + blk.y) & ctb_msk;
-        const uint32_t z2 = (2 * i + 4 + blk.y) & ctb_msk;
+        const int32_t z = (2 * i + blk.y) & ctb_msk;
+        const int32_t z2 = (2 * i + 4 + blk.y) & ctb_msk;
 
         int sb_y = ((2 * i + blk.y) & ctb_msk) >> 2;
         int sb_x = ((blk.x)         & ctb_msk) >> 2;
 
-        for (size_t k = 0; k < 4; k++) {
+        for (int k = 0; k < 4; k++) {
             __m128i x0, x1, x2, x3, x4, x5, x6, x7;
 
 
