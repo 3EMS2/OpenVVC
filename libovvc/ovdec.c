@@ -658,9 +658,6 @@ ovdec_drain_picture(OVDec *ovdec, OVFrame **frame_p)
 int
 ovdec_flush(OVDec *ovdec)
 {
-    //ovdec_wait_entry_threads(ovdec);
-    struct OVPictureUnit *punit;
-    OVFrame *frame;
     OVDPB *dpb = ovdec->dpb;
 
     ov_log(ovdec, OVLOG_WARNING, "Decoder FLUSH.\n");
@@ -668,15 +665,6 @@ ovdec_flush(OVDec *ovdec)
 
     ovdec_wait_entry_threads(ovdec);
     if (dpb) {
-#if 0
-        while (ovdpb_drain_frame(dpb, &frame, &punit)) {
-            if (frame) {
-                ovpu_unref(&punit);
-                ovframe_unref(&frame);
-            }
-        }
-        ovdpb_uninit(&ovdec->dpb);
-#endif
         ovdpb_flush_dpb(ovdec->dpb);
     }
 

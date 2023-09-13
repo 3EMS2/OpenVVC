@@ -1587,7 +1587,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
     struct ALFInfo* alf_info = &ctudec->alf_info;
     struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
     const struct ToolsInfo *tools = &ctudec->tools;
-    if (!tools->alf_luma_enabled_flag && !tools->alf_cb_enabled_flag && !tools->alf_cr_enabled_flag || ctudec->tools.ovrd_opt.disable_alf) {
+    if ((!tools->alf_luma_enabled_flag && !tools->alf_cb_enabled_flag && !tools->alf_cr_enabled_flag) || ctudec->tools.ovrd_opt.disable_alf) {
         return;
     }
 

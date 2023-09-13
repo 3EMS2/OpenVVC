@@ -263,6 +263,7 @@ struct SLHDRInfo {
     uint8_t sl_hdr_extension_data_byte;
 };
 
+#if HAVE_SLHDR
 static void
 gamut_mapping_params(struct OVNVCLReader *const rdr, struct GamutMappingParams *const gmp)
 {
@@ -477,12 +478,12 @@ tmp_read_slhdr(struct OVNVCLReader *const rdr, struct SLHDRInfo *const slhdr)
         }
     }
 }
+#endif
 
 int
 nvcl_decode_nalu_sei2(OVSEI *sei, OVNVCLReader *const rdr, uint8_t nalu_type)
 {
     struct OVSEIPayload payload = nvcl_sei_payload(rdr);
-    int br_val = 1;
 
     switch (payload.type) {
         uint8_t sei_byte;

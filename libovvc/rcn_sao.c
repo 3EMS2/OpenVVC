@@ -464,7 +464,7 @@ static void
 rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
     uint8_t sao_enabled = (!!ctudec->tools.sao_luma_flag) << 1 | (!!ctudec->tools.sao_chroma_flag);
-    if (!sao_enabled | ctudec->tools.ovrd_opt.disable_sao){
+    if ((!sao_enabled) | ctudec->tools.ovrd_opt.disable_sao){
         return;
     }
 
@@ -542,7 +542,7 @@ static void
 rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
     uint8_t sao_enabled = (!!ctudec->tools.sao_luma_flag) << 1 | (!!ctudec->tools.sao_chroma_flag);
-    if (!sao_enabled | ctudec->tools.ovrd_opt.disable_sao) {
+    if ((!sao_enabled) | ctudec->tools.ovrd_opt.disable_sao) {
         return;
     }
 

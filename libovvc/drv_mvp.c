@@ -1153,7 +1153,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
     VVCMergeInfo cand[6];
     VVCMergeInfo cand_amvp[5];
 
-    VVCMergeInfo mv_z = { .mv0 = {0}, .mv1 = {0}, .inter_dir = 3};
+    VVCMergeInfo mv_z = { .mv0 = {{0}}, .mv1 = {{0}}, .inter_dir = 3};
 
     int nb_cand = 0;
 

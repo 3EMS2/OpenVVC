@@ -168,11 +168,10 @@ wrap_around(OVSample *dst, const OVSample *src,
             int src_x, int src_y,
             const struct SPRect *const sp_rect, int off)
 {
-    int x, y, w, h;
-    int x2, w2;
+    int y, w, h;
+    int w2;
 
     int start_y, start_x, end_y, end_x;
-    int start_y2, start_x2, end_y2, end_x2;
     OVSample *dst2;
 
     w = sp_rect->w;
@@ -525,8 +524,6 @@ derive_ref_buf_c(const struct InterDRVCtx *const inter_ctx,
     OVSample *const ref_cr  = (OVSample *) ref_pic->frame->data[2];
 
     int src_stride = ref_pic->frame->linesize[1]/sizeof(OVSample);
-    const int pic_w = ref_pic->frame->width >> 1;
-    const int pic_h = ref_pic->frame->height >> 1;
 
     /*FIXME check buff side derivation */
     int ref_pos_x = pos_x + (mv.x >> 5);
@@ -706,9 +703,6 @@ derive_dmvr_ref_buf_y(const struct InterDRVCtx *const inter_ctx,
     struct OVBuffInfo ref_buff;
     OVSample *const ref_y  = (OVSample *) ref_pic->frame->data[0];
 
-    const int pic_w = ref_pic->frame->width;
-    const int pic_h = ref_pic->frame->height;
-
     int src_stride = ref_pic->frame->linesize[0]/sizeof(OVSample);
 
     struct MV mv_clipped = clip_mv(pos_x, pos_y, sp_rect, pu_w, pu_h, mv, inter_ctx->wrap_around, inter_ctx->wrap_offset);
@@ -757,9 +751,6 @@ derive_dmvr_ref_buf_c(const struct InterDRVCtx *const inter_ctx,
     struct OVBuffInfo ref_buff;
     OVSample *const ref_cb  = (OVSample *) ref_pic->frame->data[1];
     OVSample *const ref_cr  = (OVSample *) ref_pic->frame->data[2];
-
-    const int pic_w = ref_pic->frame->width >> 1;
-    const int pic_h = ref_pic->frame->height >> 1;
 
     int src_stride = ref_pic->frame->linesize[1]/sizeof(OVSample);
 
@@ -1866,9 +1857,6 @@ mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
 
-    const int pic_w = frame0->width;
-    const int pic_h = frame0->height;
-
     const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
     mv.mv = clip_mv(pos_x, pos_y, sp_rect, pu_w, pu_h, mv.mv, inter_ctx->wrap_around, inter_ctx->wrap_offset);
@@ -1967,9 +1955,6 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
 
-    const int pic_w = frame0->width;
-    const int pic_h = frame0->height;
-
     const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
     mv.mv = clip_mv(pos_x, pos_y, sp_rect, pu_w, pu_h, mv.mv, inter_ctx->wrap_around, inter_ctx->wrap_offset);
@@ -2057,9 +2042,6 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
-
-    const int pic_w = frame0->width;
-    const int pic_h = frame0->height;
 
     const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
@@ -2175,9 +2157,6 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
 
-    const int pic_w = frame0->width;
-    const int pic_h = frame0->height;
-
     const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
     mv.mv = clip_mv(pos_x, pos_y, sp_rect, pu_w, pu_h, mv.mv, inter_ctx->wrap_around, inter_ctx->wrap_offset);
@@ -2279,9 +2258,6 @@ mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu
 
     const int pu_w = 1 << (log2_pu_w - 1);
     const int pu_h = 1 << (log2_pu_h - 1);
-
-    const int pic_w = frame0->width;
-    const int pic_h = frame0->height;
 
     const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 
@@ -2405,9 +2381,6 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
 
     const int pu_w = 1 << (log2_pu_w - 1);
     const int pu_h = 1 << (log2_pu_h - 1);
-
-    const int pic_w = frame0->width;
-    const int pic_h = frame0->height;
 
     const struct SPRect *const sp_rect = &inter_ctx->subpic_rect;
 

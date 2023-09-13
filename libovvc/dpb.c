@@ -231,8 +231,8 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
     if (/*!pic->flags &&*/ !ref_count) {
         /* Release TMVP  MV maps */
         ptrdiff_t idx = pic - dpb->pictures;
-        uint64_t cvs_id_pic = pic->cvs_id;
-        uint64_t cvs_id_dpb = dpb->cvs_id;
+        //uint64_t cvs_id_pic = pic->cvs_id;
+        //uint64_t cvs_id_dpb = dpb->cvs_id;
 
         dpbpriv_release_pic(pic);
 
@@ -240,9 +240,9 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
 
 	//ov_log(NULL, OVLOG_ERROR, "DPB R state 0x%.64lb, %ld, %ld \n", dpb->status, cvs_id_pic, cvs_id_dpb);
     }
-        ptrdiff_t idx = pic - dpb->pictures;
-        uint64_t cvs_id_pic = pic->cvs_id;
-        uint64_t cvs_id_dpb = dpb->cvs_id;
+        //ptrdiff_t idx = pic - dpb->pictures;
+        //uint64_t cvs_id_pic = pic->cvs_id;
+        //uint64_t cvs_id_dpb = dpb->cvs_id;
     //ov_log(NULL, OVLOG_WARNING, "DPB R state 0x%.64lb, %ld, %ld %d \n", dpb->status, cvs_id_pic, cvs_id_dpb, ref_count);
     pthread_mutex_unlock(&pic->pic_mtx);
 }
@@ -266,7 +266,6 @@ find_min_cvs_id(const OVDPB *const dpb)
     /* Count pictures in current output target Coded Video Sequence
      */
     int min_cvs_id = INT_MAX;
-    int i;
 
     uint64_t status = dpb->status;
     while (status) {
@@ -362,6 +361,7 @@ ovdpb_flush_dpb(OVDPB *dpb)
     dpb->no_output_before_recovery = 2;
 }
 
+#if 0
 static void
 log_pic_flags(const OVDPB *dpb)
 {
@@ -377,6 +377,7 @@ log_pic_flags(const OVDPB *dpb)
         status &= ~(uint64_t)((uint64_t)1 << idx);
     }
 }
+#endif
 
 /*FIXME rename to request new picture */
 static OVPicture *
@@ -408,7 +409,7 @@ alloc_frame(OVDPB *dpb, int poc)
     }
 
     ov_log(NULL, OVLOG_ERROR, "DPB full 0x%lb\n", dpb->status);
-    log_pic_flags(dpb);
+    //log_pic_flags(dpb);
 
     return NULL;
 }
@@ -525,6 +526,7 @@ self_ref:
     return OVVC_EINDATA;
 }
 
+#if 0
 static void
 rpl_info_print(const OVDPB *const dpb, const struct RPLInfo *const rpl_info)
 {
@@ -555,6 +557,7 @@ rpl_info_print(const OVDPB *const dpb, const struct RPLInfo *const rpl_info)
 
     ov_log(NULL, OVLOG_TRACE, "POC: %d: active: (%s), non active: (%s)\n", dpb->poc, a_lst, na_lst);
 }
+#endif
 
 static int
 vvc_mark_refs(OVDPB *dpb, const struct RPLInfo *const rpl_info, OVPicture **dst_rpl)

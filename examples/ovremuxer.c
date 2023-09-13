@@ -247,6 +247,7 @@ faildmxclose:
     return ret;
 }
 
+#if 0
 static const char *nalutype2str[32] =
 {
     "TRAIL",
@@ -283,18 +284,22 @@ static const char *nalutype2str[32] =
     "UNSPEC_31"
 
 };
+#endif
 
 static uint8_t start_code[3] =
 { 0, 0, 1 };
 
+#if 0
 static uint8_t sei_header[2] =
 { 0, 0 };
+#endif
 
 static uint8_t sei_uuid[16] =
 { 0, 0, 8, 0, 0, 8, 0, 8, 0, 0, 8, 0, 0, 8, 0, 8};
 
-static int count = 0;
+//static int count = 0;
 
+#if 0
 static int
 set_br_scale(int poc)
 {
@@ -324,20 +329,20 @@ eu(int val, uint32_t * tostr)
     *tostr = ue_val;
     return pfx_sz + sfx_sz;
 }
-static int poc = 0;
+#endif
+
 static int
 write_pu(const OVPictureUnit *const pu, FILE *out, int poc)
 {
     int i;
-    char tmp_sei[256] = {0};
-    uint8_t tmp_val[4];
+    //char tmp_sei[256] = {0};
+    //uint8_t tmp_val[4];
     for (i = 0; i < pu->nb_nalus; ++i) {
         const OVNALUnit *const nalu = pu->nalus[i];
 
         if (nalu->type == OVNALU_PREFIX_SEI || nalu->type == OVNALU_SUFFIX_SEI) {
 
-            uint16_t nb_bits = eu(br_scale, (uint32_t *)&tmp_val);
-            br_scale = set_br_scale(poc);
+            //uint16_t nb_bits = eu(br_scale, (uint32_t *)&tmp_val);
 #if 0
             uint16_t nb_bytes = (nb_bits + 0x7) >> 3;
 #else
