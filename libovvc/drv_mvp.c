@@ -1648,56 +1648,38 @@ drv_mmvd_merge_mvp(struct InterDRVCtx *const inter_ctx,
                    uint8_t merge_idx, uint8_t max_nb_cand)
 {
 
-    static const uint8_t ref_mvd_cands[8] = { 1, 2, 4, 8, 16, 32, 64, 128};
     uint8_t x0_unit = x0 >> LOG2_MIN_CU_S;
     uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
     uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
     uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
 
-    int smvd_mrg_idx = merge_idx / MMVD_MAX_REFINE_NUM;
+    int smvd_mrg_idx = merge_idx >> LOG2_MMVD_MAX_REFINE_NUM;
 
     OVMV mv = vvc_derive_merge_mvp(inter_ctx, mv_ctx,
                                    x0_unit, y0_unit,
                                    nb_unit_w, nb_unit_h, smvd_mrg_idx,
                                    max_nb_cand, log2_cb_w + log2_cb_h <= 5);
 
+    uint32_t offset_msk = -((merge_idx & 0x3) <= 1);
+    uint32_t offset = 1 << (((merge_idx >> 2) & 0x7) + 2 + inter_ctx->inter_params.mmvd_shift);
 
-    struct MV mvd0;
+    struct MV mvd = {
+        .x = offset &  offset_msk,
+        .y = offset & ~offset_msk
+    };
 
-    int f_pos_group = merge_idx / (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
-
-    int idx = merge_idx;
-    idx -= f_pos_group  * (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
-    idx -= smvd_mrg_idx * (MMVD_MAX_REFINE_NUM);
-
-    int offset = (uint16_t)ref_mvd_cands[(idx >> 2)] << 2;
-
-    offset <<= inter_ctx->inter_params.mmvd_shift;
-
-    int f_pos = idx - ((idx >> 2) << 2);
-
-    if (f_pos == 0) {
-        mvd0.x = offset;
-        mvd0.y = 0;
-    } else if (f_pos == 1) {
-        mvd0.x = -offset;
-        mvd0.y = 0;
-    } else if (f_pos == 2) {
-        mvd0.x = 0;
-        mvd0.y = offset;
-    } else {
-        mvd0.x = 0;
-        mvd0.y = -offset;
+    uint8_t offset_sgn = merge_idx & 0x1;
+    if (offset_sgn) {
+        mvd.x = -mvd.x;
+        mvd.y = -mvd.y;
     }
 
-    mv.mv.x += mvd0.x;
-    mv.mv.y += mvd0.y;
+    mv.mv.x += mvd.x;
+    mv.mv.y += mvd.y;
 
     /* Force to RPL_0 */
     update_mv_ctx(inter_ctx, mv, x0_unit, y0_unit,
                     nb_unit_w, nb_unit_h, 0x1);
-
-
 
     return mv;
 }
@@ -1774,9 +1756,6 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                      uint8_t max_nb_cand, uint8_t is_small)
 {
 
-    static const uint8_t ref_mvd_cands[8] = { 1, 2, 4, 8, 16, 32, 64, 128};
-    /* FIXME better input to avoid div */
-    int smvd_mrg_idx = merge_idx / MMVD_MAX_REFINE_NUM;
     uint8_t pb_x = x0 >> LOG2_MIN_CU_S;
     uint8_t pb_y = y0 >> LOG2_MIN_CU_S;
     uint8_t nb_pb_w = (1 << log2_pu_w) >> LOG2_MIN_CU_S;
@@ -1785,150 +1764,89 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t log2_pmerge_lvl = inter_ctx->inter_params.log2_parallel_merge_level;
     uint8_t enable_hmvp = enable_hmvp_storage(pb_x, pb_y, nb_pb_w, nb_pb_h, log2_pmerge_lvl);
 
+    int smvd_mrg_idx = merge_idx >> LOG2_MMVD_MAX_REFINE_NUM;
+
     VVCMergeInfo mv_info = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
                                                   nb_pb_w, nb_pb_h, smvd_mrg_idx,
                                                   max_nb_cand, is_small);
 
+    uint32_t offset_msk = -((merge_idx & 0x3) <= 1); 
+    uint32_t offset = 1 << (((merge_idx >> 2) & 0x7) + 2 + inter_ctx->inter_params.mmvd_shift);
 
-    int idx = merge_idx;
+    struct MV mvd = {
+        .x = offset &  offset_msk,
+        .y = offset & ~offset_msk
+    };
 
-    int f_pos_group = merge_idx / (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
-
-    idx -= f_pos_group * (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
-    idx -= smvd_mrg_idx * (MMVD_MAX_REFINE_NUM);
-
-    int f_pos_step = idx >> 2;
-
-    int f_pos = idx - (f_pos_step << 2);
-
-    int offset = (uint16_t)ref_mvd_cands[f_pos_step] << 2;
-
-    struct MV mvd0, mvd1;
-
-    int ref0 = mv_info.mv0.ref_idx;
-    int ref1 = mv_info.mv1.ref_idx;
-    offset <<= inter_ctx->inter_params.mmvd_shift;
+    uint8_t offset_sgn = merge_idx & 0x1; 
+    if (offset_sgn) {
+        mvd.x = -mvd.x;
+        mvd.y = -mvd.y;
+    }
 
     if (mv_info.inter_dir == 0x3) {
         /* FIXME handle LT ref differently */
-
-        if (f_pos == 0) {
-            mvd0.x = offset;
-            mvd0.y = 0;
-        } else if (f_pos == 1) {
-            mvd0.x = -offset;
-            mvd0.y = 0;
-        } else if (f_pos == 2) {
-            mvd0.x = 0;
-            mvd0.y = offset;
-        } else {
-            mvd0.x = 0;
-            mvd0.y = -offset;
-        }
-
+        int ref0 = mv_info.mv0.ref_idx;
+        int ref1 = mv_info.mv1.ref_idx;
         int32_t dist_ref0 = inter_ctx->inter_params.dist_ref_0[ref0];
         int32_t dist_ref1 = inter_ctx->inter_params.dist_ref_1[ref1];
-        uint8_t is_lterm0 = !dist_ref0;
-        uint8_t is_lterm1 = !dist_ref1;
 
         dist_ref0 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl0[ref0]->poc;
         dist_ref1 = inter_ctx->inter_params.poc - inter_ctx->inter_params.rpl1[ref1]->poc;
         /* Same ref */
-        if (dist_ref0 == dist_ref1){
-            mvd1.x = mvd0.x;
-            mvd1.y = mvd0.y;
-        } else if (abs(dist_ref0) < abs(dist_ref1)){
-            mvd1.x = mvd0.x;
-            mvd1.y = mvd0.y;
-            if (is_lterm0 || is_lterm1){
-                if (dist_ref1 * dist_ref0 <= 0){
-                    struct MV tmp = {.x = mvd1.x, .y = mvd1.y};
-                    tmp = tmvp_scale_mv(-1, tmp);
-                    mvd0.x = tmp.x;
-                    mvd0.y = tmp.y;
-                }
-            } else {
-                int scale = tmvp_compute_scale(dist_ref0, dist_ref1);
-                struct MV tmp = {.x = mvd1.x, .y = mvd1.y};
-                tmp = tmvp_scale_mv(scale, tmp);
-                mvd0.x = tmp.x;
-                mvd0.y = tmp.y;
-            }
+        if (dist_ref0 == dist_ref1) {
+            mv_info.mv0.mv.x += mvd.x;
+            mv_info.mv0.mv.y += mvd.y;
+            mv_info.mv1.mv.x += mvd.x;
+            mv_info.mv1.mv.y += mvd.y;
+        } else if (abs(dist_ref0) < abs(dist_ref1)) {
+            uint8_t is_lterm0 = !dist_ref0;
+            uint8_t is_lterm1 = !dist_ref1;
+            int scale = !(is_lterm0 || is_lterm1) ? tmvp_compute_scale(dist_ref0, dist_ref1)
+                                                  : (dist_ref1 * dist_ref0 <= 0) ? -1 : 1;
+            struct MV tmp = tmvp_scale_mv(scale, mvd);
+
+            mv_info.mv0.mv.x += tmp.x;
+            mv_info.mv0.mv.y += tmp.y;
+            mv_info.mv1.mv.x += mvd.x;
+            mv_info.mv1.mv.y += mvd.y;
+
         } else {
+            uint8_t is_lterm0 = !dist_ref0;
+            uint8_t is_lterm1 = !dist_ref1;
+            /*FIXME LT REF inversion? */
+            int scale = !(is_lterm0 || is_lterm1) ? tmvp_compute_scale(dist_ref1, dist_ref0)
+                                                  : (dist_ref1 * dist_ref0 <= 0) ? 1 : -1;
+            struct MV tmp = tmvp_scale_mv(scale, mvd);
 
-            mvd1.x = mvd0.x;
-            mvd1.y = mvd0.y;
-
-            if (is_lterm0 || is_lterm1){
-                if ((dist_ref1) * (dist_ref0) <= 0) {
-                    struct MV tmp = {.x = mvd0.x, .y = mvd0.y};
-                    tmp = tmvp_scale_mv(-1, tmp);
-                    mvd1.x = tmp.x;
-                    mvd1.y = tmp.y;
-                }
-            } else {
-                int scale = tmvp_compute_scale(dist_ref1, dist_ref0);
-                struct MV tmp = {.x = mvd0.x, .y = mvd0.y};
-                tmp = tmvp_scale_mv(scale, tmp);
-                mvd1.x = tmp.x;
-                mvd1.y = tmp.y;
-            }
+            mv_info.mv0.mv.x += mvd.x;
+            mv_info.mv0.mv.y += mvd.y;
+            mv_info.mv1.mv.x += tmp.x;
+            mv_info.mv1.mv.y += tmp.y;
         }
+
+        /* FIXME check before ? */
+        if (is_small) {
+            mv_info.inter_dir = 0x1;
+        }
+
     } else if (mv_info.inter_dir == 0x1) {
 
-        if (f_pos == 0) {
-            mvd0.x = offset;
-            mvd0.y = 0;
-        } else if (f_pos == 1) {
-            mvd0.x = -offset;
-            mvd0.y = 0;
-        } else if (f_pos == 2) {
-            mvd0.x = 0;
-            mvd0.y = offset;
-        } else {
-            mvd0.x = 0;
-            mvd0.y = -offset;
-        }
+        mv_info.mv0.mv.x += mvd.x;
+        mv_info.mv0.mv.y += mvd.y;
 
     } else if (mv_info.inter_dir == 0x2) {
 
-        if (f_pos == 0) {
-            mvd1.x = offset;
-            mvd1.y = 0;
-        } else if (f_pos == 1) {
-            mvd1.x = -offset;
-            mvd1.y = 0;
-        } else if (f_pos == 2) {
-            mvd1.x = 0;
-            mvd1.y = offset;
-        } else {
-            mvd1.x = 0;
-            mvd1.y = -offset;
-        }
-
-    }
-
-    if (mv_info.inter_dir & 0x1) {
-        mv_info.mv0.mv.x += mvd0.x;
-        mv_info.mv0.mv.y += mvd0.y;
-    }
-
-    if (mv_info.inter_dir & 0x2) {
-        mv_info.mv1.mv.x += mvd1.x;
-        mv_info.mv1.mv.y += mvd1.y;
-    }
-
-    /* FIXME check before ? */
-    if (is_small && mv_info.inter_dir == 0x3) {
-        mv_info.inter_dir = 0x1;
+        mv_info.mv1.mv.x += mvd.x;
+        mv_info.mv1.mv.y += mvd.y;
     }
 
     update_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x, pb_y,
                     nb_pb_w, nb_pb_h, mv_info.inter_dir);
 
-
-    if (enable_hmvp)
-    hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv_info.mv0, mv_info.mv1, mv_info.inter_dir);
+    if (enable_hmvp) {
+        hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv_info.mv0, mv_info.mv1, mv_info.inter_dir);
+    }
 
     return mv_info;
 }

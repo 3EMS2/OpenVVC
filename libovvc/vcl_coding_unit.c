@@ -164,38 +164,20 @@ ovcabac_read_ae_mvp_merge_idx(OVCABACCtx *const cabac_ctx,
 
 static uint8_t
 ovcabac_read_ae_mmvd_merge_idx(OVCABACCtx *const cabac_ctx,
-                              uint8_t max_num_merge_cand)
+                              uint8_t max_nb_cand)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    uint8_t var0 = 0;
-    if (max_num_merge_cand  > 1){
-        var0 = ovcabac_ae_read(cabac_ctx, &cabac_state[MMVD_MERGE_IDX_CTX_OFFSET]);
+    uint8_t var0 = (max_nb_cand > 1) && ovcabac_ae_read(cabac_ctx, &cabac_state[MMVD_MERGE_IDX_CTX_OFFSET]);
+    uint8_t var1 = ovcabac_ae_read(cabac_ctx, &cabac_state[MMVD_STEP_MVP_IDX_CTX_OFFSET]);
+    if (var1) {
+        while (ovcabac_bypass_read(cabac_ctx) && ++var1 < NB_MMVD_REFINE_STEP_MIN1) continue;
+        var1 <<= 2;
     }
 
-    int num_cand_minus1 = MMVD_REFINE_STEP - 1;
-    int var1 = 0;
-    if (ovcabac_ae_read(cabac_ctx, &cabac_state[MMVD_STEP_MVP_IDX_CTX_OFFSET])){
-        var1++;
-        for (; var1 < num_cand_minus1; var1++){
-            if (!ovcabac_bypass_read(cabac_ctx)) {
-                break;
-            }
-        }
-    }
-    int var2 = 0;
-    if (ovcabac_bypass_read(cabac_ctx)){
-    var2 += 2;
-        if (ovcabac_bypass_read(cabac_ctx)){
-            var2 += 1;
-        }
-    }
-    else{
-        var2 += 0;
-        if (ovcabac_bypass_read(cabac_ctx)){
-            var2 += 1;
-        }
-    }
-    return (var0 * MMVD_MAX_REFINE_NUM + var1 * 4 + var2);
+    var1 |= ovcabac_bypass_read(cabac_ctx) << 1;
+    var1 |= ovcabac_bypass_read(cabac_ctx);
+
+    return (var0 << LOG2_MMVD_MAX_REFINE_NUM) + var1;
 }
 
 static void

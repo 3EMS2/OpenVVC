@@ -88,6 +88,12 @@ extern const int8_t g_weightOffset_x     [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZ
 extern const int8_t g_weightOffset_y     [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE];
 
 
+#define LOG2_MMVD_REFINE_STEP        3 ///< max number of distance step
+#define LOG2_MMVD_MAX_REFINE_NUM     (LOG2_MMVD_REFINE_STEP + 2) ///< max number of candidate from a base candidate
+#define LOG2_MMVD_BASE_MV_NUM        1 ///< max number of base candidate
+
+#define NB_MMVD_REFINE_STEP_MIN1    ((1 << LOG2_MMVD_REFINE_STEP) - 1)  ///< max number of distance step
+
 #define MMVD_REFINE_STEP        8 ///< max number of distance step
 #define MMVD_MAX_REFINE_NUM     (MMVD_REFINE_STEP * 4) ///< max number of candidate from a base candidate
 #define MMVD_BASE_MV_NUM        2 ///< max number of base candidate
