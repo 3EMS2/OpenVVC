@@ -59,7 +59,7 @@ filter_ref_samples(const OVSample* const src, OVSample* const dst,
     _dst++;
     _src++;
     // top row (left-to-right)
-    for (uint32_t i = 1; i < length; i++, _dst++, _src++) {
+    for (int32_t i = 1; i < length; i++, _dst++, _src++) {
         // FIXME: implicit conversion
         *_dst = (_src[1] + (_src[0] << 1) + _src[-1] + 2) >> 2;
     }

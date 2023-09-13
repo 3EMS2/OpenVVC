@@ -109,7 +109,7 @@ main(int argc, char** argv)
 
     while (1) {
 
-        const static struct option long_options[] =
+        static const struct option long_options[] =
         {
             {"version",   no_argument,       0, 'v'},
             {"help",      no_argument,       0, 'h'},
@@ -405,7 +405,7 @@ output_pictures_info(const struct PicInfoFormat *pinfo_fmt, OVFrame *frame)
     while (*fmt) {
         switch (*fmt) {
             case '%':
-                if (*++fmt)
+                if (*++fmt) {
                     switch (*fmt++) {
                         case 'R':
                             fprintf(pinfo_fmt->file, "%ld", pu_size);
@@ -420,6 +420,7 @@ output_pictures_info(const struct PicInfoFormat *pinfo_fmt, OVFrame *frame)
                             fprintf(pinfo_fmt->file, "%ldx%ld", frame->width, frame->height);
                             break;
                     }
+                } break;
             case '\\':
                     if (*++fmt == 'n')
                         fprintf(pinfo_fmt->file,"\n");

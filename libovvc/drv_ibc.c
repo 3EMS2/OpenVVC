@@ -221,7 +221,7 @@ ibc_derive_merge_mv(const struct IBCMVCtx *const ibc_ctx,
                     uint8_t nb_unit_w, uint8_t nb_unit_h,
                     uint8_t merge_idx, uint8_t max_nb_merge_cand)
 {
-    IBCMV amvp_cand[2];
+    IBCMV amvp_cand[2] = {0};
     IBCMV cand = { 0 };
     uint64_t lft_col = ibc_ctx->ctu_map.vfield[x0_unit];
     uint64_t abv_row = ibc_ctx->ctu_map.hfield[y0_unit];

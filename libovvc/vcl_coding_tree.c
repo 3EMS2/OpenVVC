@@ -243,7 +243,7 @@ coding_quadtree(OVCTUDec *const ctu_dec,
     const struct ToolsInfo *tools = &ctu_dec->tools;
     uint8_t split_cu_flag = 0;
 
-    if (ctu_dec->coding_unit != coding_unit_intra && ((log2_cb_s > 6) || (log2_cb_s * 2 + 2 * (ctu_dec->coding_unit == coding_unit_intra_c)) >= (2 * part_ctx->log2_ctu_s - (tools->cu_qp_chroma_offset_subdiv)))) {
+    if (ctu_dec->coding_unit != coding_unit_intra && ((log2_cb_s > 6) || (int)(log2_cb_s * 2 + 2 * (ctu_dec->coding_unit == coding_unit_intra_c)) >= (2 * part_ctx->log2_ctu_s - (tools->cu_qp_chroma_offset_subdiv)))) {
         ctu_dec->qp_ctx2.dqp_cb = 0;
         ctu_dec->qp_ctx2.dqp_cr = 0;
         ctu_dec->qp_ctx2.dqp_jcbcr = 0;

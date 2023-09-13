@@ -69,8 +69,8 @@ struct SMVDData
 
 struct AffineMVPDataB
 {
-    struct AffineControlInfo mvd0;
-    struct AffineControlInfo mvd1;
+    struct CPMV mvd0;
+    struct CPMV mvd1;
     uint8_t ref_idx0;
     uint8_t mvp_idx0;
     uint8_t ref_idx1;

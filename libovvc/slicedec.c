@@ -1307,7 +1307,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     return ret;
 }
 
-static OVPicture *const
+static const OVPicture *
 find_tmvp_collocated_ref(const OVSliceDec *const sldec, const OVPS *const ps)
 {
     OVPicture *col_pic = NULL;

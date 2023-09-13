@@ -83,7 +83,7 @@ static const struct ChromaFmtInfo yuv420_10 = {
   .shift_v = {0, 1, 1},
 };
 
-static const struct ChromaFmtInfo *const select_frame_format(enum ChromaFmt fmt, uint8_t bitdepth_min8)
+static const struct ChromaFmtInfo *select_frame_format(enum ChromaFmt fmt, uint8_t bitdepth_min8)
 {
     if (bitdepth_min8) {
         return &yuv420_10;
@@ -124,7 +124,7 @@ ovframepool_uninit(struct FramePool **fpool_p)
 int
 ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint8_t bitdepth_min8, uint16_t pic_w, uint16_t pic_h)
 {
-    const struct ChromaFmtInfo *const fmt_info = select_frame_format(fmt, bitdepth_min8);
+    const struct ChromaFmtInfo *fmt_info = select_frame_format(fmt, bitdepth_min8);
 
     ov_log(NULL, OVLOG_TRACE, "Frame pool init\n");
     /* FIXME allocation size overflow */

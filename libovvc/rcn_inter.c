@@ -1247,7 +1247,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     min_cost = (dmvr_sad - (dmvr_sad >> 2));
 
     /* skip MV refinement if cost is small or zero */
-    if (min_cost >= (pu_w * pu_h)) {
+    if (min_cost >= (uint64_t)(pu_w * pu_h)) {
         uint64_t sad[25];
         sad[12] = min_cost;
         uint8_t dmvr_idx = dmvr->computeSB[pu_w==16](ref_dmvr0 + 2 + 2 * dmvr_stride,
@@ -1338,7 +1338,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     ref1_b.y += delta_h3 + ref1_b.stride * delta_v3;
     }
 
-    uint8_t disable_bdof = apply_bdof ? min_cost < 2 * (pu_w * pu_h) : 1;
+    uint8_t disable_bdof = apply_bdof ? min_cost < (uint64_t)2 * (pu_w * pu_h) : 1;
 
     if (disable_bdof) {
         mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride,

@@ -322,9 +322,9 @@ rcn_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, 
 
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
 
-    const int width_l = (x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width) ? (rcn_ctx->frame_start->width - x_pic_l)
+    const int width_l = ((unsigned)x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width) ? (int)(rcn_ctx->frame_start->width - x_pic_l)
                                                                            : fb->filter_region_w[0];
-    const int height_l = (y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height) ? (rcn_ctx->frame_start->height - y_pic_l)
+    const int height_l = ((unsigned)y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height) ? (int)(rcn_ctx->frame_start->height - y_pic_l)
                                                                             : fb->filter_region_h[0];
     const int margin = fb->margin;
 

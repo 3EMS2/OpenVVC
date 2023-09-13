@@ -1598,7 +1598,7 @@ check_nz_affine_mvd_p(const struct AffineControlInfo *const cp_mvd, uint8_t affi
 static struct AffineMVPDataP
 inter_affine_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref_min1, uint8_t affine_type)
 {
-    struct AffineControlInfo cp_mvd;
+    struct CPMV cp_mvd;
     struct AffineMVPDataP mvp_data;
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t ref_idx = nb_active_ref_min1;
@@ -1608,16 +1608,16 @@ inter_affine_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref_min1, uin
         ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, nb_active_ref_min1 + 1);
     }
 
-    cp_mvd.cp_mv.lt = ovcabac_read_ae_mvd(cabac_ctx);
-    cp_mvd.cp_mv.rt = ovcabac_read_ae_mvd(cabac_ctx);
+    cp_mvd.lt = ovcabac_read_ae_mvd(cabac_ctx);
+    cp_mvd.rt = ovcabac_read_ae_mvd(cabac_ctx);
 
     if (affine_type) {
-        cp_mvd.cp_mv.lb = ovcabac_read_ae_mvd(cabac_ctx);
+        cp_mvd.lb = ovcabac_read_ae_mvd(cabac_ctx);
     }
 
     mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
-    mvp_data.mvd       = cp_mvd;
+    mvp_data.mvd.cp_mv       = cp_mvd;
 
     mvp_data.ref_idx   = ref_idx;
     mvp_data.mvp_idx   = mvp_idx;
@@ -1632,16 +1632,19 @@ inter_affine_mvp_data_b(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1,
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     const struct ToolsInfo *tools = &ctu_dec->tools;
     struct AffineMVPDataB mvp_data;
+    const struct MV cpmvz = {0};
 
     mvp_data.ref_idx0 = nb_active_ref0_min1;
     if (nb_active_ref0_min1) {
         mvp_data.ref_idx0 = ovcabac_read_ae_ref_idx(cabac_ctx, nb_active_ref0_min1 + 1);
     }
 
-    mvp_data.mvd0.cp_mv.lt = ovcabac_read_ae_mvd(cabac_ctx);
-    mvp_data.mvd0.cp_mv.rt = ovcabac_read_ae_mvd(cabac_ctx);
+    mvp_data.mvd0.lt = ovcabac_read_ae_mvd(cabac_ctx);
+    mvp_data.mvd0.rt = ovcabac_read_ae_mvd(cabac_ctx);
     if (affine_type) {
-        mvp_data.mvd0.cp_mv.lb = ovcabac_read_ae_mvd(cabac_ctx);
+        mvp_data.mvd0.lb = ovcabac_read_ae_mvd(cabac_ctx);
+    } else {
+        mvp_data.mvd0.lb = cpmvz;
     }
 
     mvp_data.mvp_idx0 = ovcabac_read_ae_mvp_flag(cabac_ctx);
@@ -1652,10 +1655,12 @@ inter_affine_mvp_data_b(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1,
     }
 
     if (!tools->mvd1_zero_enabled) {
-        mvp_data.mvd1.cp_mv.lt = ovcabac_read_ae_mvd(cabac_ctx);
-        mvp_data.mvd1.cp_mv.rt = ovcabac_read_ae_mvd(cabac_ctx);
+        mvp_data.mvd1.lt = ovcabac_read_ae_mvd(cabac_ctx);
+        mvp_data.mvd1.rt = ovcabac_read_ae_mvd(cabac_ctx);
         if (affine_type) {
-            mvp_data.mvd1.cp_mv.lb = ovcabac_read_ae_mvd(cabac_ctx);
+            mvp_data.mvd1.lb = ovcabac_read_ae_mvd(cabac_ctx);
+        } else {
+            mvp_data.mvd1.lb = cpmvz;
         }
     } else {
         memset(&mvp_data.mvd1, 0, sizeof(mvp_data.mvd1));
@@ -1926,24 +1931,24 @@ check_bdof_ref(struct InterDRVCtx *const inter_ctx, uint8_t ref_idx0, uint8_t re
 }
 
 static inline uint8_t
-check_nz_affine_b(const struct AffineControlInfo *const cp_mvd0, const struct AffineControlInfo *const cp_mvd1, uint8_t affine_type)
+check_nz_affine_b(const struct CPMV *const cp_mvd0, const struct CPMV *const cp_mvd1, uint8_t affine_type)
 {
     uint32_t mvd_not_zero = 0;
     if (affine_type) {
-        mvd_not_zero |= (cp_mvd0->cp_mv.lt.x | cp_mvd0->cp_mv.lt.y);
-        mvd_not_zero |= (cp_mvd0->cp_mv.rt.x | cp_mvd0->cp_mv.rt.y);
-        mvd_not_zero |= (cp_mvd0->cp_mv.lb.x | cp_mvd0->cp_mv.lb.y);
+        mvd_not_zero |= (cp_mvd0->lt.x | cp_mvd0->lt.y);
+        mvd_not_zero |= (cp_mvd0->rt.x | cp_mvd0->rt.y);
+        mvd_not_zero |= (cp_mvd0->lb.x | cp_mvd0->lb.y);
         if (!mvd_not_zero) {
-            mvd_not_zero |= (cp_mvd1->cp_mv.lt.x | cp_mvd1->cp_mv.lt.y);
-            mvd_not_zero |= (cp_mvd1->cp_mv.rt.x | cp_mvd1->cp_mv.rt.y);
-            mvd_not_zero |= (cp_mvd1->cp_mv.lb.x | cp_mvd1->cp_mv.lb.y);
+            mvd_not_zero |= (cp_mvd1->lt.x | cp_mvd1->lt.y);
+            mvd_not_zero |= (cp_mvd1->rt.x | cp_mvd1->rt.y);
+            mvd_not_zero |= (cp_mvd1->lb.x | cp_mvd1->lb.y);
         }
     } else {
-        mvd_not_zero |= (cp_mvd0->cp_mv.lt.x | cp_mvd0->cp_mv.lt.y);
-        mvd_not_zero |= (cp_mvd0->cp_mv.rt.x | cp_mvd0->cp_mv.rt.y);
+        mvd_not_zero |= (cp_mvd0->lt.x | cp_mvd0->lt.y);
+        mvd_not_zero |= (cp_mvd0->rt.x | cp_mvd0->rt.y);
         if (!mvd_not_zero) {
-            mvd_not_zero |= (cp_mvd1->cp_mv.lt.x | cp_mvd1->cp_mv.lt.y);
-            mvd_not_zero |= (cp_mvd1->cp_mv.rt.x | cp_mvd1->cp_mv.rt.y);
+            mvd_not_zero |= (cp_mvd1->lt.x | cp_mvd1->lt.y);
+            mvd_not_zero |= (cp_mvd1->rt.x | cp_mvd1->rt.y);
         }
     }
 

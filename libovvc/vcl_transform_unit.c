@@ -1304,7 +1304,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
 
     uint8_t cbf_flags = 0;
     int cbf = 0;
-    int log2_pb_w = log2_cb_w - 2;
+    uint8_t log2_pb_w = log2_cb_w - 2;
     int nb_pb;
     int i;
     struct ISPTUInfo tu_info = {0};
@@ -1505,7 +1505,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
 
     uint8_t cbf = 0;
     uint8_t cbf_flags = 0;
-    int log2_pb_h = log2_cb_h - 2;
+    uint8_t log2_pb_h = log2_cb_h - 2;
     int nb_pb;
     int16_t *coeffs_y = ctu_dec->residual_y;
     struct ISPTUInfo tu_info = {0};

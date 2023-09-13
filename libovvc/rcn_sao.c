@@ -299,8 +299,8 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_pic, int y_pic, int
 
     const OVFrame *frame = ctudec->rcn_ctx.frame_start;
 
-    int ctb_w = (OVMIN(  (1 << log2_ctb_s), frame->width - x_pic));
-    int ctb_h = (OVMIN((y_end_pic - y_pic), frame->height - y_pic));
+    int ctb_w = (OVMIN(  (1 << log2_ctb_s), (int)frame->width - x_pic));
+    int ctb_h = (OVMIN((y_end_pic - y_pic), (int)frame->height - y_pic));
 
     struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
     struct SAOBuff tmp;
@@ -377,12 +377,12 @@ rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
     const OVFrame *f = rcn_ctx->frame_start;
 
-    const int width_l  = (x_pic + fb->filter_region_w[0] > f->width) ? (f->width - x_pic)
+    const int width_l  = (x_pic + fb->filter_region_w[0] > (int)f->width) ? (int)(f->width - x_pic)
                                                                      : fb->filter_region_w[0];
-    height_l = (y_pic + height_l > f->height) ? (f->height - y_pic) : height_l;
+    height_l = (y_pic + height_l > (int)f->height) ? (int)(f->height - y_pic) : height_l;
 
     uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
-    uint8_t not_bnd_btm = !((bnd_msk & OV_BOUNDARY_BOTTOM_RECT) && y_pic + height_l >= f->height);
+    uint8_t not_bnd_btm = !((bnd_msk & OV_BOUNDARY_BOTTOM_RECT) && y_pic + height_l >= (int)f->height);
     uint8_t not_bnd_lft = !(bnd_msk & OV_BOUNDARY_LEFT_RECT);
     uint8_t enabled_l = !!(sao_enabled & 2);
     uint8_t enabled_c = !!(sao_enabled & 1);

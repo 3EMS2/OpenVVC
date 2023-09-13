@@ -943,7 +943,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
     uint8_t lfnst_flag = tu_info->lfnst_flag;
 
     int offset_x;
-    int log2_pb_w = log2_cb_w - 2;
+    uint8_t log2_pb_w = log2_cb_w - 2;
     int nb_pb;
     int pb_w;
 
@@ -957,7 +957,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
 
     uint8_t type_h = tools->mts_enabled && log2_pb_w <= 4 && log2_pb_w > 1 ? DST_VII : DCT_II;
     uint8_t type_v = tools->mts_enabled && log2_cb_h <= 4 ? DST_VII : DCT_II;
-    int8_t lfnst_intra_mode;
+    int8_t lfnst_intra_mode = lfnst_flag;
     const struct OVBuffInfo *const ctu_buff = &ctudec->rcn_ctx.ctu_buff;
     int i;
 
@@ -1006,11 +1006,11 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
 {
     const struct ToolsInfo *tools = &ctudec->tools;
 
-    int log2_pb_h = log2_cb_h - 2;
+    uint8_t log2_pb_h = log2_cb_h - 2;
     int nb_pb;
     uint8_t cbf_flags = tu_info->cbf_mask;
     uint8_t lfnst_flag = tu_info->lfnst_flag;
-    int8_t lfnst_intra_mode;
+    int8_t lfnst_intra_mode = lfnst_flag;
     int pb_h, offset_y;
 
     if (lfnst_flag) {

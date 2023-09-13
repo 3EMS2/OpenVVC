@@ -286,7 +286,7 @@ ovcabac_read_ae_significant_ts_sb_flag(OVCABACCtx *const cabac_ctx,
     return ovcabac_ae_read(cabac_ctx, &cabac_state[TS_SIG_COEFF_GROUP_CTX_OFFSET + got_significant_neighbour]);
 }
 
-static void inline
+static inline void
 set_implicit_coeff_ngbh(const VVCCoeffCodingCtx *const coef_nbh_ctx,
                         int tr_ctx_pos, int value)
 {
@@ -313,7 +313,7 @@ set_implicit_coeff_ngbh(const VVCCoeffCodingCtx *const coef_nbh_ctx,
 #define updt_sat(x,val,sat) \
 (x) = OVMIN((sat),(x)+(val));
 
-static void inline
+static inline void
 update_coeff_nbgh_bypassed(const VVCCoeffCodingCtx *const coef_nbh_ctx,
                            int tr_ctx_pos, int value)
 {
@@ -327,7 +327,7 @@ update_coeff_nbgh_bypassed(const VVCCoeffCodingCtx *const coef_nbh_ctx,
     updt_sat(coef_nbh_ctx->sum_abs_lvl2[tr_ctx_pos - VVC_TR_CTX_STRIDE * 2], value, 51);
 }
 
-static void inline
+static inline void
 update_coeff_nbgh_first_pass(const VVCCoeffCodingCtx *const coef_nbh_ctx,
                              int tr_ctx_pos, int value)
 {
@@ -351,7 +351,7 @@ update_coeff_nbgh_first_pass(const VVCCoeffCodingCtx *const coef_nbh_ctx,
     coef_nbh_ctx->sum_sig_nbs[tr_ctx_pos - VVC_TR_CTX_STRIDE * 2] += value - 1;
 }
 
-static void inline
+static inline void
 update_coeff_nbgh_other_pass(const VVCCoeffCodingCtx *const coef_nbh_ctx,
                              int tr_ctx_pos, int value)
 {
@@ -362,10 +362,10 @@ update_coeff_nbgh_other_pass(const VVCCoeffCodingCtx *const coef_nbh_ctx,
     updt_sat(coef_nbh_ctx->sum_abs_lvl2[tr_ctx_pos - VVC_TR_CTX_STRIDE * 2], value, 51);
 }
 
-static int inline
+static inline int
 decode_truncated_rice(OVCABACCtx *const cabac_ctx, uint8_t rice_param){
 
-    unsigned int prefix = 0;
+    int prefix = 0;
     unsigned int length = rice_param;
     int offset;
     int value = 0;
@@ -492,10 +492,10 @@ decode_bypassed_coeff_core(OVCABACCtx *const cabac_ctx,
     }
 }
 
-static void inline
+static inline void
 decode_signs(OVCABACCtx *const cabac_ctx, int16_t *const sb_coeffs,
              uint32_t state_map, const uint8_t *const sig_c_idx_map,
-             int nb_sig_c)
+             unsigned int nb_sig_c)
 {
     uint32_t nb_signs = nb_sig_c;
     uint32_t signs_map = 0;
@@ -1651,7 +1651,7 @@ decode_bypassed_coeff_sdh(OVCABACCtx *const cabac_ctx,
     }
 }
 
-static void inline
+static inline void
 decode_signs_sdh(OVCABACCtx *const cabac_ctx, int16_t *const sb_coeffs,
                  uint8_t *const sig_idx_map, int nb_sig_c,
                  uint8_t use_sdh)
@@ -3445,7 +3445,7 @@ static const VVCSBScanContext *ts_scan_ctx_lut[4] =
     &diag_2x2_scan, &diag_2x8_scan, &diag_8x2_scan, &diag_4x4_scan
 };
 
-static const VVCSBScanContext *const
+static const VVCSBScanContext *
 select_scan_ctx(enum TBSize tb_size_idx)
 {
     uint8_t idx;
@@ -3529,7 +3529,7 @@ uint8_t log2_sb_w, uint8_t log2_tb_h)
     }
 }
 
-static const uint8_t *const
+static const uint8_t *
 select_sb_scan_map_x(int8_t log2_tb_w, int8_t log2_tb_h, int8_t log2_sb_w, int8_t log2_sb_h)
 {
     uint8_t idx_w = OVMAX(0, log2_tb_w - log2_sb_w);
@@ -3537,7 +3537,7 @@ select_sb_scan_map_x(int8_t log2_tb_w, int8_t log2_tb_h, int8_t log2_sb_w, int8_
     return ff_vvc_scan_x[idx_w][idx_h];
 }
 
-static const uint8_t *const
+static const uint8_t *
 select_sb_scan_map_y(int8_t log2_tb_w, int8_t log2_tb_h, int8_t log2_sb_w, int8_t log2_sb_h)
 {
     uint8_t idx_w = OVMAX(0, log2_tb_w - log2_sb_w);

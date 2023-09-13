@@ -908,7 +908,7 @@ void fg_grain_apply_pic(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain
                             /* Selection of the component model */
                             intensityInt = intensityInterval[compCtr][blockAvg];
 
-                            if (-1 != intensityInt) {
+                            if (-1 != (int)intensityInt) {
                                 /* 8x8 grain block offset using co-ordinates of decoded 8x8 block in the frame */
                                 kOffset     =  (MSB16(pseudoRandValEc) % 52);
                                 kOffset     &= 0xFFFC;

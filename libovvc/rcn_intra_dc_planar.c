@@ -102,8 +102,8 @@ intra_planar(const OVSample* const ref_abv,
 {
 
     OVSample* _dst = dst;
-    const uint32_t pb_w = 1 << log2_pb_w;
-    const uint32_t pb_h = 1 << log2_pb_h;
+    const int32_t pb_w = 1 << log2_pb_w;
+    const int32_t pb_h = 1 << log2_pb_h;
     const uint32_t shift = 1 + log2_pb_w + log2_pb_h;
     const uint32_t offset = 1 << (log2_pb_w + log2_pb_h);
     int value;
@@ -153,8 +153,8 @@ intra_dc_pdpc(const OVSample* const ref_abv,
 
     const int pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
     const uint8_t* pdpc_w = vvc_pdpc_w[pdpc_scale];
-    const uint32_t pb_w = 1 << log2_pb_w;
-    const uint32_t pb_h = 1 << log2_pb_h;
+    const int32_t pb_w = 1 << log2_pb_w;
+    const int32_t pb_h = 1 << log2_pb_h;
     uint32_t dc_val = 0;
 
     if (log2_pb_w >= log2_pb_h) {
@@ -192,8 +192,8 @@ intra_planar_pdpc(const OVSample* const ref_abv,
 {
 
     OVSample* _dst = dst;
-    const uint32_t pb_w = 1 << log2_pb_w;
-    const uint32_t pb_h = 1 << log2_pb_h;
+    const int32_t pb_w = 1 << log2_pb_w;
+    const int32_t pb_h = 1 << log2_pb_h;
     const uint32_t w_scale = OVMAX(1, log2_pb_w);
     const uint32_t h_scale = OVMAX(1, log2_pb_h);
     const uint32_t s_shift = w_scale + h_scale + 1;

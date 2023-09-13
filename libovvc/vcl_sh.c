@@ -713,7 +713,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     sh->sh_picture_header_in_slice_header_flag = nvcl_read_flag(rdr);
     if (sh->sh_picture_header_in_slice_header_flag) {
         ov_log(NULL, OVLOG_DEBUG, "PH in SH%d\n", sh->sh_slice_address);
-        int ret = nvcl_decode_ph(rdr, nvcl_ctx, &ph_manager, 0);
+        int ret = nvcl_decode_ph(rdr, (OVNVCLCtx *const)nvcl_ctx, &ph_manager, 0);
         if (ret < 0) {
             ov_log(NULL, 3, "Failed reading PH from SH\n");
             return OVVC_EINDATA;
@@ -738,7 +738,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
      */
     init_tile_ctx(&tinfo, pps);
     uint8_t log2_ctb_s = 5 + sps->sps_log2_ctu_size_minus5;
-    struct PicPartitionInfo *const part_info = &pps->part_info;
+    struct PicPartitionInfo *const part_info = (struct PicPartitionInfo *const)&pps->part_info;
     setup_subpic_prms(sps, part_info, &tinfo, log2_ctb_s);
     setup_slice_prms(pps, part_info, &tinfo, log2_ctb_s);
     setup_suppic_slice_map(part_info);

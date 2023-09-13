@@ -3605,8 +3605,8 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                                   ref_idx0, opp_ref_idx0, mvp_idx0,
                                   inter_dir & 0x1, affine_type, prec_amvr);
 
-        lt = drv_change_precision_mv(mvp_data->mvd0.cp_mv.lt, prec_amvr, MV_PRECISION_INTERNAL);
-        rt = drv_change_precision_mv(mvp_data->mvd0.cp_mv.rt, prec_amvr, MV_PRECISION_INTERNAL);
+        lt = drv_change_precision_mv(mvp_data->mvd0.lt, prec_amvr, MV_PRECISION_INTERNAL);
+        rt = drv_change_precision_mv(mvp_data->mvd0.rt, prec_amvr, MV_PRECISION_INTERNAL);
 
         cp_info->cp_mv.lt.x += lt.x;
         cp_info->cp_mv.lt.y += lt.y;
@@ -3624,7 +3624,7 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
         cp_info->mv_spec.prec_amvr = prec_amvr ;
 
         if (affine_type == AFFINE_3CP) {
-            struct MV lb = drv_change_precision_mv(mvp_data->mvd0.cp_mv.lb, prec_amvr, MV_PRECISION_INTERNAL);
+            struct MV lb = drv_change_precision_mv(mvp_data->mvd0.lb, prec_amvr, MV_PRECISION_INTERNAL);
             cp_info->cp_mv.lb.x += lt.x;
             cp_info->cp_mv.lb.y += lt.y;
             cp_info->cp_mv.lb.x += lb.x;
@@ -3646,8 +3646,8 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                                   ref_idx1, opp_ref_idx1, mvp_idx1,
                                   inter_dir & 0x2, affine_type, prec_amvr);
 
-        lt = drv_change_precision_mv(mvp_data->mvd1.cp_mv.lt, prec_amvr, MV_PRECISION_INTERNAL);
-        rt = drv_change_precision_mv(mvp_data->mvd1.cp_mv.rt, prec_amvr, MV_PRECISION_INTERNAL);
+        lt = drv_change_precision_mv(mvp_data->mvd1.lt, prec_amvr, MV_PRECISION_INTERNAL);
+        rt = drv_change_precision_mv(mvp_data->mvd1.rt, prec_amvr, MV_PRECISION_INTERNAL);
 
         cp_info->cp_mv.lt.x += lt.x;
         cp_info->cp_mv.lt.y += lt.y;
@@ -3665,7 +3665,7 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
         cp_info->mv_spec.prec_amvr = prec_amvr;
 
         if (affine_type == AFFINE_3CP) {
-            struct MV lb = drv_change_precision_mv(mvp_data->mvd1.cp_mv.lb, prec_amvr, MV_PRECISION_INTERNAL);
+            struct MV lb = drv_change_precision_mv(mvp_data->mvd1.lb, prec_amvr, MV_PRECISION_INTERNAL);
 
             cp_info->cp_mv.lb.x += lt.x;
             cp_info->cp_mv.lb.y += lt.y;
