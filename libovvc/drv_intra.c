@@ -244,7 +244,7 @@ vvc_derive_mpm_list_sorted(uint8_t lft_mode, uint8_t abv_mode, uint8_t intra_lum
     return intra_luma_comp;
 }
 
-uint8_t
+__attribute__ ((const))uint8_t
 derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag, uint8_t mpm_idx,
                     uint8_t luma_mode, uint8_t cclm_idx)
 {

@@ -461,7 +461,7 @@ derive_tmvp_scale(int16_t dist_ref, int16_t dist_col)
     return (int16_t)scale;
 }
 
-struct TMVPPos
+__attribute__ ((const))struct TMVPPos
 compute_tmpv_coord(struct PBInfo pb)
 {
     struct TMVPPos pos;

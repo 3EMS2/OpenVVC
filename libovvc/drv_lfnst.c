@@ -76,7 +76,7 @@ derive_lfnst_mode_l(OVCTUDec *const ctudec, int log2_tb_w, int log2_tb_h,
 }
 #endif
 
-int8_t
+__attribute__ ((const))int8_t
 drv_lfnst_mode_l(uint8_t log2_tb_w, uint8_t log2_tb_h,
                  int8_t intra_mode)
 {

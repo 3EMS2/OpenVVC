@@ -35,7 +35,7 @@
 
 #include "overror.h"
 
-const char * ovvc_error_stringify(uint32_t error_code){
+__attribute__ ((const)) const char * ovvc_error_stringify(uint32_t error_code){
   switch (error_code) {
     case OVVC_EAGAIN:
       return "No data available. Try again later.";

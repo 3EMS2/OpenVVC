@@ -856,14 +856,14 @@ ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const char
     ovlog_set_callback(log_function);
 }
 
-const char *
+__attribute__ ((const))const char *
 ovdec_version()
 {
     static const char *ov_version = OV_VERSION_STR(VER_MAJOR,VER_MINOR,VER_REVISION,VER_BUILD);
     return ov_version;
 }
 
-const char* ovdec_get_version()
+__attribute__ ((const)) const char* ovdec_get_version()
 {
     return OV_VERSION;
 }

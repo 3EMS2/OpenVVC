@@ -83,7 +83,7 @@ tmvp_compute_scale(int16_t dist_current, int16_t dist_colocated)
     return (int16_t)scale;
 }
 
-struct MV
+__attribute__ ((const))struct MV
 drv_change_precision_mv(struct MV mv, int src, int dst)
 {
     int shift = dst - src;
@@ -119,7 +119,7 @@ drv_change_precision_mv2(struct MV mv, int src, int dst)
     return mv;
 }
 
-struct MV
+__attribute__ ((const))struct MV
 drv_round_to_precision_mv(struct MV mv, int src, int dst)
 {
     struct MV mv1 = drv_change_precision_mv(mv, src, dst);
