@@ -511,7 +511,7 @@ tmvp_rescale(struct MV mv, int16_t scale)
 static uint8_t
 tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *const tmvp, struct TMVPPos pos,
              uint8_t rpl_idx, uint8_t ref_idx,
-             uint8_t cand_msk, OVMV *const dst)
+             uint8_t cand_msk, struct MV *const dst)
 {
     int32_t dist_ref = rpl_idx == RPL_0 ? inter_ctx->inter_params.dist_ref_0[ref_idx]
                                         : inter_ctx->inter_params.dist_ref_1[ref_idx];
@@ -562,9 +562,7 @@ found :
     mv.mv = tmvp_rescale(mv.mv, scale);
     if ((dist_ref == 0) ^ (mv.z == 0)) return 0;
 
-    dst->mv = mv.mv;
-    dst->ref_idx = ref_idx;
-    memset(&dst->mv_spec, 0, sizeof(dst->mv_spec));
+    *dst = mv.mv;
 
     return 1;
 }
@@ -573,7 +571,7 @@ found :
 static uint8_t
 tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *const tmvp, struct TMVPPos pos,
              uint8_t rpl_idx, uint8_t ref_idx,
-             uint8_t cand_msk, OVMV *const dst)
+             uint8_t cand_msk, struct MV *const dst)
 {
     int32_t dist_ref = rpl_idx == RPL_0 ? inter_ctx->inter_params.dist_ref_0[ref_idx]
                                         : inter_ctx->inter_params.dist_ref_1[ref_idx];
@@ -620,11 +618,8 @@ found :
     scale = derive_tmvp_scale(dist_ref, dist_col);
 
     mv.mv = tmvp_rescale(mv.mv, scale);
-    if ((dist_ref == 0) ^ (mv.z == 0)) return 0;
 
-    dst->mv = mv.mv;
-    dst->ref_idx = ref_idx;
-    memset(&dst->mv_spec, 0, sizeof(dst->mv_spec));
+    *dst = mv.mv;
 
     return 1;
 }
@@ -1026,7 +1021,7 @@ derive_affine_mvp_cand(const struct AffineDRVInfo *const affine_ctx,
                        struct PBInfo pb, enum CandName cand_name,
                        uint8_t inter_dir, uint8_t ref_idx, uint8_t ref_opp_idx,
                        uint8_t rpl_msk0, uint8_t rpl_msk1, uint8_t aff_msk,
-                       uint8_t prec_amvr, uint8_t affine_type, uint8_t log2_ctu_s)
+                       uint8_t affine_type, uint8_t log2_ctu_s)
 {
 
     /* Note this is OK since inter_dir cannot be 3 from MVP */
@@ -1096,7 +1091,7 @@ derive_mvp_cand(const struct InterDRVCtx *const inter_ctx,
                 struct PBInfo pb, enum CandName cand_name,
                 uint8_t inter_dir, uint8_t ref_idx, uint8_t ref_opp_idx,
                 uint8_t rpl0_list, uint8_t rpl1_list,
-                OVMV *dst_mv)
+                struct MV *dst_mv)
 {
     const int16_t cand_pos = derive_cand_position(pb, cand_name);
 
@@ -1115,7 +1110,6 @@ derive_mvp_cand(const struct InterDRVCtx *const inter_ctx,
         mv_cand = mv_ctx[cand_pos];
 
         if (mv_cand.ref_idx == ref_idx) {
-
             goto found;
         }
     }
@@ -1124,8 +1118,6 @@ derive_mvp_cand(const struct InterDRVCtx *const inter_ctx,
         mv_cand = mv_ctx_opp[cand_pos];
 
         if (mv_cand.ref_idx == ref_opp_idx) {
-
-            mv_cand.ref_idx = ref_idx;
             goto found;
         }
     }
@@ -1134,7 +1126,7 @@ derive_mvp_cand(const struct InterDRVCtx *const inter_ctx,
 
 found:
 
-    *dst_mv = mv_cand;
+    *dst_mv = mv_cand.mv;
 
     return 1;
 }
@@ -1148,8 +1140,6 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
                uint8_t ref_idx, uint8_t ref_opp_idx, uint8_t mvp_idx,
                uint8_t inter_dir, uint8_t affine_type, uint8_t prec_amvr)
 {
-    /*FIXME do not search for third control point when type flag is zero */
-    /*FIXME early termination ?*/
     uint8_t log2_ctb_s = inter_ctx->tmvp_ctx.ctudec->part_ctx->log2_ctu_s;
     uint8_t nb_cand = 0;
     uint8_t cand_aff_lft;
@@ -1160,11 +1150,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     uint8_t cand_lb;
 
     int cand_mask = 0;
-    OVMV lt_mv_cand = {0};
-    OVMV rt_mv_cand = {0};
-    OVMV lb_mv_cand = {0};
-
-    struct MV mv_aff[3];
+    struct CPMV cpmv_cand;
 
     struct PBInfo pb_info = { 
         .x_pb = x_pb, 
@@ -1198,59 +1184,57 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     /* Affine left cand */
     struct AffineControlInfo cp_info[2] = {0};
 
-
     /* FIXME check affine */
     cand_aff_lft = derive_affine_mvp_cand(affine_ctx, cp_info, pb_info, A0,
                                           inter_dir, ref_idx, ref_opp_idx,
                                           rpl0_cand, rpl1_cand, aff_cand_list,
-                                          prec_amvr, affine_type, log2_ctb_s);
+                                          affine_type, log2_ctb_s);
     if (!cand_aff_lft) {
         cand_aff_lft = derive_affine_mvp_cand(affine_ctx, cp_info, pb_info, A1,
                                               inter_dir, ref_idx, ref_opp_idx,
                                               rpl0_cand, rpl1_cand, aff_cand_list,
-                                              prec_amvr, affine_type, log2_ctb_s);
+                                              affine_type, log2_ctb_s);
+    }
+
+    nb_cand = cand_aff_lft;
+    if (nb_cand > mvp_idx) {
+        goto end;
     }
 
     /* Affine above cand */
     cand_aff_abv = derive_affine_mvp_cand(affine_ctx, &cp_info[cand_aff_lft], pb_info, B0,
                                           inter_dir, ref_idx, ref_opp_idx,
                                           rpl0_cand, rpl1_cand, aff_cand_list,
-                                          prec_amvr, affine_type, log2_ctb_s);
+                                          affine_type, log2_ctb_s);
     if (!cand_aff_abv) {
         cand_aff_abv = derive_affine_mvp_cand(affine_ctx, &cp_info[cand_aff_lft], pb_info, B1,
                                               inter_dir, ref_idx, ref_opp_idx,
                                               rpl0_cand, rpl1_cand, aff_cand_list,
-                                              prec_amvr, affine_type, log2_ctb_s);
+                                              affine_type, log2_ctb_s);
         if (!cand_aff_abv) {
             cand_aff_abv = derive_affine_mvp_cand(affine_ctx, &cp_info[cand_aff_lft], pb_info, B2,
                                                   inter_dir, ref_idx, ref_opp_idx,
                                                   rpl0_cand, rpl1_cand, aff_cand_list,
-                                                  prec_amvr, affine_type, log2_ctb_s);
+                                                  affine_type, log2_ctb_s);
         }
     }
 
-    nb_cand = cand_aff_lft + cand_aff_abv;
+    nb_cand += cand_aff_abv;
 
-    if (nb_cand >= MAX_NB_AMVP_CAND) {
-        /* FIXME is rounding needed since done in cand derivation */
-        for (int i = 0; i < nb_cand; i++) {
-            cp_info[i].cp_mv.lt = round_affine_mv(cp_info[i].cp_mv.lt, prec_amvr);
-            cp_info[i].cp_mv.rt = round_affine_mv(cp_info[i].cp_mv.rt, prec_amvr);
-            cp_info[i].cp_mv.lb = round_affine_mv(cp_info[i].cp_mv.lb, prec_amvr);
-        }
-        return cp_info[mvp_idx];
+    if (nb_cand > mvp_idx) {
+        goto end;
     }
 
     /* Control points from MVs */
     /* Cand LT */
     cand_lt = derive_mvp_cand(inter_ctx, pb_info, B2, inter_dir, ref_idx, ref_opp_idx,
-                              rpl0_cand, rpl1_cand, &lt_mv_cand);
+                              rpl0_cand, rpl1_cand, &cpmv_cand.lt);
     if (!cand_lt) {
         cand_lt = derive_mvp_cand(inter_ctx, pb_info, B3, inter_dir, ref_idx, ref_opp_idx,
-                                  rpl0_cand, rpl1_cand, &lt_mv_cand);
+                                  rpl0_cand, rpl1_cand, &cpmv_cand.lt);
         if (!cand_lt) {
             cand_lt = derive_mvp_cand(inter_ctx, pb_info, A2, inter_dir, ref_idx, ref_opp_idx,
-                                      rpl0_cand, rpl1_cand, &lt_mv_cand);
+                                      rpl0_cand, rpl1_cand, &cpmv_cand.lt);
         }
     }
 
@@ -1258,65 +1242,72 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
 
     /* Cand RT */
     cand_rt = derive_mvp_cand(inter_ctx, pb_info, B1, inter_dir, ref_idx, ref_opp_idx,
-                              rpl0_cand, rpl1_cand, &rt_mv_cand);
+                              rpl0_cand, rpl1_cand, &cpmv_cand.rt);
     if (!cand_rt) {
         cand_rt = derive_mvp_cand(inter_ctx, pb_info, B0, inter_dir, ref_idx, ref_opp_idx,
-                                  rpl0_cand, rpl1_cand, &rt_mv_cand);
+                                  rpl0_cand, rpl1_cand, &cpmv_cand.rt);
     }
 
     cand_mask |= cand_rt << 1;
 
     /*Cand LB */
     cand_lb = derive_mvp_cand(inter_ctx, pb_info, A1, inter_dir, ref_idx, ref_opp_idx,
-                              rpl0_cand, rpl1_cand, &lb_mv_cand);
+                              rpl0_cand, rpl1_cand, &cpmv_cand.lb);
     if (!cand_lb) {
         cand_lb = derive_mvp_cand(inter_ctx, pb_info, A0, inter_dir, ref_idx, ref_opp_idx,
-                                  rpl0_cand, rpl1_cand, &lb_mv_cand);
+                                  rpl0_cand, rpl1_cand, &cpmv_cand.lb);
     }
 
     cand_mask |= cand_lb << 2;
 
-    mv_aff[CP_LT] = round_affine_mv(lt_mv_cand.mv, prec_amvr);
-    mv_aff[CP_RT] = round_affine_mv(rt_mv_cand.mv, prec_amvr);
-    mv_aff[CP_LB] = round_affine_mv(lb_mv_cand.mv, prec_amvr);
-
     if (cand_mask == 0x7 || (cand_mask == 0x3 && affine_type == AFFINE_2CP)) {
-        cp_info[nb_cand].cp_mv.lt = mv_aff[CP_LT];
-        cp_info[nb_cand].cp_mv.rt = mv_aff[CP_RT];
-        cp_info[nb_cand].cp_mv.lb = mv_aff[CP_LB];
+
+        cp_info[nb_cand].cp_mv = cpmv_cand;
+
         cp_info[nb_cand].ref_idx = ref_idx;
-        nb_cand++;
+        if (nb_cand++ == mvp_idx) {
+            goto end;
+        }
     }
 
-    if (nb_cand < 2) {
+    //if (nb_cand < 2) {
         if (cand_mask & 0x4) {
-            cp_info[nb_cand].cp_mv.lt = mv_aff[CP_LB];
-            cp_info[nb_cand].cp_mv.rt = mv_aff[CP_LB];
-            cp_info[nb_cand].cp_mv.lb = mv_aff[CP_LB];
+            struct MV lb = cpmv_cand.lb; //round_affine_mv(cpmv_cand.lb, prec_amvr);
+            cp_info[nb_cand].cp_mv.lt = lb;
+            cp_info[nb_cand].cp_mv.rt = lb;
+            cp_info[nb_cand].cp_mv.lb = lb;
             cp_info[nb_cand].ref_idx = ref_idx;
-            nb_cand++;
+            if (nb_cand++ == mvp_idx) {
+                goto end;
+            }
         }
-    }
+    //}
 
-    if (nb_cand < 2) {
+    //if (nb_cand < 2) {
         if (cand_mask & 0x2) {
-            cp_info[nb_cand].cp_mv.lt = mv_aff[CP_RT];
-            cp_info[nb_cand].cp_mv.rt = mv_aff[CP_RT];
-            cp_info[nb_cand].cp_mv.lb = mv_aff[CP_RT];
+            struct MV rt = cpmv_cand.rt; //round_affine_mv(cpmv_cand.rt, prec_amvr);
+            cp_info[nb_cand].cp_mv.lt = rt;
+            cp_info[nb_cand].cp_mv.rt = rt;
+            cp_info[nb_cand].cp_mv.lb = rt;
             cp_info[nb_cand].ref_idx = ref_idx;
-            nb_cand++;
+            if (nb_cand++ == mvp_idx) {
+                goto end;
+            }
         }
-    }
+    //}
 
-    if (nb_cand < 2) {
+    //if (nb_cand < 2) {
         if (cand_mask & 0x1) {
-            cp_info[nb_cand].cp_mv.lt = mv_aff[CP_LT];
-            cp_info[nb_cand].cp_mv.rt = mv_aff[CP_LT];
-            cp_info[nb_cand].cp_mv.lb = mv_aff[CP_LT];
+            struct MV lt = cpmv_cand.lt; //round_affine_mv(cpmv_cand.lt, prec_amvr);
+            cp_info[nb_cand].cp_mv.lt = lt;
+            cp_info[nb_cand].cp_mv.rt = lt;
+            cp_info[nb_cand].cp_mv.lb = lt;
             cp_info[nb_cand].ref_idx = ref_idx;
-            nb_cand++;
+            if (nb_cand++ == mvp_idx) {
+                goto end;
+            }
         }
-    }
+    //}
 
     /* TMVP candidate */
     if (nb_cand < 2 && inter_ctx->inter_params.tmvp_enabled) {
@@ -1332,26 +1323,27 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
         uint8_t cand_msk = check_tmvp_cand(tmvp->dir_map_v0, tmvp->dir_map_v1, pos);
 
         if (cand_msk) {
-            struct MV col_mv = {0};
-            uint8_t avail = 0;
+            struct MV col_mv;
+            uint8_t found = 0;
             uint8_t rpl_idx  = inter_dir - 1;
             uint8_t col_ref_l0 = tmvp->col_ref_l0;
-            OVMV dst;
-            if ((!col_ref_l0 && !inter_ctx->inter_params.low_delay) || (inter_ctx->inter_params.low_delay && rpl_idx == RPL_0)) {
-                avail = tmvp_from_l0(inter_ctx, tmvp, pos, rpl_idx, ref_idx, cand_msk, &dst);
+            if ((!col_ref_l0 && !inter_ctx->inter_params.low_delay)
+                || (inter_ctx->inter_params.low_delay && rpl_idx == RPL_0)) {
+                found = tmvp_from_l0(inter_ctx, tmvp, pos, rpl_idx, ref_idx, cand_msk, &col_mv);
             } else {
-                avail = tmvp_from_l1(inter_ctx, tmvp, pos, rpl_idx, ref_idx, cand_msk, &dst);
+                found = tmvp_from_l1(inter_ctx, tmvp, pos, rpl_idx, ref_idx, cand_msk, &col_mv);
             }
 
-            if (avail) {
-                col_mv = round_affine_mv(dst.mv, prec_amvr);
-
+            if (found) {
                 cp_info[nb_cand].cp_mv.lt = col_mv;
                 cp_info[nb_cand].cp_mv.rt = col_mv;
                 cp_info[nb_cand].cp_mv.lb = col_mv;
+
                 cp_info[nb_cand].ref_idx = ref_idx;
 
-                nb_cand++;
+                if (nb_cand++ == mvp_idx) {
+                    goto end;
+                }
             }
         }
     }
@@ -1369,17 +1361,14 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
 
     /* FIXME round needed? */
     /* Round control points */
-    for (int i = 0; i < nb_cand; i++) {
-        cp_info[i].cp_mv.lt = round_affine_mv(cp_info[i].cp_mv.lt, prec_amvr);
-        cp_info[i].cp_mv.rt = round_affine_mv(cp_info[i].cp_mv.rt, prec_amvr);
-        if (affine_type)
-        cp_info[i].cp_mv.lb = round_affine_mv(cp_info[i].cp_mv.lb, prec_amvr);
-    }
+end:
+    cp_info[mvp_idx].cp_mv.lt = round_affine_mv(cp_info[mvp_idx].cp_mv.lt, prec_amvr);
+    cp_info[mvp_idx].cp_mv.rt = round_affine_mv(cp_info[mvp_idx].cp_mv.rt, prec_amvr);
+    if (affine_type)
+        cp_info[mvp_idx].cp_mv.lb = round_affine_mv(cp_info[mvp_idx].cp_mv.lb, prec_amvr);
+
     return cp_info[mvp_idx];
 }
-
-/* SBTMVP related function
- */
 
 #define LOG2_SBTMVP_S 3
 
