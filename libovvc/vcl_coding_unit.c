@@ -1580,16 +1580,16 @@ inter_merge_data_p(OVCTUDec *const ctu_dec,
 }
 
 static inline uint8_t
-check_nz_affine_mvd_p(const struct AffineControlInfo *const cp_mvd, uint8_t affine_type)
+check_nz_affine_mvd_p(const struct CPMV *const cp_mvd, uint8_t affine_type)
 {
     uint32_t mvd_not_zero = 0;
     if (affine_type) {
-        mvd_not_zero |= (cp_mvd->cp_mv.lt.x | cp_mvd->cp_mv.lt.y);
-        mvd_not_zero |= (cp_mvd->cp_mv.rt.x | cp_mvd->cp_mv.rt.y);
-        mvd_not_zero |= (cp_mvd->cp_mv.lb.x | cp_mvd->cp_mv.lb.y);
+        mvd_not_zero |= (cp_mvd->lt.x | cp_mvd->lt.y);
+        mvd_not_zero |= (cp_mvd->rt.x | cp_mvd->rt.y);
+        mvd_not_zero |= (cp_mvd->lb.x | cp_mvd->lb.y);
     } else {
-        mvd_not_zero |= (cp_mvd->cp_mv.lt.x | cp_mvd->cp_mv.lt.y);
-        mvd_not_zero |= (cp_mvd->cp_mv.rt.x | cp_mvd->cp_mv.rt.y);
+        mvd_not_zero |= (cp_mvd->lt.x | cp_mvd->lt.y);
+        mvd_not_zero |= (cp_mvd->rt.x | cp_mvd->rt.y);
     }
 
     return (uint8_t)!!mvd_not_zero;
@@ -1747,7 +1747,7 @@ inter_mvp_read_p(OVCTUDec *const ctu_dec,
         mvp_data = inter_affine_mvp_data_p(ctu_dec, nb_active_ref_min1, affine_type);
 
         if (tools->affine_amvr_enabled) {
-            int32_t nz_mvd = check_nz_affine_mvd_p(&mvp_data.mvd, affine_type);
+            int32_t nz_mvd = check_nz_affine_mvd_p(&mvp_data.mvd.cp_mv, affine_type);
 
             if (nz_mvd) {
                 prec_amvr = ovcabac_read_ae_affine_amvr_precision(cabac_ctx);
@@ -2577,7 +2577,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                     struct AffineMVPDataP aff_mvp_data = inter_affine_mvp_data_p(ctu_dec, nb_active_ref_min1, affine_type);
 
                     if (tools->affine_amvr_enabled) {
-                        int32_t nz_mvd = check_nz_affine_mvd_p(&aff_mvp_data.mvd, affine_type);
+                        int32_t nz_mvd = check_nz_affine_mvd_p(&aff_mvp_data.mvd.cp_mv, affine_type);
 
                         if (nz_mvd) {
                             prec_amvr = ovcabac_read_ae_affine_amvr_precision(cabac_ctx);
