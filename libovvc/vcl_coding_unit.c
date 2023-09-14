@@ -2088,7 +2088,7 @@ inter_merge_data_b(OVCTUDec *const ctu_dec,
     enum MergeTypeP mrg_type = DEFAULT_MERGE;
     uint8_t merge_idx;
 
-    uint8_t ciip_flag;
+    uint8_t ciip_flag = 0;
 
     uint8_t ciip_enabled = tools->ciip_enabled && log2_cb_w < 7 && log2_cb_h < 7
                                                && (log2_cb_w + log2_cb_h) >= 6;

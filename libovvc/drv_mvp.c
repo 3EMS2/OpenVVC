@@ -876,9 +876,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         avg_mv.mv.x >>= 1;
         avg_mv.mv.y >>= 1;
 
-        if (cand[0].mv_spec.prec_amvr != cand[1].mv_spec.prec_amvr) {
-            avg_mv.mv_spec.prec_amvr = 0;
-        }
+        avg_mv.mv_spec.prec_amvr = (cand[0].mv_spec.prec_amvr & cand[1].mv_spec.prec_amvr) == MV_PRECISION_HALF ? MV_PRECISION_HALF : 0 ;
 
         if (nb_cand == merge_idx)
             return avg_mv;
@@ -1298,7 +1296,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         if (nb_cand == merge_idx){
             uint8_t prec_amvr0 = cand[0].inter_dir & 0x1 ? cand[0].mv0.mv_spec.prec_amvr : cand[0].mv1.mv_spec.prec_amvr;
             uint8_t prec_amvr1 = cand[1].inter_dir & 0x1 ? cand[1].mv0.mv_spec.prec_amvr : cand[1].mv1.mv_spec.prec_amvr;
-            avg_mv.mv0.mv_spec.prec_amvr = (prec_amvr0 == prec_amvr1) ? prec_amvr0 : 0 ;
+            avg_mv.mv0.mv_spec.prec_amvr = (prec_amvr0 & prec_amvr1) == MV_PRECISION_HALF ? prec_amvr0 : 0 ;
             avg_mv.mv1.mv_spec.prec_amvr = avg_mv.mv0.mv_spec.prec_amvr ;
             avg_mv.mv0.mv_spec.bcw_idx_plus1 = 0;
             avg_mv.mv1.mv_spec.bcw_idx_plus1 = 0;
