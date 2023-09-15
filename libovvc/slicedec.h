@@ -137,10 +137,10 @@ struct DRVLines
     }ibc_lines;
 };
 
-
 typedef struct OVSliceDec
 {
     struct SliceSynchro slice_sync;
+    struct OptimFilter opt_flt;
 
     OVNALUnit* slice_nalu;
 

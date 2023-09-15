@@ -302,6 +302,11 @@ struct OVDec
         uint8_t disable_lmcs;
     }ovrd_opt;
 
+    struct OptimFilter {
+        uint8_t lvl_flg;
+    } opt_flt;
+
+
 };
 
 #endif

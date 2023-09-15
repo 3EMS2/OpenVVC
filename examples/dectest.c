@@ -92,6 +92,7 @@ main(int argc, char** argv)
     int pp_disable = 0;
     int disable_df = 0;
     int disable_sao = 0;
+    int disable_simd = 0;
     int disable_alf = 0;
     int brightness = 1000;
     static const char *const default_info_fmt = "POC : %P %T µs  %R bytes %V\n";
@@ -124,6 +125,7 @@ main(int argc, char** argv)
             {"nosao", no_argument,       0, 's'},
             {"noalf", no_argument,       0, 'a'},
             {"brightness", required_argument,       0, 'b'},
+            {"nosimd", no_argument,       0, 'n'},
             {NULL},
         };
 
@@ -192,6 +194,10 @@ main(int argc, char** argv)
                 disable_sao = 1;
                 break;
 
+            case 'n':
+                disable_simd = 1;
+                break;
+
             case '?':
                 options_flag += 0x10;
                 break;
@@ -251,6 +257,10 @@ main(int argc, char** argv)
     if (disable_alf) {
         int val = 1;
         ovdec_set_opt(ovvc_hdl.dec, "noalf", &val);
+    }
+    if (disable_simd) {
+        int val = 0;
+        ovdec_set_opt(ovvc_hdl.dec, "nosimd", &val);
     }
     ovdec_set_opt(ovvc_hdl.dec, "brightness", &brightness);
 

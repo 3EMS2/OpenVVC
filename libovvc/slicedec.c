@@ -1970,13 +1970,6 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms, const 
 
     init_slice_tree_ctx(ctudec, prms);
 
-    rcn_init_functions(&ctudec->rcn_funcs, ict_type(ph), tools->lm_chroma_enabled,
-                       sps->sps_chroma_vertical_collocated_flag, sh->sh_lmcs_used_flag,
-                       sps->sps_bitdepth_minus8 + 8, sh->sh_dep_quant_used_flag);
-
-    //In loop filter information for CTU reconstruction
-    ctudec_init_in_loop_filters(ctudec, prms);
-
     ctudec->tmp_slice_type = sh->sh_slice_type;
 
     if (tools->scaling_list_enabled) {
@@ -1999,8 +1992,18 @@ int
 slicedec_update_entry_decoder(OVSliceDec *sldec, OVCTUDec *ctudec)
 {
     const OVPS *const prms = &sldec->active_params;
+    const OVSPS *const sps = prms->sps;
+    //const OVPPS *const pps = prms->pps;
+    const OVSH *const sh = prms->sh;
+    const OVPH *const ph = prms->ph;
 
     slicedec_init_slice_tools(ctudec, prms, &sldec->ovrd_opt);
+
+    rcn_init_functions(&ctudec->rcn_funcs, ict_type(ph), sps->sps_cclm_enabled_flag,
+                       sps->sps_chroma_vertical_collocated_flag, sh->sh_lmcs_used_flag,
+                       sps->sps_bitdepth_minus8 + 8, sh->sh_dep_quant_used_flag, &sldec->opt_flt);
+
+    ctudec_init_in_loop_filters(ctudec, prms);
 
     copy_init_stuff(sldec, ctudec, prms);
 

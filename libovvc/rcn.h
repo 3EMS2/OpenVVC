@@ -37,12 +37,13 @@
 #include "ovdefs.h"
 
 struct RCNFunctions;
+struct OptimFilter;
 
 void rcn_init_gpm_params();
 
 void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled,
                         uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag, uint8_t bitdepth,
-                        uint8_t sh_dep_quant_used_flag);
+                        uint8_t sh_dep_quant_used_flag, const struct OptimFilter *const opt_flt);
 
 void rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs);
 

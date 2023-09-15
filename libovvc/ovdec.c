@@ -78,6 +78,7 @@ static const struct OVOption ovdecopt[] = {
    {"nodf", "Forcefully disable Deblocking Filter", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ovrd_opt.disable_df)},
    {"noalf", "Forcefully disable ALF Filter", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ovrd_opt.disable_alf)},
    {"nosao", "Forcefully disable SAO Filter", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, ovrd_opt.disable_sao)},
+   {"nosimd", "Forcefully disable SIMD", .type=OVOPT_FLAG, .min=0, .max=1,  .offset= offsetof(struct OVDec, opt_flt.lvl_flg)},
    { NULL },
 };
 
@@ -271,6 +272,7 @@ init_vcl_decoder(OVDec *const ovdec, OVSliceDec **sldec_p, const OVNVCLCtx *cons
 
     *sldec_p = sldec;
     sldec->ovrd_opt = ovdec->ovrd_opt;
+    sldec->opt_flt  = ovdec->opt_flt;
     //Temporary: copy active parameters
     slicedec_ref_params(sldec, &ovdec->active_params);
 
@@ -786,6 +788,7 @@ ovdec_init(OVDec **ovdec_p)
     ov_log(NULL, OVLOG_TRACE, "OpenVVC init at %p\n", *ovdec_p);
 
     (*ovdec_p)->ppctx.brightness = 10000;
+    (*ovdec_p)->opt_flt.lvl_flg = 1;
 
     return 0;
 

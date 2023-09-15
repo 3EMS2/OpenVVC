@@ -147,7 +147,7 @@ rcn_init_intra_angular_functions(struct RCNFunctions *rcn_func, uint8_t bitdepth
 void
 rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled,
                    uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag, uint8_t bitdepth,
-                   uint8_t sh_dep_quant_used_flag)
+                   uint8_t sh_dep_quant_used_flag, const struct OptimFilter *const opt_flt)
 {
   rcn_init_ctu_buffs_10(rcn_func);
   rcn_init_mc_functions_10(rcn_func);
@@ -223,7 +223,8 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
   #ifndef NO_SIMD
     #if HAVE_X86_OPTIM
       #if HAVE_SSE4_1
-      if (__builtin_cpu_supports("sse4.1") && bitdepth == 10) {
+      uint8_t use_sse = (opt_flt->lvl_flg & 0x1) && __builtin_cpu_supports("sse4.1");
+      if (use_sse && bitdepth == 10) {
           rcn_init_mc_functions_sse(rcn_func);
           rcn_init_tr_functions_sse(rcn_func);
           rcn_init_dc_planar_functions_sse(rcn_func);
@@ -248,7 +249,8 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
       }
       #endif
       #if HAVE_AVX2
-        if (__builtin_cpu_supports("avx2") && bitdepth == 10) {
+      uint8_t use_avx2 = (opt_flt->lvl_flg & 0x1) && __builtin_cpu_supports("sse4.1");
+        if (use_avx2 && bitdepth == 10) {
           rcn_init_alf_functions_avx2(rcn_func);
           rcn_init_sao_functions_avx2(rcn_func);
           rcn_init_ict_functions_avx2(rcn_func, ict_type);
