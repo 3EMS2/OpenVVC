@@ -93,7 +93,7 @@ enum ControlPointIdx
    CP_LT = 0,
    CP_RT = 1,
    CP_LB = 2,
-   CP_RB = 3,
+   CP_TMVP = 3,
 };
 
 enum ControlPointMask
@@ -101,15 +101,15 @@ enum ControlPointMask
    CP_LT_MASK = (1 << CP_LT),
    CP_RT_MASK = (1 << CP_RT),
    CP_LB_MASK = (1 << CP_LB),
-   CP_RB_MASK = (1 << CP_RB),
+   CP_RB_MASK = (1 << CP_TMVP),
 };
 
 enum ControlPointCandMask
 {
    CP3_MASK0 = (1 << CP_LT) | (1 << CP_RT) | (1 << CP_LB),
-   CP3_MASK1 = (1 << CP_LT) | (1 << CP_RT) | (1 << CP_RB),
-   CP3_MASK2 = (1 << CP_LT) | (1 << CP_LB) | (1 << CP_RB),
-   CP3_MASK3 = (1 << CP_RT) | (1 << CP_LB) | (1 << CP_RB),
+   CP3_MASK1 = (1 << CP_LT) | (1 << CP_RT) | (1 << CP_TMVP),
+   CP3_MASK2 = (1 << CP_LT) | (1 << CP_LB) | (1 << CP_TMVP),
+   CP3_MASK3 = (1 << CP_RT) | (1 << CP_LB) | (1 << CP_TMVP),
    CP2_MASK0 = (1 << CP_LT) | (1 << CP_RT),
    CP2_MASK1 = (1 << CP_LT) | (1 << CP_LB)
 };
@@ -617,6 +617,7 @@ tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
 found :
     scale = derive_tmvp_scale(dist_ref, dist_col);
 
+    if ((dist_ref == 0) ^ (mv.z == 0)) return 0;
     mv.mv = tmvp_rescale(mv.mv, scale);
 
     *dst = mv.mv;
@@ -814,7 +815,6 @@ merge_tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
                    uint8_t cand_msk, struct MV *const dst)
 {
     int32_t dist_ref = inter_ctx->inter_params.dist_ref_0[0];
-
     int32_t dist_ref_opp =  inter_ctx->inter_params.dist_ref_1[0];
 
     uint8_t cand_c0  = cand_msk & 0x1;
@@ -2065,7 +2065,7 @@ struct ControlPointMVCand
 static uint8_t
 derive_affine_control_point_0(struct ControlPointMVCand mi, int model_idx,
                               uint8_t log2_cu_w, uint8_t log2_cu_h,
-                              struct AffineMergeInfo *const aff_mrg_ctx)
+                              struct AffineMergeInfo *const affmrg_info)
 {
     /* FIXME dir info should be derived from RPL cand list + ref_idx*/
     struct MV mv0[4];
@@ -2138,27 +2138,27 @@ derive_affine_control_point_0(struct ControlPointMVCand mi, int model_idx,
         return 0;
     }
 
-    aff_mrg_ctx->cinfo[0].cp_mv.lt = mv0[0];
-    aff_mrg_ctx->cinfo[0].cp_mv.rt = mv0[1];
-    aff_mrg_ctx->cinfo[0].cp_mv.lb = mv0[2];
-    aff_mrg_ctx->cinfo[0].ref_idx = mi.mv0[CP_LT].ref_idx;
-    aff_mrg_ctx->cinfo[0].mv_spec = mi.mv0[CP_LT].mv_spec;
+    affmrg_info->cinfo[0].cp_mv.lt = mv0[0];
+    affmrg_info->cinfo[0].cp_mv.rt = mv0[1];
+    affmrg_info->cinfo[0].cp_mv.lb = mv0[2];
+    affmrg_info->cinfo[0].ref_idx = mi.mv0[CP_LT].ref_idx;
+    affmrg_info->cinfo[0].mv_spec = mi.mv0[CP_LT].mv_spec;
 
-    aff_mrg_ctx->cinfo[1].cp_mv.lt = mv1[0];
-    aff_mrg_ctx->cinfo[1].cp_mv.rt = mv1[1];
-    aff_mrg_ctx->cinfo[1].cp_mv.lb = mv1[2];
-    aff_mrg_ctx->cinfo[1].ref_idx = mi.mv1[CP_LT].ref_idx;
-    aff_mrg_ctx->cinfo[1].mv_spec = mi.mv1[CP_LT].mv_spec;
+    affmrg_info->cinfo[1].cp_mv.lt = mv1[0];
+    affmrg_info->cinfo[1].cp_mv.rt = mv1[1];
+    affmrg_info->cinfo[1].cp_mv.lb = mv1[2];
+    affmrg_info->cinfo[1].ref_idx = mi.mv1[CP_LT].ref_idx;
+    affmrg_info->cinfo[1].mv_spec = mi.mv1[CP_LT].mv_spec;
 
-    aff_mrg_ctx->inter_dir   = dir;
-    aff_mrg_ctx->affine_type = AFFINE_2CP;
+    affmrg_info->inter_dir   = dir;
+    affmrg_info->affine_type = AFFINE_2CP;
 
     return 1;
 }
 
 static uint8_t
 derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
-                              struct AffineMergeInfo *const aff_mrg_ctx)
+                              struct AffineMergeInfo *const affmrg_info)
 {
     struct MV mv0[4] = {0};
     struct MV mv1[4] = {0};
@@ -2201,13 +2201,13 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
 
         case 1:
             if (mi.mv0[CP_LT].ref_idx >= 0 && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_RT].ref_idx
-                                          && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_RB].ref_idx) {
+                                           && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_TMVP].ref_idx) {
                 mv0[0] = mi.mv0[0].mv;
                 mv0[1] = mi.mv0[1].mv;
-                mv0[3] = mi.mv0[3].mv;
+                mv0[CP_TMVP] = mi.mv0[CP_TMVP].mv;
 
-                mv0[2].x = mv0[0].x - mv0[1].x + mv0[3].x;
-                mv0[2].y = mv0[0].y - mv0[1].y + mv0[3].y;
+                mv0[2].x = mv0[0].x - mv0[1].x + mv0[CP_TMVP].x;
+                mv0[2].y = mv0[0].y - mv0[1].y + mv0[CP_TMVP].y;
 
                 mv0[2] = clip_mv(mv0[2]);
 
@@ -2218,14 +2218,14 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
             }
 
             if (mi.mv1[CP_LT].ref_idx >= 0 && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_RT].ref_idx
-                                          && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_RB].ref_idx) {
+                                           && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_TMVP].ref_idx) {
 
                 mv1[0] = mi.mv1[0].mv;
                 mv1[1] = mi.mv1[1].mv;
-                mv1[3] = mi.mv1[3].mv;
+                mv1[CP_TMVP] = mi.mv1[CP_TMVP].mv;
 
-                mv1[2].x = mv1[0].x - mv1[1].x + mv1[3].x;
-                mv1[2].y = mv1[0].y - mv1[1].y + mv1[3].y;
+                mv1[2].x = mv1[0].x - mv1[1].x + mv1[CP_TMVP].x;
+                mv1[2].y = mv1[0].y - mv1[1].y + mv1[CP_TMVP].y;
 
                 mv1[2] = clip_mv(mv1[2]);
 
@@ -2239,13 +2239,13 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
 
         case 2:
             if (mi.mv0[CP_LT].ref_idx >= 0 && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_LB].ref_idx
-                                          && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_RB].ref_idx) {
+                                           && mi.mv0[CP_LT].ref_idx == mi.mv0[CP_TMVP].ref_idx) {
                 mv0[0] = mi.mv0[0].mv;
                 mv0[2] = mi.mv0[2].mv;
-                mv0[3] = mi.mv0[3].mv;
+                mv0[CP_TMVP] = mi.mv0[CP_TMVP].mv;
 
-                mv0[1].x = mv0[0].x - mv0[2].x + mv0[3].x;
-                mv0[1].y = mv0[0].y - mv0[2].y + mv0[3].y;
+                mv0[1].x = mv0[0].x - mv0[2].x + mv0[CP_TMVP].x;
+                mv0[1].y = mv0[0].y - mv0[2].y + mv0[CP_TMVP].y;
 
                 mv0[1] = clip_mv(mv0[1]);
 
@@ -2256,14 +2256,14 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
             }
 
             if (mi.mv1[CP_LT].ref_idx >= 0 && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_LB].ref_idx
-                                          && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_RB].ref_idx) {
+                                           && mi.mv1[CP_LT].ref_idx == mi.mv1[CP_TMVP].ref_idx) {
 
                 mv1[0] = mi.mv1[0].mv;
                 mv1[2] = mi.mv1[2].mv;
-                mv1[3] = mi.mv1[3].mv;
+                mv1[CP_TMVP] = mi.mv1[CP_TMVP].mv;
 
-                mv1[1].x = mv1[0].x - mv1[2].x + mv1[3].x;
-                mv1[1].y = mv1[0].y - mv1[2].y + mv1[3].y;
+                mv1[1].x = mv1[0].x - mv1[2].x + mv1[CP_TMVP].x;
+                mv1[1].y = mv1[0].y - mv1[2].y + mv1[CP_TMVP].y;
 
                 mv1[1] = clip_mv(mv1[1]);
 
@@ -2277,13 +2277,13 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
 
         case 3:
             if (mi.mv0[CP_RT].ref_idx >= 0 && mi.mv0[CP_RT].ref_idx == mi.mv0[CP_LB].ref_idx
-                                          && mi.mv0[CP_RT].ref_idx == mi.mv0[CP_RB].ref_idx) {
+                                           && mi.mv0[CP_RT].ref_idx == mi.mv0[CP_TMVP].ref_idx) {
                 mv0[1] = mi.mv0[1].mv;
                 mv0[2] = mi.mv0[2].mv;
-                mv0[3] = mi.mv0[3].mv;
+                mv0[CP_TMVP] = mi.mv0[CP_TMVP].mv;
 
-                mv0[0].x = mv0[1].x + mv0[2].x - mv0[3].x;
-                mv0[0].y = mv0[1].y + mv0[2].y - mv0[3].y;
+                mv0[0].x = mv0[1].x + mv0[2].x - mv0[CP_TMVP].x;
+                mv0[0].y = mv0[1].y + mv0[2].y - mv0[CP_TMVP].y;
 
                 mv0[0] = clip_mv(mv0[0]);
 
@@ -2294,14 +2294,14 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
             }
 
             if (mi.mv1[CP_RT].ref_idx >= 0 && mi.mv1[CP_RT].ref_idx == mi.mv1[CP_LB].ref_idx
-                                          && mi.mv1[CP_RT].ref_idx == mi.mv1[CP_RB].ref_idx) {
+                                           && mi.mv1[CP_RT].ref_idx == mi.mv1[CP_TMVP].ref_idx) {
 
                 mv1[1] = mi.mv1[1].mv;
                 mv1[2] = mi.mv1[2].mv;
-                mv1[3] = mi.mv1[3].mv;
+                mv1[CP_TMVP] = mi.mv1[CP_TMVP].mv;
 
-                mv1[0].x = mv1[1].x + mv1[2].x - mv1[3].x;
-                mv1[0].y = mv1[1].y + mv1[2].y - mv1[3].y;
+                mv1[0].x = mv1[1].x + mv1[2].x - mv1[CP_TMVP].x;
+                mv1[0].y = mv1[1].y + mv1[2].y - mv1[CP_TMVP].y;
 
                 mv1[0] = clip_mv(mv1[0]);
 
@@ -2318,20 +2318,20 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
         return 0;
     }
 
-    aff_mrg_ctx->cinfo[0].cp_mv.lt = mv0[0];
-    aff_mrg_ctx->cinfo[0].cp_mv.rt = mv0[1];
-    aff_mrg_ctx->cinfo[0].cp_mv.lb = mv0[2];
-    aff_mrg_ctx->cinfo[0].ref_idx = ref_idx0;
-    aff_mrg_ctx->cinfo[0].mv_spec = mv_spec0;
+    affmrg_info->cinfo[0].cp_mv.lt = mv0[0];
+    affmrg_info->cinfo[0].cp_mv.rt = mv0[1];
+    affmrg_info->cinfo[0].cp_mv.lb = mv0[2];
+    affmrg_info->cinfo[0].ref_idx = ref_idx0;
+    affmrg_info->cinfo[0].mv_spec = mv_spec0;
 
-    aff_mrg_ctx->cinfo[1].cp_mv.lt = mv1[0];
-    aff_mrg_ctx->cinfo[1].cp_mv.rt = mv1[1];
-    aff_mrg_ctx->cinfo[1].cp_mv.lb = mv1[2];
-    aff_mrg_ctx->cinfo[1].ref_idx = ref_idx1;
-    aff_mrg_ctx->cinfo[1].mv_spec = mv_spec1;
+    affmrg_info->cinfo[1].cp_mv.lt = mv1[0];
+    affmrg_info->cinfo[1].cp_mv.rt = mv1[1];
+    affmrg_info->cinfo[1].cp_mv.lb = mv1[2];
+    affmrg_info->cinfo[1].ref_idx = ref_idx1;
+    affmrg_info->cinfo[1].mv_spec = mv_spec1;
 
-    aff_mrg_ctx->inter_dir   = dir;
-    aff_mrg_ctx->affine_type = AFFINE_3CP;
+    affmrg_info->inter_dir   = dir;
+    affmrg_info->affine_type = AFFINE_3CP;
 
     return 1;
 }
@@ -2339,7 +2339,7 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
 static void
 derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
                        struct AffineDRVInfo *affine_ctx,
-                       struct AffineMergeInfo *const aff_mrg_ctx,
+                       struct AffineMergeInfo *const affmrg_info,
                        uint8_t x_pb, uint8_t y_pb,
                        uint8_t nb_pb_w, uint8_t nb_pb_h,
                        uint8_t log2_cu_w, uint8_t log2_cu_h,
@@ -2409,11 +2409,11 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
                                            affine_info->type, cand_name, log2_ctb_s);
         }
 
-        aff_mrg_ctx[0].cinfo[0] = cp_info0;
-        aff_mrg_ctx[0].cinfo[1] = cp_info1;
+        affmrg_info->cinfo[0] = cp_info0;
+        affmrg_info->cinfo[1] = cp_info1;
 
-        aff_mrg_ctx[0].inter_dir   = dir;
-        aff_mrg_ctx[0].affine_type = affine_type;
+        affmrg_info->inter_dir   = dir;
+        affmrg_info->affine_type = affine_type;
 
         if (nb_cand == mrg_idx) {
             return;
@@ -2449,11 +2449,11 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
                                            affine_info->type, cand_name, log2_ctb_s);
         }
 
-        aff_mrg_ctx[0].cinfo[0] = cp_info0;
-        aff_mrg_ctx[0].cinfo[1] = cp_info1;
+        affmrg_info->cinfo[0] = cp_info0;
+        affmrg_info->cinfo[1] = cp_info1;
 
-        aff_mrg_ctx[0].inter_dir   = dir;
-        aff_mrg_ctx[0].affine_type = affine_type;
+        affmrg_info->inter_dir   = dir;
+        affmrg_info->affine_type = affine_type;
 
         if (nb_cand == mrg_idx) {
             return;
@@ -2474,20 +2474,20 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
             enum CandName cand_id = cand_mask_to_idx(cand_msk);
             uint16_t pos = derive_cand_position(pb_info, cand_id);
             avail_cp_map |= 0x1;
-            dir[0]  = !!(cand_msk & rpl0_cand);
-            dir[0] |= (!!(cand_msk & rpl1_cand)) << 1;
+            dir[CP_LT]  = !!(cand_msk & rpl0_cand);
+            dir[CP_LT] |= (!!(cand_msk & rpl1_cand)) << 1;
 
-            if (dir[0] & 0x1) {
-                mi.mv0[0] = mv_ctx0->mvs[pos];
+            if (dir[CP_LT] & 0x1) {
+                mi.mv0[CP_LT] = mv_ctx0->mvs[pos];
             } else {
                 /* FIXME this is only so  we check for ref_idx < 0 in CPInfo derivation */
-                mi.mv0[0].ref_idx = -1;
+                mi.mv0[CP_LT].ref_idx = -1;
             }
 
-            if (dir[0] & 0x2) {
-                mi.mv1[0] = mv_ctx1->mvs[pos];
+            if (dir[CP_LT] & 0x2) {
+                mi.mv1[CP_LT] = mv_ctx1->mvs[pos];
             } else {
-                mi.mv1[0].ref_idx = -1;
+                mi.mv1[CP_LT].ref_idx = -1;
             }
 
         }
@@ -2496,20 +2496,20 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
             enum CandName cand_id = cand_mask_to_idx(cand_msk);
             uint16_t pos = derive_cand_position(pb_info, cand_id);
             avail_cp_map |= 0x2;
-            dir[1]  = !!(cand_msk & rpl0_cand);
-            dir[1] |= (!!(cand_msk & rpl1_cand)) << 1;
+            dir[CP_RT]  = !!(cand_msk & rpl0_cand);
+            dir[CP_RT] |= (!!(cand_msk & rpl1_cand)) << 1;
 
-            if (dir[1] & 0x1) {
-                mi.mv0[1] = mv_ctx0->mvs[pos];
+            if (dir[CP_RT] & 0x1) {
+                mi.mv0[CP_RT] = mv_ctx0->mvs[pos];
             } else {
-                mi.mv0[1].ref_idx = -1;
+                mi.mv0[CP_RT].ref_idx = -1;
             }
 
 
-            if (dir[1] & 0x2) {
-                mi.mv1[1] = mv_ctx1->mvs[pos];
+            if (dir[CP_RT] & 0x2) {
+                mi.mv1[CP_RT] = mv_ctx1->mvs[pos];
             } else {
-                mi.mv1[1].ref_idx = -1;
+                mi.mv1[CP_RT].ref_idx = -1;
             }
 
         }
@@ -2518,19 +2518,19 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
             enum CandName cand_id = cand_mask_to_idx(cand_msk);
             uint16_t pos = derive_cand_position(pb_info, cand_id);
             avail_cp_map |= 0x4;
-            dir[2]  = !!(cand_msk & rpl0_cand);
-            dir[2] |= (!!(cand_msk & rpl1_cand)) << 1;
+            dir[CP_LB]  = !!(cand_msk & rpl0_cand);
+            dir[CP_LB] |= (!!(cand_msk & rpl1_cand)) << 1;
 
-            if (dir[2] & 0x1) {
-                mi.mv0[2] = mv_ctx0->mvs[pos];
+            if (dir[CP_LB] & 0x1) {
+                mi.mv0[CP_LB] = mv_ctx0->mvs[pos];
             } else {
-                mi.mv0[2].ref_idx = -1;
+                mi.mv0[CP_LB].ref_idx = -1;
             }
 
-            if (dir[2] & 0x2) {
-                mi.mv1[2] = mv_ctx1->mvs[pos];
+            if (dir[CP_LB] & 0x2) {
+                mi.mv1[CP_LB] = mv_ctx1->mvs[pos];
             } else {
-                mi.mv1[2].ref_idx = -1;
+                mi.mv1[CP_LB].ref_idx = -1;
             }
 
         }
@@ -2567,20 +2567,22 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
                                                    cand_msk, c0_mv);
                 }
 
-                dir[3] = avail_dir;
+                dir[CP_TMVP] = avail_dir;
 
                 if (avail_dir & 0x1) {
-                    mi.mv0[3].mv = c0_mv[0];
+                    mi.mv0[CP_TMVP].mv = c0_mv[0];
+                    mi.mv0[CP_TMVP].ref_idx = 0;
                     avail_cp_map |= 0x8;
                 } else {
-                    mi.mv0[3].ref_idx = -1;
+                    mi.mv0[CP_TMVP].ref_idx = -1;
                 }
 
                 if (avail_dir & 0x2) {
-                    mi.mv1[3].mv = c0_mv[1];
+                    mi.mv1[CP_TMVP].mv = c0_mv[1];
+                    mi.mv1[CP_TMVP].ref_idx = 0;
                     avail_cp_map |= 0x8;
                 } else {
-                    mi.mv1[3].ref_idx = -1;
+                    mi.mv1[CP_TMVP].ref_idx = -1;
                 }
 
             }
@@ -2591,7 +2593,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
         uint8_t sps_affine_type_flag = inter_ctx->inter_params.affine_6params_enabled;
         if (sps_affine_type_flag) {
             if (check_avail_cp(avail_cp_map, CP3_MASK0)) {
-                nb_cand += derive_affine_control_point_1(mi, 0, aff_mrg_ctx);
+                nb_cand += derive_affine_control_point_1(mi, 0, affmrg_info);
 
                 if (nb_cand - 1 == mrg_idx) {
                     return;
@@ -2600,7 +2602,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
             /* Note check those only if TMVP is enabled */
             if (check_avail_cp(avail_cp_map, CP3_MASK1)) {
-                nb_cand += derive_affine_control_point_1(mi, 1, aff_mrg_ctx);
+                nb_cand += derive_affine_control_point_1(mi, 1, affmrg_info);
 
                 if (nb_cand - 1 == mrg_idx) {
                     return;
@@ -2608,7 +2610,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
             }
 
             if (check_avail_cp(avail_cp_map, CP3_MASK2)) {
-                nb_cand += derive_affine_control_point_1(mi, 2, aff_mrg_ctx);
+                nb_cand += derive_affine_control_point_1(mi, 2, affmrg_info);
 
                 if (nb_cand - 1 == mrg_idx) {
                     return;
@@ -2616,7 +2618,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
             }
 
             if (check_avail_cp(avail_cp_map, CP3_MASK3)) {
-                nb_cand += derive_affine_control_point_1(mi, 3, aff_mrg_ctx);
+                nb_cand += derive_affine_control_point_1(mi, 3, affmrg_info);
 
                 if (nb_cand - 1 == mrg_idx) {
                     return;
@@ -2626,7 +2628,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
         if (check_avail_cp(avail_cp_map, CP2_MASK0)) {
             nb_cand += derive_affine_control_point_0(mi, 0, log2_cu_w, log2_cu_h,
-                                                     aff_mrg_ctx);
+                                                     affmrg_info);
 
             if (nb_cand - 1 == mrg_idx) {
                 return;
@@ -2635,7 +2637,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
         if (check_avail_cp(avail_cp_map, CP2_MASK1)) {
             nb_cand += derive_affine_control_point_0(mi, 1, log2_cu_w, log2_cu_h,
-                                                     aff_mrg_ctx);
+                                                     affmrg_info);
 
             if (nb_cand - 1 == mrg_idx) {
                 return;
@@ -2648,12 +2650,12 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
     while (nb_cand <= mrg_idx) {
         struct AffineControlInfo z_cinfo = {0};
 
-        aff_mrg_ctx[0].cinfo[0] = z_cinfo;
-        aff_mrg_ctx[0].cinfo[1] = z_cinfo;
+        affmrg_info->cinfo[0] = z_cinfo;
+        affmrg_info->cinfo[1] = z_cinfo;
 
-        aff_mrg_ctx[0].inter_dir = 3;
+        affmrg_info->inter_dir = 3;
 
-        aff_mrg_ctx[0].affine_type = AFFINE_2CP;
+        affmrg_info->affine_type = AFFINE_2CP;
 
         nb_cand++;
 
