@@ -6,14 +6,14 @@
 
 struct MVPDataP
 {
-    OVMV mvd;
+    struct MV mvd;
     uint8_t ref_idx;
     uint8_t mvp_idx;
 };
 
 struct AffineMVPDataP
 {
-    struct AffineControlInfo mvd;
+    struct CPMV mvd;
     uint8_t ref_idx;
     uint8_t mvp_idx;
 };
@@ -62,7 +62,7 @@ struct MergeData
 
 struct SMVDData
 {
-    struct OVMV mvd;
+    struct MV mvd;
     uint8_t mvp_idx0;
     uint8_t mvp_idx1;
 };
@@ -79,8 +79,8 @@ struct AffineMVPDataB
 
 struct MVPDataB
 {
-    OVMV mvd0;
-    OVMV mvd1;
+    struct MV mvd0;
+    struct MV mvd1;
     uint8_t ref_idx0;
     uint8_t mvp_idx0;
     uint8_t ref_idx1;
