@@ -169,7 +169,11 @@ typedef struct OVPictureUnit
      *     - currently unused for output PTS computation.
      */
     uint64_t dts;
-
+    int32_t poc;
+    enum OVNALUType type;
+    uint8_t qp;
+    uint8_t temporal_layer_id;
+    uint8_t alf_flags;
     /* Reference counter
      *
      * This is used internally to know when the Picture Unit should be freed.

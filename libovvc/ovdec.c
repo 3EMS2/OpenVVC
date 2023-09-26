@@ -217,9 +217,15 @@ set_max_pic_part_info(struct PicPartInfo *pic_info, const OVSPS *const sps, cons
 static int
 update_decoder_buffers(OVDec *ovdec)
 {
+
+    int ret;
+
+    OVSH *sh = ovdec->active_params.sh;
+    ovdec->pu->alf_flags = (sh->sh_alf_enabled_flag << 4) | (sh->sh_alf_cb_enabled_flag << 3) | (sh->sh_alf_cr_enabled_flag << 2)
+      | (sh->sh_alf_cc_cb_enabled_flag<< 1) | (sh->sh_alf_cc_cr_enabled_flag);
+
     if (!ovdec->dpb) {
-         int ret = ovdpb_init(&ovdec->dpb, &ovdec->active_params);
-         ovdec->active_params.sps_info.req_dpb_realloc = 0;
+         ret = ovdpb_init(&ovdec->dpb, &ovdec->active_params);
          if (ret < 0) {
              ov_log(NULL, OVLOG_ERROR, "Failed DPB init\n");
              return ret;
@@ -281,6 +287,8 @@ init_vcl_decoder(OVDec *const ovdec, OVSliceDec **sldec_p, const OVNVCLCtx *cons
         ov_log(NULL, OVLOG_ERROR, "Failed picture init\n");
         return ret;
     }
+    uint8_t tid = (nalu->rbsp_data[1] & 0x7) - 1;
+    ovdec->pu->temporal_layer_id = tid;
 
     ovnalu_ref(&sldec->slice_nalu, nalu);
 

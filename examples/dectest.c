@@ -47,6 +47,10 @@
 #include "ovversion.h"
 #include "ovmem.h"
 #include "ovtime.h"
+#include "nvcl_structures.h"
+#include "slicedec.h"
+
+
 
 struct PicInfoFormat
 {
@@ -62,6 +66,44 @@ typedef struct OVVCHdl
     struct PicInfoFormat *pinfo_fmt;
     int brightness;
 } OVVCHdl;
+
+
+static const char *nalu_name[32] =
+  {
+    "TRAIL",
+    "STSA",
+    "RADL",
+    "RASL",
+    "RSVD_VCL",
+    "RSVD_VCL",
+    "RSVD_VCL",
+    "IDR_W_RADL",
+    "IDR_N_LP",
+    "CRA",
+    "GDR",
+    "RSVD_IRAP_VCL",
+    "OPI",
+    "DCI",
+    "VPS",
+    "SPS",
+    "PPS",
+    "PREFIX_APS",
+    "SUFFIX_APS",
+    "PH",
+    "AUD",
+    "EOS",
+    "EOB",
+    "PREFIX_SEI",
+    "SUFFIX_SEI",
+    "FD",
+    "RSVD_NVCL",
+    "RSVD_NVCL",
+    "UNSPEC",
+    "UNSPEC",
+    "UNSPEC",
+    "UNSPEC"
+  };
+
 
 static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name);
 
@@ -324,7 +366,6 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_f
     if (ret < 0) goto failstart;
 
     ov_log(vvcdec, OVLOG_TRACE, "Decoder init.\n");
-
     ret = ovdmx_init(vvcdmx);
 
     if (ret < 0) goto faildmx;
@@ -409,6 +450,8 @@ output_pictures_info(const struct PicInfoFormat *pinfo_fmt, OVFrame *frame)
 {
     uint64_t pu_size = 0;
 
+    //printf("%d %ld %d %s %d %d %b\n",  nalu_name[pu->type], pu->qp, pu->temporal_layer_id, pu->alf_flags);
+
     if (frame->pu)  pu_size = derive_pu_size(frame->pu);
 
     const char *fmt = pinfo_fmt->fmt_str;
@@ -429,14 +472,26 @@ output_pictures_info(const struct PicInfoFormat *pinfo_fmt, OVFrame *frame)
                         case 'V' :
                             fprintf(pinfo_fmt->file, "%ldx%ld", frame->width, frame->height);
                             break;
+                        case 'A' :
+                            fprintf(pinfo_fmt->file, "%d", frame->pu->alf_flags);
+                            break;
+                        case 'L' :
+                            fprintf(pinfo_fmt->file, "%d", frame->pu->temporal_layer_id);
+                            break;
+                        case 'Q' :
+                            fprintf(pinfo_fmt->file, "%d", frame->pu->qp);
+                            break;
+                        case 'N' :
+                            fprintf(pinfo_fmt->file, "%s", nalu_name[frame->pu->type]);
+                            break;
                     }
                 } break;
             case '\\':
-                    if (*++fmt == 'n')
-                        fprintf(pinfo_fmt->file,"\n");
-                    else
-                        fprintf(pinfo_fmt->file,"%c", *--fmt);
-                    fmt++;
+                if (*++fmt == 'n')
+                    fprintf(pinfo_fmt->file,"\n");
+                else
+                    fprintf(pinfo_fmt->file,"%c", *--fmt);
+                fmt++;
                 break;
             default:
                 fprintf(pinfo_fmt->file,"%c", *fmt);
@@ -507,7 +562,6 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
             }
 
             ov_log(NULL, OVLOG_DEBUG, "Drain picture with POC %d.\n", frame->poc);
-
             if (hdl->pinfo_fmt->fmt_str)
                 output_pictures_info(hdl->pinfo_fmt, frame);
 

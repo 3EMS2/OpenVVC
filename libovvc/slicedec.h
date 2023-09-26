@@ -41,6 +41,14 @@
 #include "ctudec.h"
 #include "dec_structures.h"
 
+
+
+
+typedef struct OVPS OVPS;
+extern const OVPS *const ps;
+
+
+
 struct EntryThread;
 struct RectEntryInfo;
 

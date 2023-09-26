@@ -59,7 +59,7 @@ enum SliceType
 };
 
 const uint8_t SIZE_INT64 = 6;
-
+struct OVPS* dec_params;
 static void tmvp_release_mv_planes(OVPicture *const pic);
 
 static int dpb_init_params(OVDPB *dpb, OVDPBParams const *prm);
@@ -1239,6 +1239,13 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
             ret = init_tmvp_info(*pic_p, ps, ovdec);
         }
         ovpu_ref(&(*pic_p)->pu, ovdec->pu);
+        (*pic_p)->pu->poc = poc;
+        (*pic_p)->pu->type = nalu_type;
+        int8_t pic_base_qp = ps->pps->pps_init_qp_minus26 + 26;
+        int8_t pic_qp = pic_base_qp + ph->ph_qp_delta;
+        int8_t slice_qp = pic_qp + sh->sh_qp_delta;
+
+        (*pic_p)->pu->qp = slice_qp;
 
         init_nb_slices(*pic_p, ovdec->pu, ps->pps);
     }
